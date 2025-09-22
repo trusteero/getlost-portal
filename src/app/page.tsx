@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 import { LatestPost } from "@/app/_components/post";
 import { auth } from "@/server/auth";
 import { HydrateClient, api } from "@/trpc/server";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
 export default async function Home() {
 	const hello = await api.post.hello({ text: "from tRPC" });
@@ -14,56 +17,92 @@ export default async function Home() {
 
 	return (
 		<HydrateClient>
-			<main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-				<div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-					<h1 className="font-extrabold text-5xl tracking-tight sm:text-[5rem]">
-						Create <span className="text-[hsl(280,100%,70%)]">T3</span> App
-					</h1>
-					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
-						<Link
-							className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-							href="https://create.t3.gg/en/usage/first-steps"
-							target="_blank"
-						>
-							<h3 className="font-bold text-2xl">First Steps →</h3>
-							<div className="text-lg">
-								Just the basics - Everything you need to know to set up your
-								database and authentication.
-							</div>
-						</Link>
-						<Link
-							className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-							href="https://create.t3.gg/en/introduction"
-							target="_blank"
-						>
-							<h3 className="font-bold text-2xl">Documentation →</h3>
-							<div className="text-lg">
-								Learn more about Create T3 App, the libraries it uses, and how
-								to deploy it.
-							</div>
-						</Link>
-					</div>
-					<div className="flex flex-col items-center gap-2">
-						<p className="text-2xl text-white">
-							{hello ? hello.greeting : "Loading tRPC query..."}
+			<div className="min-h-screen bg-gradient-to-b from-zinc-900 via-purple-900/20 to-zinc-900">
+				<div className="container mx-auto px-4 py-16">
+					{/* Hero Section */}
+					<div className="flex flex-col items-center text-center mb-16">
+						<h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6">
+							Create <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">T3</span> App
+						</h1>
+						<p className="text-xl text-zinc-300 max-w-2xl mb-8">
+							The best way to start a full-stack, typesafe Next.js app
 						</p>
 
-						<div className="flex flex-col items-center justify-center gap-4">
-							<p className="text-center text-2xl text-white">
-								{session && <span>Logged in as {session.user?.name}</span>}
-							</p>
-							<Link
-								href={session ? "/api/auth/signout" : "/api/auth/signin"}
-								className="rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20"
+						{/* Auth Section */}
+						<div className="flex flex-col items-center gap-4 mb-8">
+							{session && (
+								<p className="text-lg text-zinc-300">
+									Welcome back, <span className="font-semibold text-white">{session.user?.name}</span>
+								</p>
+							)}
+							<Button
+								variant={session ? "outline" : "default"}
+								size="lg"
+								className="min-w-[150px]"
+								asChild
 							>
-								{session ? "Sign out" : "Sign in"}
-							</Link>
+								<Link href={session ? "/api/auth/signout" : "/api/auth/signin"}>
+									{session ? "Sign out" : "Get Started"}
+								</Link>
+							</Button>
 						</div>
 					</div>
 
-					{session?.user && <LatestPost />}
+					{/* Cards Section */}
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-12">
+						<Card className="bg-zinc-900/50 border-zinc-800 backdrop-blur-sm hover:bg-zinc-900/70 transition-all">
+							<Link href="https://create.t3.gg/en/usage/first-steps" target="_blank" className="block h-full">
+								<CardHeader>
+									<CardTitle className="flex items-center justify-between text-white">
+										First Steps
+										<ArrowRight className="h-5 w-5" />
+									</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<CardDescription className="text-zinc-400">
+										Just the basics - Everything you need to know to set up your
+										database and authentication.
+									</CardDescription>
+								</CardContent>
+							</Link>
+						</Card>
+
+						<Card className="bg-zinc-900/50 border-zinc-800 backdrop-blur-sm hover:bg-zinc-900/70 transition-all">
+							<Link href="https://create.t3.gg/en/introduction" target="_blank" className="block h-full">
+								<CardHeader>
+									<CardTitle className="flex items-center justify-between text-white">
+										Documentation
+										<ArrowRight className="h-5 w-5" />
+									</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<CardDescription className="text-zinc-400">
+										Learn more about Create T3 App, the libraries it uses, and how
+										to deploy it.
+									</CardDescription>
+								</CardContent>
+							</Link>
+						</Card>
+					</div>
+
+					{/* tRPC Status */}
+					<div className="text-center mb-12">
+						<div className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-900/50 backdrop-blur-sm rounded-full border border-zinc-800">
+							<div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+							<p className="text-sm text-zinc-300">
+								{hello ? hello.greeting : "Connecting to tRPC..."}
+							</p>
+						</div>
+					</div>
+
+					{/* Latest Post Section */}
+					{session?.user && (
+						<div className="max-w-4xl mx-auto">
+							<LatestPost />
+						</div>
+					)}
 				</div>
-			</main>
+			</div>
 		</HydrateClient>
 	);
 }
