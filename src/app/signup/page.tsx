@@ -80,7 +80,7 @@ export default function SignupPage() {
 
 	if (signupSuccess) {
 		return (
-			<div className="min-h-screen bg-gradient-to-b from-sky-100 via-orange-50/30 to-white flex items-center justify-center px-4 py-12">
+			<div className="min-h-screen flex items-center justify-center px-4 py-12" style={{ backgroundImage: 'url(/booksborder.png)', backgroundRepeat: 'repeat-x', backgroundPosition: 'top', backgroundSize: 'auto 320px' }}>
 				<Card className="w-full max-w-md border-orange-200">
 					<CardContent className="pt-6">
 						<div className="text-center space-y-4">
@@ -106,7 +106,7 @@ export default function SignupPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gradient-to-b from-sky-100 via-orange-50/30 to-white flex items-center justify-center px-4 py-12">
+		<div className="min-h-screen flex items-center justify-center px-4 py-12" style={{ backgroundImage: 'url(/booksborder.png)', backgroundRepeat: 'repeat-x', backgroundPosition: 'top', backgroundSize: 'auto 320px' }}>
 			<div className="w-full max-w-md">
 				<div className="mb-8 text-center">
 					<Link href="/">
@@ -260,7 +260,7 @@ export default function SignupPage() {
 							<p className="text-center text-sm text-gray-600">
 								Already have an account?{" "}
 								<Link
-									href="/api/auth/signin"
+									href="/login"
 									className="text-orange-600 hover:text-orange-700 font-medium"
 								>
 									Sign in

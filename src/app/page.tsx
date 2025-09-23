@@ -43,7 +43,7 @@ export default async function Home() {
 									</>
 								) : (
 									<>
-										<Link href="/signup">
+										<Link href="/login">
 											<Button variant="ghost" className="text-gray-600 hover:text-gray-900">
 												Sign in
 											</Button>
@@ -61,12 +61,12 @@ export default async function Home() {
 				</nav>
 
 				{/* Hero Section */}
-				<section className="relative bg-gradient-to-b from-sky-100 via-orange-50/30 to-white py-12 md:py-16">
+				<section className="relative py-12 md:py-16" style={{ backgroundImage: 'url(/booksborder.png)', backgroundRepeat: 'repeat-x', backgroundPosition: 'top', backgroundSize: 'auto 320px' }}>
 					<div className="container mx-auto px-4">
 						<div className="max-w-4xl mx-auto text-center">
 							<h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 leading-tight">
 								Transform Your Manuscript
-								<span className="block text-orange-600">Into Your Best Work</span>
+								<span className="block text-orange-600" style={{ textShadow: '0 0 4px rgba(255, 255, 255, 1), 0 0 8px rgba(255, 255, 255, 0.9)' }}>Into Your Best Work</span>
 							</h1>
 							<p className="text-xl text-gray-600 mb-6 max-w-2xl mx-auto leading-relaxed">
 								Get comprehensive, AI-enhanced feedback on your book. Our expert team combines
@@ -259,7 +259,7 @@ export default async function Home() {
 						<div className="max-w-4xl mx-auto">
 							<div className="text-center mb-10">
 								<h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-									Three Simple Steps to Better Writing
+									Three Easy Steps to Better Writing
 								</h2>
 								<p className="text-gray-600">
 									From submission to insights in just a few days
@@ -331,80 +331,45 @@ export default async function Home() {
 				</section>
 
 				{/* CTA Section */}
-				<section className="py-12">
+				<section className="py-16">
 					<div className="container mx-auto px-4">
-						<div className="max-w-4xl mx-auto">
-							<Card className="bg-gradient-to-r from-orange-600 to-orange-700 border-0">
-								<CardContent className="p-8 text-center">
-									<h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-										Ready to Transform Your Manuscript?
-									</h2>
-									<p className="text-orange-100 mb-8 max-w-2xl mx-auto text-lg">
-										Get professional insights that will elevate your writing.
-										Start your journey to publication success today.
-									</p>
-									<Link href="/signup">
-										<Button size="lg" className="bg-white text-orange-600 hover:bg-gray-100 px-8">
-											Get Your Report - $39
-											<ArrowRight className="ml-2 h-4 w-4" />
-										</Button>
-									</Link>
-									<div className="flex items-center justify-center gap-8 mt-8 text-white/90">
-										<div className="flex items-center gap-2">
-											<Clock className="h-5 w-5" />
-											<span className="text-sm">1-3 day turnaround</span>
-										</div>
-										<div className="flex items-center gap-2">
-											<Award className="h-5 w-5" />
-											<span className="text-sm">Professional analysis</span>
-										</div>
-									</div>
-								</CardContent>
-							</Card>
+						<div className="max-w-4xl mx-auto text-center">
+							<h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+								Ready to Transform Your Manuscript?
+							</h2>
+							<p className="text-gray-600 mb-8 max-w-2xl mx-auto text-lg">
+								Get professional insights that will elevate your writing.
+								Start your journey to publication success today.
+							</p>
+							<Link href="/signup">
+								<Button size="lg" className="bg-orange-600 text-white hover:bg-orange-700 px-8">
+									Get Your Report - $39
+									<ArrowRight className="ml-2 h-4 w-4" />
+								</Button>
+							</Link>
+							<div className="flex items-center justify-center gap-8 mt-8 text-gray-500">
+								<div className="flex items-center gap-2">
+									<Clock className="h-5 w-5" />
+									<span className="text-sm">1-3 day turnaround</span>
+								</div>
+								<div className="flex items-center gap-2">
+									<Award className="h-5 w-5" />
+									<span className="text-sm">Professional analysis</span>
+								</div>
+							</div>
 						</div>
 					</div>
 				</section>
 
 				{/* Footer */}
 				<footer className="border-t border-gray-200 bg-gray-50">
-					<div className="container mx-auto px-4 py-12">
-						<div className="grid md:grid-cols-4 gap-8">
-							<div>
-								<div className="flex items-center space-x-2 mb-4">
-									<BookOpen className="h-6 w-6 text-orange-600" />
-									<span className="text-lg font-semibold text-gray-900">Get Lost</span>
-								</div>
-								<p className="text-sm text-gray-600">
-									Professional manuscript analysis combining AI technology with human expertise.
-								</p>
+					<div className="container mx-auto px-4 py-8">
+						<div className="text-center">
+							<div className="flex items-center justify-center space-x-3 mb-4">
+								<BookOpen className="h-8 w-8 text-orange-600" />
+								<span className="text-2xl font-bold text-gray-900">Get Lost</span>
 							</div>
-							<div>
-								<h3 className="font-semibold text-gray-900 mb-4">Product</h3>
-								<ul className="space-y-2 text-sm text-gray-600">
-									<li><Link href="#features" className="hover:text-gray-900">Features</Link></li>
-									<li><Link href="#pricing" className="hover:text-gray-900">Pricing</Link></li>
-									<li><Link href="#" className="hover:text-gray-900">Sample Report</Link></li>
-								</ul>
-							</div>
-							<div>
-								<h3 className="font-semibold text-gray-900 mb-4">Company</h3>
-								<ul className="space-y-2 text-sm text-gray-600">
-									<li><Link href="#" className="hover:text-gray-900">About</Link></li>
-									<li><Link href="#" className="hover:text-gray-900">Blog</Link></li>
-									<li><Link href="#" className="hover:text-gray-900">Contact</Link></li>
-								</ul>
-							</div>
-							<div>
-								<h3 className="font-semibold text-gray-900 mb-4">Legal</h3>
-								<ul className="space-y-2 text-sm text-gray-600">
-									<li><Link href="#" className="hover:text-gray-900">Privacy</Link></li>
-									<li><Link href="#" className="hover:text-gray-900">Terms</Link></li>
-									<li><Link href="#" className="hover:text-gray-900">Cookie Policy</Link></li>
-								</ul>
-							</div>
-						</div>
-						<div className="mt-8 pt-8 border-t border-gray-200">
-							<p className="text-center text-sm text-gray-600">
+							<p className="text-sm text-gray-600">
 								© 2024 Get Lost. All rights reserved.
 							</p>
 						</div>
