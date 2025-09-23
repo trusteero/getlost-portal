@@ -75,14 +75,14 @@ export default async function Home() {
 							Get comprehensive, AI-enhanced feedback on your book. Our expert team combines
 							advanced AI with human insight to deliver actionable recommendations.
 						</p>
-						<div className="flex flex-col sm:flex-row gap-4 justify-center">
+						<div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
 							<Link href="/signup">
-								<Button size="lg" className="bg-cyan-600 hover:bg-cyan-700 text-white px-8">
+								<Button size="lg" className="bg-cyan-600 hover:bg-cyan-700 text-white px-8 w-auto">
 									Start Your Analysis
 									<ArrowRight className="ml-2 h-4 w-4" />
 								</Button>
 							</Link>
-							<Button size="lg" variant="outline" className="border-gray-300">
+							<Button size="lg" variant="outline" className="border-gray-300 w-auto px-8">
 								View Sample Report
 							</Button>
 						</div>
@@ -105,31 +105,13 @@ export default async function Home() {
 								</p>
 							</div>
 
-							{/* Placeholder for transformation visual */}
-							<div className="flex items-center justify-center gap-8 md:gap-16">
-								<div className="text-center">
-									<div className="w-32 h-40 bg-gray-100 rounded-lg border-2 border-gray-300 flex items-center justify-center mb-4">
-										<FileText className="h-16 w-16 text-gray-400" />
-									</div>
-									<p className="text-sm font-medium text-gray-700">Your Manuscript</p>
-								</div>
-
-								<div className="flex flex-col items-center">
-									<ArrowRight className="h-8 w-8 text-orange-600 animate-pulse" />
-									<p className="text-xs text-orange-600 font-medium mt-2">AI + Human Analysis</p>
-								</div>
-
-								<div className="text-center">
-									<div className="w-32 h-40 bg-gradient-to-br from-orange-100 to-orange-50 rounded-lg border-2 border-orange-300 flex items-center justify-center mb-4">
-										<BarChart3 className="h-16 w-16 text-orange-600" />
-									</div>
-									<p className="text-sm font-medium text-gray-700">Your Report</p>
-								</div>
+							<div className="flex items-center justify-center">
+								<img
+									src="/file_to_report.png"
+									alt="Manuscript to Report Transformation"
+									className="max-w-1/2 h-auto"
+								/>
 							</div>
-
-							<p className="text-center text-gray-500 text-sm mt-8">
-								Space reserved for transformation artwork
-							</p>
 						</div>
 					</div>
 				</section>
