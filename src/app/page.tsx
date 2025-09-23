@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, FileText, Sparkles, Zap, Shield, BarChart3, CheckCircle } from "lucide-react";
+import { ArrowRight, BookOpen, FileText, Sparkles, Zap, Shield, BarChart3, CheckCircle, Clock, Users, Award } from "lucide-react";
 
 import { auth } from "@/server/auth";
 import { HydrateClient, api } from "@/trpc/server";
@@ -65,15 +65,15 @@ export default async function Home() {
 					<div className="max-w-4xl mx-auto text-center">
 						<div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 text-purple-700 text-sm font-medium mb-8">
 							<Sparkles className="h-4 w-4" />
-							AI-Powered Manuscript Analysis
+							AI-Enhanced Manuscript Analysis
 						</div>
 						<h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
 							Transform Your Manuscript
 							<span className="block text-purple-600">Into Your Best Work</span>
 						</h1>
 						<p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-							Get comprehensive, AI-powered feedback on your book in minutes.
-							Understand your audience, improve your narrative, and maximize your book's potential.
+							Get comprehensive, AI-enhanced feedback on your book. Our expert team combines
+							advanced AI with human insight to deliver actionable recommendations.
 						</p>
 						<div className="flex flex-col sm:flex-row gap-4 justify-center">
 							<Link href="/api/auth/signin">
@@ -87,20 +87,62 @@ export default async function Home() {
 							</Button>
 						</div>
 						<p className="text-sm text-gray-500 mt-8">
-							Trusted by over 10,000 authors • No credit card required
+							Professional manuscript analysis • 1-3 day turnaround
 						</p>
 					</div>
 				</section>
 
+				{/* Transformation Visual Section */}
+				<section className="py-20 bg-gradient-to-b from-purple-50 to-white">
+					<div className="container mx-auto px-4">
+						<div className="max-w-5xl mx-auto">
+							<div className="text-center mb-12">
+								<h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+									From Manuscript to Masterpiece
+								</h2>
+								<p className="text-gray-600 max-w-2xl mx-auto">
+									Watch your manuscript transform into a comprehensive analysis report
+								</p>
+							</div>
+
+							{/* Placeholder for transformation visual */}
+							<div className="flex items-center justify-center gap-8 md:gap-16">
+								<div className="text-center">
+									<div className="w-32 h-40 bg-gray-100 rounded-lg border-2 border-gray-300 flex items-center justify-center mb-4">
+										<FileText className="h-16 w-16 text-gray-400" />
+									</div>
+									<p className="text-sm font-medium text-gray-700">Your Manuscript</p>
+								</div>
+
+								<div className="flex flex-col items-center">
+									<ArrowRight className="h-8 w-8 text-purple-600 animate-pulse" />
+									<p className="text-xs text-purple-600 font-medium mt-2">AI + Human Analysis</p>
+								</div>
+
+								<div className="text-center">
+									<div className="w-32 h-40 bg-gradient-to-br from-purple-100 to-purple-50 rounded-lg border-2 border-purple-300 flex items-center justify-center mb-4">
+										<BarChart3 className="h-16 w-16 text-purple-600" />
+									</div>
+									<p className="text-sm font-medium text-gray-700">Your Report</p>
+								</div>
+							</div>
+
+							<p className="text-center text-gray-500 text-sm mt-8">
+								Space reserved for transformation artwork
+							</p>
+						</div>
+					</div>
+				</section>
+
 				{/* Features Grid */}
-				<section id="features" className="bg-gray-50 py-20">
+				<section id="features" className="py-20">
 					<div className="container mx-auto px-4">
 						<div className="text-center mb-16">
 							<h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
 								Everything Authors Need to Succeed
 							</h2>
 							<p className="text-gray-600 max-w-2xl mx-auto">
-								Our AI analyzes every aspect of your manuscript to provide actionable insights
+								Our AI-enhanced analysis examines every aspect of your manuscript with both technological precision and human expertise
 							</p>
 						</div>
 
@@ -132,11 +174,11 @@ export default async function Home() {
 							<Card className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
 								<CardContent className="p-6">
 									<div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center mb-4">
-										<Zap className="h-6 w-6 text-green-600" />
+										<Users className="h-6 w-6 text-green-600" />
 									</div>
-									<h3 className="text-lg font-semibold text-gray-900 mb-2">Instant Results</h3>
+									<h3 className="text-lg font-semibold text-gray-900 mb-2">Human + AI Insights</h3>
 									<p className="text-gray-600">
-										Receive your comprehensive report in under 5 minutes, not weeks.
+										Combining AI analysis with human expertise for nuanced, actionable feedback.
 									</p>
 								</CardContent>
 							</Card>
@@ -172,7 +214,74 @@ export default async function Home() {
 									</div>
 									<h3 className="text-lg font-semibold text-gray-900 mb-2">Confidential & Secure</h3>
 									<p className="text-gray-600">
-										Your manuscript is encrypted and never shared or stored permanently.
+										Your manuscript is encrypted and handled with complete confidentiality.
+									</p>
+								</CardContent>
+							</Card>
+						</div>
+					</div>
+				</section>
+
+				{/* Pricing Section */}
+				<section id="pricing" className="bg-gray-50 py-20">
+					<div className="container mx-auto px-4">
+						<div className="text-center mb-12">
+							<h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+								Simple, Transparent Pricing
+							</h2>
+							<p className="text-gray-600 max-w-2xl mx-auto">
+								One comprehensive report, one fair price
+							</p>
+						</div>
+
+						<div className="max-w-md mx-auto">
+							<Card className="border-2 border-purple-200 shadow-lg">
+								<CardContent className="p-8">
+									<div className="text-center mb-6">
+										<h3 className="text-2xl font-bold text-gray-900 mb-2">Manuscript Analysis Report</h3>
+										<div className="flex items-baseline justify-center gap-1">
+											<span className="text-5xl font-bold text-purple-600">$39</span>
+											<span className="text-gray-600">USD</span>
+										</div>
+										<p className="text-sm text-gray-500 mt-2">per manuscript</p>
+									</div>
+
+									<ul className="space-y-3 mb-8">
+										<li className="flex items-start gap-3">
+											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+											<span className="text-gray-700">Comprehensive 20+ page report</span>
+										</li>
+										<li className="flex items-start gap-3">
+											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+											<span className="text-gray-700">AI-enhanced analysis with human review</span>
+										</li>
+										<li className="flex items-start gap-3">
+											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+											<span className="text-gray-700">Structure, pacing, and character analysis</span>
+										</li>
+										<li className="flex items-start gap-3">
+											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+											<span className="text-gray-700">Market positioning insights</span>
+										</li>
+										<li className="flex items-start gap-3">
+											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+											<span className="text-gray-700">Actionable recommendations</span>
+										</li>
+										<li className="flex items-start gap-3">
+											<Clock className="h-5 w-5 text-purple-500 flex-shrink-0 mt-0.5" />
+											<span className="text-gray-700">Delivered in 1-3 business days</span>
+										</li>
+									</ul>
+
+									<Link href="/api/auth/signin" className="block">
+										<Button className="w-full bg-purple-600 hover:bg-purple-700 text-white" size="lg">
+											Get Your Report
+											<ArrowRight className="ml-2 h-4 w-4" />
+										</Button>
+									</Link>
+
+									<p className="text-xs text-gray-500 text-center mt-4">
+										Secure payment via Stripe
 									</p>
 								</CardContent>
 							</Card>
@@ -189,7 +298,7 @@ export default async function Home() {
 									Three Simple Steps to Better Writing
 								</h2>
 								<p className="text-gray-600">
-									From submission to insights in minutes
+									From submission to insights in just a few days
 								</p>
 							</div>
 
@@ -201,7 +310,7 @@ export default async function Home() {
 									<div>
 										<h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Your Manuscript</h3>
 										<p className="text-gray-600">
-											Simply upload your book in any format - DOCX, PDF, or plain text. Our system handles the rest with complete confidentiality.
+											Simply upload your book in any format - DOCX, PDF, or plain text. Complete the secure checkout process.
 										</p>
 									</div>
 								</div>
@@ -211,9 +320,9 @@ export default async function Home() {
 										<span className="text-purple-600 font-bold">2</span>
 									</div>
 									<div>
-										<h3 className="text-lg font-semibold text-gray-900 mb-2">AI Analysis</h3>
+										<h3 className="text-lg font-semibold text-gray-900 mb-2">AI-Enhanced Analysis</h3>
 										<p className="text-gray-600">
-											Our advanced AI reads and analyzes your entire manuscript, examining structure, style, character development, and market potential.
+											Our AI analyzes your manuscript while our team reviews key elements, ensuring both technological precision and human insight.
 										</p>
 									</div>
 								</div>
@@ -223,9 +332,9 @@ export default async function Home() {
 										<span className="text-purple-600 font-bold">3</span>
 									</div>
 									<div>
-										<h3 className="text-lg font-semibold text-gray-900 mb-2">Get Your Report</h3>
+										<h3 className="text-lg font-semibold text-gray-900 mb-2">Receive Your Report</h3>
 										<p className="text-gray-600">
-											Receive a comprehensive 20+ page report with actionable feedback, market insights, and specific recommendations for improvement.
+											Within 1-3 business days, receive your comprehensive report with detailed feedback, market insights, and specific recommendations for improvement.
 										</p>
 									</div>
 								</div>
@@ -238,17 +347,17 @@ export default async function Home() {
 				<section className="bg-purple-50 py-20">
 					<div className="container mx-auto px-4">
 						<div className="max-w-3xl mx-auto text-center">
-							<h2 className="text-3xl font-bold text-gray-900 mb-12">Authors Love Get Lost</h2>
+							<h2 className="text-3xl font-bold text-gray-900 mb-12">What Authors Are Saying</h2>
 							<Card className="border-0 shadow-lg">
 								<CardContent className="p-8">
 									<p className="text-lg text-gray-700 italic mb-6">
 										"Get Lost completely transformed my manuscript. The insights on pacing and character development
-										were exactly what I needed. My book is now with a major publisher!"
+										were exactly what I needed. The combination of AI analysis and human expertise made all the difference."
 									</p>
 									<div className="flex items-center justify-center">
 										<div>
 											<p className="font-semibold text-gray-900">Sarah Mitchell</p>
-											<p className="text-sm text-gray-600">Bestselling Author of "The Last Chapter"</p>
+											<p className="text-sm text-gray-600">Author of "The Last Chapter"</p>
 										</div>
 									</div>
 								</CardContent>
@@ -267,27 +376,23 @@ export default async function Home() {
 										Ready to Transform Your Manuscript?
 									</h2>
 									<p className="text-purple-100 mb-8 max-w-2xl mx-auto text-lg">
-										Join thousands of authors who've improved their books with Get Lost.
+										Get professional insights that will elevate your writing.
 										Start your journey to publication success today.
 									</p>
 									<Link href="/api/auth/signin">
 										<Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100 px-8">
-											Get Your Report Now
+											Get Your Report - $39
 											<ArrowRight className="ml-2 h-4 w-4" />
 										</Button>
 									</Link>
 									<div className="flex items-center justify-center gap-8 mt-8 text-white/90">
 										<div className="flex items-center gap-2">
-											<CheckCircle className="h-5 w-5" />
-											<span className="text-sm">No credit card required</span>
+											<Clock className="h-5 w-5" />
+											<span className="text-sm">1-3 day turnaround</span>
 										</div>
 										<div className="flex items-center gap-2">
-											<CheckCircle className="h-5 w-5" />
-											<span className="text-sm">5 minute analysis</span>
-										</div>
-										<div className="flex items-center gap-2">
-											<CheckCircle className="h-5 w-5" />
-											<span className="text-sm">Instant results</span>
+											<Award className="h-5 w-5" />
+											<span className="text-sm">Professional analysis</span>
 										</div>
 									</div>
 								</CardContent>
@@ -306,14 +411,14 @@ export default async function Home() {
 									<span className="text-lg font-semibold text-gray-900">Get Lost</span>
 								</div>
 								<p className="text-sm text-gray-600">
-									Professional manuscript analysis powered by AI, designed for serious authors.
+									Professional manuscript analysis combining AI technology with human expertise.
 								</p>
 							</div>
 							<div>
 								<h3 className="font-semibold text-gray-900 mb-4">Product</h3>
 								<ul className="space-y-2 text-sm text-gray-600">
-									<li><Link href="#" className="hover:text-gray-900">Features</Link></li>
-									<li><Link href="#" className="hover:text-gray-900">Pricing</Link></li>
+									<li><Link href="#features" className="hover:text-gray-900">Features</Link></li>
+									<li><Link href="#pricing" className="hover:text-gray-900">Pricing</Link></li>
 									<li><Link href="#" className="hover:text-gray-900">Sample Report</Link></li>
 								</ul>
 							</div>
