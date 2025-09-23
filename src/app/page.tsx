@@ -76,7 +76,7 @@ export default async function Home() {
 								<img
 									src="/file_to_report.png"
 									alt="Manuscript to Report Transformation"
-									className="mx-auto my-16 w-2/4 max-w-xl h-auto"
+									className="mx-auto my-4 md:my-16 w-2/3 md:w-2/4 max-w-xl h-auto"
 								/>
 							</div>
 							<div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
