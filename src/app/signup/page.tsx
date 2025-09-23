@@ -41,17 +41,40 @@ export default function SignupPage() {
 		setIsLoading(true);
 
 		try {
-			// For now, we'll use NextAuth's signIn with credentials
-			// You'll need to implement the actual signup logic in your auth configuration
-			const result = await signIn("credentials", {
+			// First, create the account
+			const signupResponse = await fetch("/api/auth/signup", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					name: formData.name,
+					email: formData.email,
+					password: formData.password,
+				}),
+			});
+
+			const signupData = await signupResponse.json();
+
+			if (!signupResponse.ok) {
+				throw new Error(signupData.error || "Unable to create account");
+			}
+
+			// Then, sign them in automatically
+			const signInResult = await signIn("credentials", {
 				redirect: false,
 				email: formData.email,
 				password: formData.password,
-				name: formData.name,
 			});
 
-			if (result?.error) {
-				throw new Error(result.error);
+			if (signInResult?.error) {
+				// Account was created but sign in failed
+				// Still show success and redirect to login
+				setSignupSuccess(true);
+				setTimeout(() => {
+					router.push("/login");
+				}, 2000);
+				return;
 			}
 
 			// Show success message
