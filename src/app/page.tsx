@@ -43,12 +43,12 @@ export default async function Home() {
 									</>
 								) : (
 									<>
-										<Link href="/api/auth/signin">
+										<Link href="/signup">
 											<Button variant="ghost" className="text-gray-600 hover:text-gray-900">
 												Sign in
 											</Button>
 										</Link>
-										<Link href="/api/auth/signin">
+										<Link href="/signup">
 											<Button className="bg-orange-600 hover:bg-orange-700 text-white">
 												Get Started
 											</Button>
@@ -76,7 +76,7 @@ export default async function Home() {
 							advanced AI with human insight to deliver actionable recommendations.
 						</p>
 						<div className="flex flex-col sm:flex-row gap-4 justify-center">
-							<Link href="/api/auth/signin">
+							<Link href="/signup">
 								<Button size="lg" className="bg-cyan-600 hover:bg-cyan-700 text-white px-8">
 									Start Your Analysis
 									<ArrowRight className="ml-2 h-4 w-4" />
@@ -379,7 +379,7 @@ export default async function Home() {
 										Get professional insights that will elevate your writing.
 										Start your journey to publication success today.
 									</p>
-									<Link href="/api/auth/signin">
+									<Link href="/signup">
 										<Button size="lg" className="bg-white text-orange-600 hover:bg-gray-100 px-8">
 											Get Your Report - $39
 											<ArrowRight className="ml-2 h-4 w-4" />
