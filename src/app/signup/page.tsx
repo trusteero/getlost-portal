@@ -80,7 +80,7 @@ export default function SignupPage() {
 
 	if (signupSuccess) {
 		return (
-			<div className="min-h-screen bg-gradient-to-b from-white to-orange-50 flex items-center justify-center px-4 py-12">
+			<div className="min-h-screen bg-gradient-to-b from-sky-100 via-orange-50/30 to-white flex items-center justify-center px-4 py-12">
 				<Card className="w-full max-w-md border-orange-200">
 					<CardContent className="pt-6">
 						<div className="text-center space-y-4">
@@ -106,23 +106,19 @@ export default function SignupPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gradient-to-b from-white to-orange-50 flex items-center justify-center px-4 py-12">
+		<div className="min-h-screen bg-gradient-to-b from-sky-100 via-orange-50/30 to-white flex items-center justify-center px-4 py-12">
 			<div className="w-full max-w-md">
 				<div className="mb-8 text-center">
 					<Link href="/">
 						<Button
 							variant="ghost"
 							size="sm"
-							className="mb-8 text-gray-600 hover:text-gray-900"
+							className="mb-6 text-gray-600 hover:text-gray-900"
 						>
 							<ArrowLeft className="w-4 h-4 mr-2" />
 							Back to Home
 						</Button>
 					</Link>
-
-					<div className="flex justify-center mb-4">
-						<BookOpen className="h-10 w-10 text-orange-600" />
-					</div>
 
 					<h1 className="text-3xl font-bold mb-4 text-gray-900">Join Get Lost</h1>
 					<p className="text-gray-600">
@@ -134,7 +130,7 @@ export default function SignupPage() {
 					<CardHeader className="space-y-3">
 						<CardTitle>Create Your Author Account</CardTitle>
 						<CardDescription>
-							Get your first manuscript analysis for just $39
+							Join thousands of authors improving their craft
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
