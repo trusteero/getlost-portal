@@ -13,10 +13,18 @@ async function killPort(port) {
     const { stdout } = await execAsync(`lsof -ti :${port}`);
 
     if (stdout.trim()) {
-      const pid = stdout.trim();
-      console.log(`Killing process ${pid} on port ${port}...`);
-      await execAsync(`kill -9 ${pid}`);
-      console.log(`Process killed successfully.`);
+      const pids = stdout.trim().split('\n');
+      for (const pid of pids) {
+        if (pid) {
+          console.log(`Killing process ${pid} on port ${port}...`);
+          try {
+            await execAsync(`kill -9 ${pid}`);
+            console.log(`Process ${pid} killed successfully.`);
+          } catch (killError) {
+            console.log(`Could not kill process ${pid}: ${killError.message}`);
+          }
+        }
+      }
     } else {
       console.log(`No process found on port ${port}.`);
     }

@@ -107,3 +107,100 @@ export const verificationTokens = createTable(
 	}),
 	(t) => [primaryKey({ columns: [t.identifier, t.token] })],
 );
+
+// Books table
+export const books = createTable(
+	"book",
+	(d) => ({
+		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+		userId: d.text({ length: 255 }).notNull().references(() => users.id),
+		title: d.text({ length: 500 }).notNull(),
+		personalNotes: d.text(),
+		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+		updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
+	}),
+	(t) => [
+		index("book_user_idx").on(t.userId),
+		index("book_created_idx").on(t.createdAt),
+	],
+);
+
+// Book versions table (each upload is a new version)
+export const bookVersions = createTable(
+	"book_version",
+	(d) => ({
+		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+		bookId: d.text({ length: 255 }).notNull().references(() => books.id),
+		versionNumber: d.integer({ mode: "number" }).notNull(),
+		fileName: d.text({ length: 500 }).notNull(),
+		fileUrl: d.text({ length: 1000 }).notNull(),
+		fileSize: d.integer({ mode: "number" }).notNull(),
+		fileType: d.text({ length: 100 }).notNull(),
+		uploadedAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+	}),
+	(t) => [
+		index("version_book_idx").on(t.bookId),
+		index("version_uploaded_idx").on(t.uploadedAt),
+	],
+);
+
+// Reports table
+export const reports = createTable(
+	"report",
+	(d) => ({
+		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+		bookVersionId: d.text({ length: 255 }).notNull().references(() => bookVersions.id),
+		status: d.text({ length: 50 }).notNull().default("pending"), // pending, analyzing, completed
+		htmlContent: d.text(), // HTML version of the report
+		pdfUrl: d.text({ length: 1000 }), // URL to PDF version
+		adminNotes: d.text(), // Notes from admin
+		requestedAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+		startedAt: d.integer({ mode: "timestamp" }),
+		completedAt: d.integer({ mode: "timestamp" }),
+		analyzedBy: d.text({ length: 255 }), // Admin who analyzed it
+	}),
+	(t) => [
+		index("report_version_idx").on(t.bookVersionId),
+		index("report_status_idx").on(t.status),
+		index("report_requested_idx").on(t.requestedAt),
+	],
+);
+
+// Notifications table
+export const notifications = createTable(
+	"notification",
+	(d) => ({
+		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+		userId: d.text({ length: 255 }).notNull().references(() => users.id),
+		type: d.text({ length: 50 }).notNull(), // report_ready, system, etc.
+		title: d.text({ length: 255 }).notNull(),
+		message: d.text().notNull(),
+		data: d.text(), // JSON data for additional info
+		read: d.integer({ mode: "boolean" }).default(false).notNull(),
+		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+	}),
+	(t) => [
+		index("notification_user_idx").on(t.userId),
+		index("notification_read_idx").on(t.read),
+		index("notification_created_idx").on(t.createdAt),
+	],
+);
+
+// Relations
+export const booksRelations = relations(books, ({ one, many }) => ({
+	user: one(users, { fields: [books.userId], references: [users.id] }),
+	versions: many(bookVersions),
+}));
+
+export const bookVersionsRelations = relations(bookVersions, ({ one, many }) => ({
+	book: one(books, { fields: [bookVersions.bookId], references: [books.id] }),
+	reports: many(reports),
+}));
+
+export const reportsRelations = relations(reports, ({ one }) => ({
+	bookVersion: one(bookVersions, { fields: [reports.bookVersionId], references: [bookVersions.id] }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+	user: one(users, { fields: [notifications.userId], references: [users.id] }),
+}));

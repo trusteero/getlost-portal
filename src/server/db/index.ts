@@ -1,5 +1,5 @@
-import { type Client, createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
+import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
 
 import { env } from "@/env";
 import * as schema from "./schema";
@@ -9,11 +9,14 @@ import * as schema from "./schema";
  * update.
  */
 const globalForDb = globalThis as unknown as {
-	client: Client | undefined;
+	sqlite: Database.Database | undefined;
 };
 
-export const client =
-	globalForDb.client ?? createClient({ url: env.DATABASE_URL });
-if (env.NODE_ENV !== "production") globalForDb.client = client;
+// Remove the file:// prefix if present
+const dbPath = env.DATABASE_URL.replace(/^file:\/+/, '');
 
-export const db = drizzle(client, { schema });
+export const sqlite =
+	globalForDb.sqlite ?? new Database(dbPath);
+if (env.NODE_ENV !== "production") globalForDb.sqlite = sqlite;
+
+export const db = drizzle(sqlite, { schema });
