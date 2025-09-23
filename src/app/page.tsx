@@ -315,13 +315,14 @@ export default async function Home() {
 							<Card className="border-0 shadow-lg">
 								<CardContent className="p-8">
 									<p className="text-lg text-gray-700 italic mb-6">
-										"Get Lost completely transformed my manuscript. The insights on pacing and character development
-										were exactly what I needed. The combination of AI analysis and human expertise made all the difference."
+										"Get Lost helped me realize my memoir about moving to Finland for love needed more cultural context
+										and emotional depth. The analysis pinpointed exactly where readers might disconnect from my journey,
+										and the suggestions transformed it from a simple love story to a rich cross-cultural narrative."
 									</p>
 									<div className="flex items-center justify-center">
 										<div>
-											<p className="font-semibold text-gray-900">Sarah Mitchell</p>
-											<p className="text-sm text-gray-600">Author of "The Last Chapter"</p>
+											<p className="font-semibold text-gray-900">Crames Jamer</p>
+											<p className="text-sm text-gray-600">Author of "Northern Hearts: A Love Letter to Helsinki"</p>
 										</div>
 									</div>
 								</CardContent>
