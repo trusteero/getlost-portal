@@ -61,65 +61,47 @@ export default async function Home() {
 				</nav>
 
 				{/* Hero Section */}
-				<section className="container mx-auto px-4 py-20 md:py-28">
-					<div className="max-w-4xl mx-auto text-center">
-						<div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-50 text-orange-700 text-sm font-medium mb-8">
-							<Sparkles className="h-4 w-4" />
-							AI-Enhanced Manuscript Analysis
-						</div>
-						<h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-							Transform Your Manuscript
-							<span className="block text-orange-600">Into Your Best Work</span>
-						</h1>
-						<p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-							Get comprehensive, AI-enhanced feedback on your book. Our expert team combines
-							advanced AI with human insight to deliver actionable recommendations.
-						</p>
-						<div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-							<Link href="/signup">
-								<Button size="lg" className="bg-cyan-600 hover:bg-cyan-700 text-white px-8 w-auto">
-									Start Your Analysis
-									<ArrowRight className="ml-2 h-4 w-4" />
-								</Button>
-							</Link>
-							<Button size="lg" variant="outline" className="border-gray-300 w-auto px-8">
-								View Sample Report
-							</Button>
-						</div>
-						<p className="text-sm text-gray-500 mt-8">
-							Professional manuscript analysis • 1-3 day turnaround
-						</p>
-					</div>
-				</section>
-
-				{/* Transformation Visual Section */}
-				<section className="py-20 bg-gradient-to-b from-orange-50 to-white">
+				<section className="relative bg-gradient-to-b from-sky-100 via-orange-50/30 to-white py-12 md:py-16">
 					<div className="container mx-auto px-4">
-						<div className="max-w-5xl mx-auto">
-							<div className="text-center mb-12">
-								<h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-									From Manuscript to Masterpiece
-								</h2>
-								<p className="text-gray-600 max-w-2xl mx-auto">
-									Watch your manuscript transform into a comprehensive analysis report
-								</p>
-							</div>
-
-							<div className="flex items-center justify-center">
+						<div className="max-w-4xl mx-auto text-center">
+							<h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 leading-tight">
+								Transform Your Manuscript
+								<span className="block text-orange-600">Into Your Best Work</span>
+							</h1>
+							<p className="text-xl text-gray-600 mb-6 max-w-2xl mx-auto leading-relaxed">
+								Get comprehensive, AI-enhanced feedback on your book. Our expert team combines
+								advanced technology with human insight to deliver actionable recommendations.
+							</p>
+							<div className="mb-8">
 								<img
 									src="/file_to_report.png"
 									alt="Manuscript to Report Transformation"
-									className="max-w-1/2 h-auto"
+									className="mx-auto my-16 w-2/4 max-w-xl h-auto"
 								/>
 							</div>
+							<div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+								<Link href="/signup">
+									<Button size="lg" className="bg-cyan-600 hover:bg-cyan-700 text-white px-8 w-auto">
+										Start Your Analysis
+										<ArrowRight className="ml-2 h-4 w-4" />
+									</Button>
+								</Link>
+								<Button size="lg" variant="outline" className="border-gray-300 w-auto px-8">
+									View Sample Report
+								</Button>
+							</div>
+							<p className="text-sm text-gray-500 mt-6">
+								Professional manuscript analysis • 1-3 day turnaround
+							</p>
 						</div>
 					</div>
 				</section>
 
+
 				{/* Features Grid */}
-				<section id="features" className="py-20">
+				<section id="features" className="py-12">
 					<div className="container mx-auto px-4">
-						<div className="text-center mb-16">
+						<div className="text-center mb-10">
 							<h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
 								Everything Authors Need to Succeed
 							</h2>
@@ -205,9 +187,9 @@ export default async function Home() {
 				</section>
 
 				{/* Pricing Section */}
-				<section id="pricing" className="bg-gray-50 py-20">
+				<section id="pricing" className="bg-gray-50 py-12">
 					<div className="container mx-auto px-4">
-						<div className="text-center mb-12">
+						<div className="text-center mb-8">
 							<h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
 								Simple, Transparent Pricing
 							</h2>
@@ -272,10 +254,10 @@ export default async function Home() {
 				</section>
 
 				{/* How it works */}
-				<section id="how-it-works" className="py-20">
+				<section id="how-it-works" className="py-12">
 					<div className="container mx-auto px-4">
 						<div className="max-w-4xl mx-auto">
-							<div className="text-center mb-16">
+							<div className="text-center mb-10">
 								<h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
 									Three Simple Steps to Better Writing
 								</h2>
@@ -284,7 +266,7 @@ export default async function Home() {
 								</p>
 							</div>
 
-							<div className="space-y-12">
+							<div className="space-y-8">
 								<div className="flex gap-6 items-start">
 									<div className="flex-shrink-0 w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
 										<span className="text-orange-600 font-bold">1</span>
@@ -326,10 +308,10 @@ export default async function Home() {
 				</section>
 
 				{/* Testimonial Section */}
-				<section className="bg-orange-50 py-20">
+				<section className="bg-orange-50 py-12">
 					<div className="container mx-auto px-4">
 						<div className="max-w-3xl mx-auto text-center">
-							<h2 className="text-3xl font-bold text-gray-900 mb-12">What Authors Are Saying</h2>
+							<h2 className="text-3xl font-bold text-gray-900 mb-8">What Authors Are Saying</h2>
 							<Card className="border-0 shadow-lg">
 								<CardContent className="p-8">
 									<p className="text-lg text-gray-700 italic mb-6">
@@ -349,11 +331,11 @@ export default async function Home() {
 				</section>
 
 				{/* CTA Section */}
-				<section className="py-20">
+				<section className="py-12">
 					<div className="container mx-auto px-4">
 						<div className="max-w-4xl mx-auto">
 							<Card className="bg-gradient-to-r from-orange-600 to-orange-700 border-0">
-								<CardContent className="p-12 text-center">
+								<CardContent className="p-8 text-center">
 									<h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
 										Ready to Transform Your Manuscript?
 									</h2>
