@@ -189,66 +189,158 @@ export default async function Home() {
 				{/* Pricing Section */}
 				<section id="pricing" className="bg-gray-50 py-12">
 					<div className="container mx-auto px-4">
-						<div className="text-center mb-8">
+						<div className="text-center mb-12">
 							<h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-								Simple, Transparent Pricing
+								Choose Your Plan
 							</h2>
-							<p className="text-gray-600 max-w-2xl mx-auto">
-								One comprehensive report, one fair price
+							<p className="text-gray-600 max-w-2xl mx-auto mb-8">
+								Professional manuscript analysis that scales with your needs
 							</p>
 						</div>
 
-						<div className="max-w-md mx-auto">
-							<Card className="border-2 border-orange-200 shadow-lg">
-								<CardContent className="p-8">
+						<div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-end">
+							{/* Starter Plan */}
+							<Card className="relative border shadow-lg hover:shadow-xl transition-shadow h-full flex flex-col">
+								<CardContent className="p-6 flex flex-col flex-grow">
 									<div className="text-center mb-6">
-										<h3 className="text-2xl font-bold text-gray-900 mb-2">Manuscript Analysis Report</h3>
+										<h3 className="text-xl font-bold text-gray-900 mb-2">Starter</h3>
 										<div className="flex items-baseline justify-center gap-1">
-											<span className="text-5xl font-bold text-orange-600">$39</span>
-											<span className="text-gray-600">USD</span>
+											<span className="text-4xl font-bold text-gray-900">$39</span>
 										</div>
-										<p className="text-sm text-gray-500 mt-2">per manuscript</p>
+										<p className="text-sm text-gray-500 mt-2">per report</p>
 									</div>
 
-									<ul className="space-y-3 mb-8">
+									<ul className="space-y-3 mb-8 flex-grow">
 										<li className="flex items-start gap-3">
 											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-											<span className="text-gray-700">Comprehensive 20+ page report</span>
+											<span className="text-gray-700 text-sm">1 manuscript analysis</span>
 										</li>
 										<li className="flex items-start gap-3">
 											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-											<span className="text-gray-700">AI-enhanced analysis with human review</span>
+											<span className="text-gray-700 text-sm">20+ page detailed report</span>
 										</li>
 										<li className="flex items-start gap-3">
 											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-											<span className="text-gray-700">Structure, pacing, and character analysis</span>
+											<span className="text-gray-700 text-sm">1-3 day turnaround</span>
 										</li>
 										<li className="flex items-start gap-3">
 											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-											<span className="text-gray-700">Market positioning insights</span>
-										</li>
-										<li className="flex items-start gap-3">
-											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-											<span className="text-gray-700">Actionable recommendations</span>
-										</li>
-										<li className="flex items-start gap-3">
-											<Clock className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
-											<span className="text-gray-700">Delivered in 1-3 business days</span>
+											<span className="text-gray-700 text-sm">AI + human review</span>
 										</li>
 									</ul>
 
-									<Link href="/api/auth/signin" className="block">
-										<Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-white" size="lg">
-											Get Your Report
+									<Link href="/api/auth/signin" className="block mt-auto">
+										<Button className="w-full bg-gray-600 hover:bg-gray-700 text-white" size="lg">
+											Get Started
+										</Button>
+									</Link>
+								</CardContent>
+							</Card>
+
+							{/* Author Plan - Popular */}
+							<Card className="relative border-2 border-orange-300 shadow-xl hover:shadow-2xl transition-shadow transform md:-translate-y-4 h-full flex flex-col">
+								{/* Popular badge */}
+								<div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+									<span className="bg-orange-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
+										MOST POPULAR
+									</span>
+								</div>
+
+								<CardContent className="p-6 pt-8 flex flex-col flex-grow">
+									<div className="text-center mb-6">
+										<h3 className="text-xl font-bold text-gray-900 mb-2">Author</h3>
+										<div className="flex items-baseline justify-center gap-1">
+											<span className="text-5xl font-bold text-orange-600">$129</span>
+										</div>
+										<p className="text-sm text-gray-500 mt-2">4 reports bundle</p>
+										<div className="mt-2 bg-green-50 border border-green-200 rounded-full px-3 py-1 inline-block">
+											<p className="text-sm text-green-700 font-semibold">Save $27</p>
+										</div>
+									</div>
+
+									<ul className="space-y-3 mb-8 flex-grow">
+										<li className="flex items-start gap-3">
+											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+											<span className="text-gray-700 text-sm font-semibold">4 manuscript analyses</span>
+										</li>
+										<li className="flex items-start gap-3">
+											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+											<span className="text-gray-700 text-sm">Priority processing</span>
+										</li>
+										<li className="flex items-start gap-3">
+											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+											<span className="text-gray-700 text-sm">12 month validity</span>
+										</li>
+										<li className="flex items-start gap-3">
+											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+											<span className="text-gray-700 text-sm">Email support</span>
+										</li>
+										<li className="flex items-start gap-3">
+											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+											<span className="text-gray-700 text-sm">Perfect for series authors</span>
+										</li>
+									</ul>
+
+									<Link href="/api/auth/signin" className="block mt-auto">
+										<Button className="w-full bg-orange-600 hover:bg-orange-700 text-white" size="lg">
+											Best Value
 											<ArrowRight className="ml-2 h-4 w-4" />
 										</Button>
 									</Link>
-
-									<p className="text-xs text-gray-500 text-center mt-4">
-										Secure payment via Stripe
-									</p>
 								</CardContent>
 							</Card>
+
+							{/* Business Plan */}
+							<Card className="relative border shadow-lg hover:shadow-xl transition-shadow h-full flex flex-col">
+								<CardContent className="p-6 flex flex-col flex-grow">
+									<div className="text-center mb-6">
+										<h3 className="text-xl font-bold text-gray-900 mb-2">Business</h3>
+										<div className="flex items-baseline justify-center gap-1">
+											<span className="text-4xl font-bold text-gray-900">$349</span>
+										</div>
+										<p className="text-sm text-gray-500 mt-2">12 reports bundle</p>
+										<p className="text-xs text-gray-600 mt-1">+ $29 per additional</p>
+									</div>
+
+									<ul className="space-y-3 mb-8 flex-grow">
+										<li className="flex items-start gap-3">
+											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+											<span className="text-gray-700 text-sm font-semibold">12 manuscript analyses</span>
+										</li>
+										<li className="flex items-start gap-3">
+											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+											<span className="text-gray-700 text-sm">Dedicated support</span>
+										</li>
+										<li className="flex items-start gap-3">
+											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+											<span className="text-gray-700 text-sm">Team collaboration</span>
+										</li>
+										<li className="flex items-start gap-3">
+											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+											<span className="text-gray-700 text-sm">Volume discounts available</span>
+										</li>
+									</ul>
+
+									<Link href="/api/auth/signin" className="block mt-auto">
+										<Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-white" size="lg">
+											For Teams
+										</Button>
+									</Link>
+								</CardContent>
+							</Card>
+						</div>
+
+						<p className="text-xs text-gray-500 text-center mt-8">
+							All plans include comprehensive AI-enhanced analysis with human review • Secure payment via Stripe
+						</p>
+
+						<div className="text-center mt-6">
+							<p className="text-sm text-gray-600">
+								Need a custom plan? Contact us at{" "}
+								<a href="mailto:info@getlost.ai" className="text-orange-600 hover:text-orange-700 underline">
+									info@getlost.ai
+								</a>
+							</p>
 						</div>
 					</div>
 				</section>
