@@ -39,7 +39,9 @@ declare module "next-auth" {
  */
 export const authConfig = {
 	providers: [
-		GoogleProvider,
+		GoogleProvider({
+			allowDangerousEmailAccountLinking: true,
+		}),
 		CredentialsProvider({
 			name: "credentials",
 			credentials: {
@@ -93,8 +95,26 @@ export const authConfig = {
 			user: {
 				...session.user,
 				id: user.id,
-				role: user.role,
+				role: user.role || "user",
 			},
 		}),
+		async signIn({ user, account }) {
+			// Ensure all users have a role (default to "user")
+			if (user.id && !user.role) {
+				const existingUser = await db
+					.select()
+					.from(users)
+					.where(eq(users.id, user.id))
+					.limit(1);
+
+				if (existingUser.length > 0 && !existingUser[0].role) {
+					await db
+						.update(users)
+						.set({ role: "user" })
+						.where(eq(users.id, user.id));
+				}
+			}
+			return true;
+		},
 	},
 } satisfies NextAuthConfig;
