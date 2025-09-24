@@ -282,128 +282,156 @@ export default function BookDetail() {
           {/* Left Column - Book Info & Versions */}
           <div className="lg:col-span-2 space-y-6">
             {/* Book Info */}
-            <Card className="overflow-hidden">
-              {/* Cover Image Banner */}
-              <div className="relative h-48 bg-gradient-to-br from-orange-100 to-orange-50">
-                {book.coverImageUrl || newCoverImagePreview ? (
-                  <img
-                    src={newCoverImagePreview || book.coverImageUrl}
-                    alt={book.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Image className="w-20 h-20 text-orange-300" />
-                  </div>
-                )}
-                {editMode && (
-                  <div className="absolute bottom-4 right-4">
-                    <label className="bg-white/90 backdrop-blur rounded-full p-2 shadow-lg cursor-pointer hover:bg-white transition-colors inline-flex items-center">
-                      <Edit2 className="w-4 h-4 text-gray-700" />
-                      <span className="ml-2 text-sm text-gray-700">Change Cover</span>
-                      <input
-                        type="file"
-                        className="sr-only"
-                        accept="image/*"
-                        onChange={(e) => e.target.files && handleCoverImageChange(e.target.files[0])}
-                      />
-                    </label>
-                    {newCoverImagePreview && (
-                      <button
-                        onClick={() => {
-                          setNewCoverImage(null);
-                          setNewCoverImagePreview(null);
-                        }}
-                        className="ml-2 bg-white/90 backdrop-blur rounded-full p-2 shadow-lg hover:bg-white transition-colors inline-flex items-center"
-                      >
-                        <X className="w-4 h-4 text-red-600" />
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex gap-6">
+                  {/* Left side - Cover Image */}
+                  <div className="flex-shrink-0">
                     {editMode ? (
-                      <input
-                        type="text"
-                        value={editedTitle}
-                        onChange={(e) => setEditedTitle(e.target.value)}
-                        className="text-2xl font-bold w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        placeholder="Book title"
-                      />
-                    ) : (
-                      <CardTitle className="text-2xl">{book.title}</CardTitle>
-                    )}
-                    <CardDescription className="mt-1">
-                      Created {new Date(book.createdAt).toLocaleDateString()}
-                    </CardDescription>
-                  </div>
-                  {!editMode ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setEditMode(true)}
-                    >
-                      <Edit2 className="w-4 h-4 mr-1" />
-                      Edit
-                    </Button>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleCancelEdit}
-                        disabled={saving}
-                      >
-                        <X className="w-4 h-4 mr-1" />
-                        Cancel
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="bg-orange-600 hover:bg-orange-700"
-                        onClick={handleSaveEdit}
-                        disabled={saving || !editedTitle.trim()}
-                      >
-                        {saving ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                            Saving...
-                          </>
+                      <div className="relative mb-4">
+                        {newCoverImagePreview || book.coverImageUrl ? (
+                          <div className="relative">
+                            <img
+                              src={newCoverImagePreview || book.coverImageUrl}
+                              alt={book.title}
+                              className="w-32 h-48 object-cover rounded-lg shadow-md"
+                            />
+                            <label className="absolute bottom-2 right-2 bg-white/90 backdrop-blur rounded-full p-2 shadow-lg cursor-pointer hover:bg-white transition-colors">
+                              <Edit2 className="w-4 h-4 text-gray-700" />
+                              <input
+                                type="file"
+                                className="sr-only"
+                                accept="image/*"
+                                onChange={(e) => e.target.files && handleCoverImageChange(e.target.files[0])}
+                              />
+                            </label>
+                            {newCoverImagePreview && (
+                              <button
+                                onClick={() => {
+                                  setNewCoverImage(null);
+                                  setNewCoverImagePreview(null);
+                                }}
+                                className="absolute top-2 right-2 bg-white/90 backdrop-blur rounded-full p-1.5 shadow-lg hover:bg-white transition-colors"
+                              >
+                                <X className="w-3 h-3 text-red-600" />
+                              </button>
+                            )}
+                          </div>
                         ) : (
-                          <>
-                            <Save className="w-4 h-4 mr-1" />
-                            Save
-                          </>
+                          <label className="flex items-center justify-center w-32 h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-orange-600 bg-gray-50">
+                            <div className="text-center">
+                              <Image className="mx-auto h-8 w-8 text-gray-400" />
+                              <p className="mt-1 text-xs text-gray-600">Add Cover</p>
+                            </div>
+                            <input
+                              type="file"
+                              className="sr-only"
+                              accept="image/*"
+                              onChange={(e) => e.target.files && handleCoverImageChange(e.target.files[0])}
+                            />
+                          </label>
                         )}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {/* Notes */}
-                {editMode ? (
-                  <div>
-                    <h3 className="font-semibold text-gray-700 mb-2">Personal Notes</h3>
-                    <textarea
-                      value={editedNotes}
-                      onChange={(e) => setEditedNotes(e.target.value)}
-                      className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      rows={4}
-                      placeholder="Add any notes about this book (optional)"
-                    />
+                      </div>
+                    ) : (
+                      <div className="mb-4">
+                        {book.coverImageUrl ? (
+                          <img
+                            src={book.coverImageUrl}
+                            alt={book.title}
+                            className="w-32 h-48 object-cover rounded-lg shadow-md"
+                          />
+                        ) : (
+                          <div className="w-32 h-48 bg-gradient-to-br from-orange-100 to-orange-50 rounded-lg flex items-center justify-center">
+                            <Image className="w-12 h-12 text-orange-300" />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  book.personalNotes && (
-                    <div>
-                      <h3 className="font-semibold text-gray-700 mb-2">Personal Notes</h3>
-                      <p className="text-gray-600">{book.personalNotes}</p>
+
+                  {/* Right side - Book Details */}
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        {editMode ? (
+                          <input
+                            type="text"
+                            value={editedTitle}
+                            onChange={(e) => setEditedTitle(e.target.value)}
+                            className="text-2xl font-bold w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            placeholder="Book title"
+                          />
+                        ) : (
+                          <h2 className="text-2xl font-bold text-gray-900">{book.title}</h2>
+                        )}
+                        <p className="text-sm text-gray-500 mt-1">
+                          Created {new Date(book.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {!editMode ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditMode(true)}
+                        >
+                          <Edit2 className="w-4 h-4 mr-1" />
+                          Edit
+                        </Button>
+                      ) : (
+                        <div className="flex items-center gap-2 ml-4">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleCancelEdit}
+                            disabled={saving}
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-orange-600 hover:bg-orange-700"
+                            onClick={handleSaveEdit}
+                            disabled={saving || !editedTitle.trim()}
+                          >
+                            {saving ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                Saving...
+                              </>
+                            ) : (
+                              <>
+                                <Save className="w-4 h-4 mr-1" />
+                                Save
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  )
-                )}
+
+                    {/* Personal Notes */}
+                    {editMode ? (
+                      <div>
+                        <h3 className="font-semibold text-gray-700 mb-2">Personal Notes</h3>
+                        <textarea
+                          value={editedNotes}
+                          onChange={(e) => setEditedNotes(e.target.value)}
+                          className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          rows={6}
+                          placeholder="Add any notes about this book (optional)"
+                        />
+                      </div>
+                    ) : (
+                      book.personalNotes && (
+                        <div>
+                          <h3 className="font-semibold text-gray-700 mb-2">Personal Notes</h3>
+                          <p className="text-gray-600">{book.personalNotes}</p>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
 
                 {/* Upload New Version */}
                 <div className="border-t pt-4">
