@@ -10,6 +10,7 @@ import {
   ArrowLeft, Upload, FileText, Clock, CheckCircle, AlertCircle,
   Download, Eye, CreditCard, Loader2, ChevronDown, ChevronRight, Edit2, Save, X, Image
 } from "lucide-react";
+import DashboardLayout from "@/components/dashboard-layout";
 
 interface BookVersion {
   id: string;
@@ -262,18 +263,18 @@ export default function BookDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
+    <DashboardLayout>
+      {/* Breadcrumb */}
+      <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/dashboard" className="flex items-center text-gray-600 hover:text-orange-600">
-              <ArrowLeft className="w-5 h-5 mr-2" />
+          <div className="py-3">
+            <Link href="/dashboard" className="flex items-center text-gray-600 hover:text-orange-600 text-sm">
+              <ArrowLeft className="w-4 h-4 mr-1" />
               Back to Dashboard
             </Link>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -281,7 +282,47 @@ export default function BookDetail() {
           {/* Left Column - Book Info & Versions */}
           <div className="lg:col-span-2 space-y-6">
             {/* Book Info */}
-            <Card>
+            <Card className="overflow-hidden">
+              {/* Cover Image Banner */}
+              <div className="relative h-48 bg-gradient-to-br from-orange-100 to-orange-50">
+                {book.coverImageUrl || newCoverImagePreview ? (
+                  <img
+                    src={newCoverImagePreview || book.coverImageUrl}
+                    alt={book.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Image className="w-20 h-20 text-orange-300" />
+                  </div>
+                )}
+                {editMode && (
+                  <div className="absolute bottom-4 right-4">
+                    <label className="bg-white/90 backdrop-blur rounded-full p-2 shadow-lg cursor-pointer hover:bg-white transition-colors inline-flex items-center">
+                      <Edit2 className="w-4 h-4 text-gray-700" />
+                      <span className="ml-2 text-sm text-gray-700">Change Cover</span>
+                      <input
+                        type="file"
+                        className="sr-only"
+                        accept="image/*"
+                        onChange={(e) => e.target.files && handleCoverImageChange(e.target.files[0])}
+                      />
+                    </label>
+                    {newCoverImagePreview && (
+                      <button
+                        onClick={() => {
+                          setNewCoverImage(null);
+                          setNewCoverImagePreview(null);
+                        }}
+                        className="ml-2 bg-white/90 backdrop-blur rounded-full p-2 shadow-lg hover:bg-white transition-colors inline-flex items-center"
+                      >
+                        <X className="w-4 h-4 text-red-600" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -310,14 +351,15 @@ export default function BookDetail() {
                       Edit
                     </Button>
                   ) : (
-                    <div className="flex space-x-2">
+                    <div className="flex items-center gap-2">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={handleCancelEdit}
                         disabled={saving}
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-4 h-4 mr-1" />
+                        Cancel
                       </Button>
                       <Button
                         size="sm"
@@ -326,9 +368,15 @@ export default function BookDetail() {
                         disabled={saving || !editedTitle.trim()}
                       >
                         {saving ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <>
+                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                            Saving...
+                          </>
                         ) : (
-                          <Save className="w-4 h-4" />
+                          <>
+                            <Save className="w-4 h-4 mr-1" />
+                            Save
+                          </>
                         )}
                       </Button>
                     </div>
@@ -336,101 +384,26 @@ export default function BookDetail() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-6">
-                  {/* Cover Image */}
-                  <div className="flex-shrink-0">
-                    {editMode ? (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Cover Image</label>
-                        <div className="relative">
-                          {newCoverImagePreview ? (
-                            <div className="relative">
-                              <img
-                                src={newCoverImagePreview}
-                                alt="New cover"
-                                className="w-32 h-48 object-cover rounded-lg border"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setNewCoverImage(null);
-                                  setNewCoverImagePreview(null);
-                                }}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ) : book.coverImageUrl ? (
-                            <div className="relative">
-                              <img
-                                src={book.coverImageUrl}
-                                alt="Cover"
-                                className="w-32 h-48 object-cover rounded-lg border"
-                              />
-                              <label className="absolute bottom-2 right-2 bg-white rounded-full p-2 shadow cursor-pointer hover:bg-gray-100">
-                                <Edit2 className="w-3 h-3" />
-                                <input
-                                  type="file"
-                                  className="sr-only"
-                                  accept="image/*"
-                                  onChange={(e) => e.target.files && handleCoverImageChange(e.target.files[0])}
-                                />
-                              </label>
-                            </div>
-                          ) : (
-                            <label className="flex items-center justify-center w-32 h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-orange-600">
-                              <div className="text-center">
-                                <Image className="mx-auto h-8 w-8 text-gray-400" />
-                                <p className="mt-1 text-xs text-gray-600">Add Cover</p>
-                              </div>
-                              <input
-                                type="file"
-                                className="sr-only"
-                                accept="image/*"
-                                onChange={(e) => e.target.files && handleCoverImageChange(e.target.files[0])}
-                              />
-                            </label>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      book.coverImageUrl && (
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">Cover Image</label>
-                          <img
-                            src={book.coverImageUrl}
-                            alt="Cover"
-                            className="w-32 h-48 object-cover rounded-lg border"
-                          />
-                        </div>
-                      )
-                    )}
+                {/* Notes */}
+                {editMode ? (
+                  <div>
+                    <h3 className="font-semibold text-gray-700 mb-2">Personal Notes</h3>
+                    <textarea
+                      value={editedNotes}
+                      onChange={(e) => setEditedNotes(e.target.value)}
+                      className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      rows={4}
+                      placeholder="Add any notes about this book (optional)"
+                    />
                   </div>
-
-                  {/* Notes */}
-                  <div className="flex-1">
-                    {editMode ? (
-                      <div>
-                        <h3 className="font-semibold text-gray-700 mb-2">Personal Notes</h3>
-                        <textarea
-                          value={editedNotes}
-                          onChange={(e) => setEditedNotes(e.target.value)}
-                          className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
-                          rows={4}
-                          placeholder="Add any notes about this book (optional)"
-                        />
-                      </div>
-                    ) : (
-                      book.personalNotes && (
-                        <div>
-                          <h3 className="font-semibold text-gray-700 mb-2">Personal Notes</h3>
-                          <p className="text-gray-600">{book.personalNotes}</p>
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
+                ) : (
+                  book.personalNotes && (
+                    <div>
+                      <h3 className="font-semibold text-gray-700 mb-2">Personal Notes</h3>
+                      <p className="text-gray-600">{book.personalNotes}</p>
+                    </div>
+                  )
+                )}
 
                 {/* Upload New Version */}
                 <div className="border-t pt-4">
@@ -629,6 +602,6 @@ export default function BookDetail() {
           </div>
         </div>
       </main>
-    </div>
+    </DashboardLayout>
   );
 }

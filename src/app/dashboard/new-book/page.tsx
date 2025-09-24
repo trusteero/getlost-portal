@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Upload, FileText, X, Loader2, Image } from "lucide-react";
+import DashboardLayout from "@/components/dashboard-layout";
 
 export default function NewBook() {
   const { data: session, status } = useSession();
@@ -162,18 +163,18 @@ export default function NewBook() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
+    <DashboardLayout>
+      {/* Breadcrumb */}
+      <div className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
-            <Link href="/dashboard" className="flex items-center text-gray-600 hover:text-orange-600">
-              <ArrowLeft className="w-5 h-5 mr-2" />
+          <div className="py-3">
+            <Link href="/dashboard" className="flex items-center text-gray-600 hover:text-orange-600 text-sm">
+              <ArrowLeft className="w-4 h-4 mr-1" />
               Back to Dashboard
             </Link>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -376,6 +377,6 @@ export default function NewBook() {
           </CardContent>
         </Card>
       </main>
-    </div>
+    </DashboardLayout>
   );
 }

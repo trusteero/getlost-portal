@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, User, Mail, Shield, Save, Loader2 } from "lucide-react";
+import DashboardLayout from "@/components/dashboard-layout";
 
 export default function Settings() {
   const { data: session, status, update } = useSession();
@@ -106,18 +107,18 @@ export default function Settings() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
+    <DashboardLayout>
+      {/* Breadcrumb */}
+      <div className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
-            <Link href="/dashboard" className="flex items-center text-gray-600 hover:text-orange-600">
-              <ArrowLeft className="w-5 h-5 mr-2" />
+          <div className="py-3">
+            <Link href="/dashboard" className="flex items-center text-gray-600 hover:text-orange-600 text-sm">
+              <ArrowLeft className="w-4 h-4 mr-1" />
               Back to Dashboard
             </Link>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -269,36 +270,8 @@ export default function Settings() {
               </form>
             </CardContent>
           </Card>
-
-          {/* Account Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Statistics</CardTitle>
-              <CardDescription>Your usage and activity</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-bold text-orange-600">0</p>
-                  <p className="text-sm text-gray-600">Books Uploaded</p>
-                </div>
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-bold text-orange-600">0</p>
-                  <p className="text-sm text-gray-600">Reports Generated</p>
-                </div>
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-bold text-orange-600">
-                    {session?.user?.createdAt
-                      ? new Date(session.user.createdAt).toLocaleDateString()
-                      : "N/A"}
-                  </p>
-                  <p className="text-sm text-gray-600">Member Since</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </main>
-    </div>
+    </DashboardLayout>
   );
 }
