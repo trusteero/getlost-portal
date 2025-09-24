@@ -143,6 +143,9 @@ export default function SignupPage() {
 						</Button>
 					</Link>
 
+					<div className="flex justify-center mb-4">
+						<img src="/logo256.png" alt="Get Lost" className="h-16 w-16" />
+					</div>
 					<h1 className="text-3xl font-bold mb-4 text-gray-900">Join Get Lost</h1>
 					<p className="text-gray-600">
 						Start your journey to better writing today

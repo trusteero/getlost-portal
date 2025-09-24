@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Plus, Bell, Settings, LogOut, FileText, Clock, CheckCircle, ChevronDown, User } from "lucide-react";
+import { BookOpen, Plus, Bell, Settings, LogOut, FileText, Clock, CheckCircle, ChevronDown, User, Image } from "lucide-react";
 import { signOut } from "next-auth/react";
 
 interface Book {
   id: string;
   title: string;
   personalNotes: string;
+  coverImageUrl?: string;
   createdAt: string;
   latestVersion?: {
     id: string;
@@ -127,8 +128,9 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold text-orange-600">
-                Get Lost
+              <Link href="/" className="flex items-center space-x-2">
+                <img src="/logo256.png" alt="Get Lost" className="h-8 w-8" />
+                <span className="text-2xl font-bold text-orange-600">Get Lost</span>
               </Link>
               <span className="ml-4 text-gray-600">Author Dashboard</span>
             </div>
@@ -248,36 +250,56 @@ export default function Dashboard() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {books.map((book) => (
               <Link key={book.id} href={`/dashboard/book/${book.id}`}>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                  <CardHeader>
-                    <CardTitle className="text-lg line-clamp-2">{book.title}</CardTitle>
-                    <CardDescription className="text-sm">
-                      Added {new Date(book.createdAt).toLocaleDateString()}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {book.personalNotes && (
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">{book.personalNotes}</p>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full overflow-hidden">
+                  <div className="flex">
+                    {/* Cover Image */}
+                    {book.coverImageUrl ? (
+                      <div className="w-24 h-36 flex-shrink-0">
+                        <img
+                          src={book.coverImageUrl}
+                          alt={book.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-24 h-36 flex-shrink-0 bg-gray-100 flex items-center justify-center">
+                        <Image className="w-8 h-8 text-gray-400" />
+                      </div>
                     )}
 
-                    <div className="space-y-2">
-                      {book.latestVersion && (
-                        <div className="flex items-center text-sm text-gray-500">
-                          <FileText className="w-4 h-4 mr-2" />
-                          {book.latestVersion.fileName}
-                        </div>
-                      )}
+                    {/* Book Details */}
+                    <div className="flex-1 min-w-0">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg line-clamp-1">{book.title}</CardTitle>
+                        <CardDescription className="text-xs">
+                          Added {new Date(book.createdAt).toLocaleDateString()}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-2">
+                        {book.personalNotes && (
+                          <p className="text-xs text-gray-600 mb-2 line-clamp-2">{book.personalNotes}</p>
+                        )}
 
-                      {book.latestReport && (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center text-sm">
-                            {getStatusIcon(book.latestReport.status)}
-                            <span className="ml-2">{getStatusText(book.latestReport.status)}</span>
-                          </div>
+                        <div className="space-y-1">
+                          {book.latestVersion && (
+                            <div className="flex items-center text-xs text-gray-500">
+                              <FileText className="w-3 h-3 mr-1" />
+                              <span className="truncate">{book.latestVersion.fileName}</span>
+                            </div>
+                          )}
+
+                          {book.latestReport && (
+                            <div className="flex items-center">
+                              <div className="flex items-center text-xs">
+                                {getStatusIcon(book.latestReport.status)}
+                                <span className="ml-1">{getStatusText(book.latestReport.status)}</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </CardContent>
                     </div>
-                  </CardContent>
+                  </div>
                 </Card>
               </Link>
             ))}

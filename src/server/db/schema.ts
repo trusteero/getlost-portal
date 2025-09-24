@@ -12,27 +12,6 @@ export const createTable = sqliteTableCreator(
 	(name) => `getlostportal_${name}`,
 );
 
-export const posts = createTable(
-	"post",
-	(d) => ({
-		id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
-		name: d.text({ length: 256 }),
-		createdById: d
-			.text({ length: 255 })
-			.notNull()
-			.references(() => users.id),
-		createdAt: d
-			.integer({ mode: "timestamp" })
-			.default(sql`(unixepoch())`)
-			.notNull(),
-		updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
-	}),
-	(t) => [
-		index("created_by_idx").on(t.createdById),
-		index("name_idx").on(t.name),
-	],
-);
-
 export const users = createTable("user", (d) => ({
 	id: d
 		.text({ length: 255 })
@@ -116,6 +95,7 @@ export const books = createTable(
 		userId: d.text({ length: 255 }).notNull().references(() => users.id),
 		title: d.text({ length: 500 }).notNull(),
 		personalNotes: d.text(),
+		coverImageUrl: d.text({ length: 1000 }),
 		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
 		updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
 	}),

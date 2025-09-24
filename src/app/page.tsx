@@ -18,8 +18,8 @@ export default async function Home() {
 						<div className="flex items-center justify-between h-16">
 							<div className="flex items-center space-x-8">
 								<Link href="/" className="flex items-center space-x-2">
-									<BookOpen className="h-6 w-6 text-orange-600" />
-									<span className="text-xl font-semibold text-gray-900">Get Lost</span>
+									<img src="/logo256.png" alt="Get Lost" className="h-8 w-8" />
+									<span className="text-xl font-semibold text-orange-600">Get Lost</span>
 								</Link>
 								<div className="hidden md:flex space-x-6">
 									<Link href="#features" className="text-gray-600 hover:text-gray-900 transition">Features</Link>
@@ -69,8 +69,8 @@ export default async function Home() {
 								<span className="block text-orange-600" style={{ textShadow: '0 0 4px rgba(255, 255, 255, 1), 0 0 8px rgba(255, 255, 255, 0.9)' }}>Into Your Best Work</span>
 							</h1>
 							<p className="text-xl text-gray-600 mb-6 max-w-2xl mx-auto leading-relaxed">
-								Get comprehensive, AI-enhanced feedback on your book. Our expert team combines
-								advanced technology with human insight to deliver actionable recommendations.
+								Get comprehensive, AI-enhanced book reports with actionable feedback. Perfect for
+								iterative writing, early feedback, and polishing multiple manuscripts.
 							</p>
 							<div className="mb-8">
 								<img
@@ -91,7 +91,7 @@ export default async function Home() {
 								</Button>
 							</div>
 							<p className="text-sm text-gray-500 mt-6">
-								Professional manuscript analysis • 1-3 day turnaround
+								Professional book reports • 1-3 day turnaround
 							</p>
 						</div>
 					</div>
@@ -106,7 +106,7 @@ export default async function Home() {
 								Everything Authors Need to Succeed
 							</h2>
 							<p className="text-gray-600 max-w-2xl mx-auto">
-								Our AI-enhanced analysis examines every aspect of your manuscript with both technological precision and human expertise
+								Our AI-enhanced reports examine every aspect of your book with both technological precision and human expertise
 							</p>
 						</div>
 
@@ -194,7 +194,7 @@ export default async function Home() {
 								Choose Your Plan
 							</h2>
 							<p className="text-gray-600 max-w-2xl mx-auto mb-8">
-								Professional manuscript analysis that scales with your needs
+								Professional book reports that scale with your writing journey. Get feedback early and often to improve faster.
 							</p>
 						</div>
 
@@ -213,7 +213,7 @@ export default async function Home() {
 									<ul className="space-y-3 mb-8 flex-grow">
 										<li className="flex items-start gap-3">
 											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-											<span className="text-gray-700 text-sm">1 manuscript analysis</span>
+											<span className="text-gray-700 text-sm">1 book report</span>
 										</li>
 										<li className="flex items-start gap-3">
 											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -261,7 +261,7 @@ export default async function Home() {
 									<ul className="space-y-3 mb-8 flex-grow">
 										<li className="flex items-start gap-3">
 											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-											<span className="text-gray-700 text-sm font-semibold">4 manuscript analyses</span>
+											<span className="text-gray-700 text-sm font-semibold">4 book reports</span>
 										</li>
 										<li className="flex items-start gap-3">
 											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -277,7 +277,7 @@ export default async function Home() {
 										</li>
 										<li className="flex items-start gap-3">
 											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-											<span className="text-gray-700 text-sm">Perfect for series authors</span>
+											<span className="text-gray-700 text-sm">Perfect for iterative writing</span>
 										</li>
 									</ul>
 
@@ -305,7 +305,7 @@ export default async function Home() {
 									<ul className="space-y-3 mb-8 flex-grow">
 										<li className="flex items-start gap-3">
 											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-											<span className="text-gray-700 text-sm font-semibold">12 manuscript analyses</span>
+											<span className="text-gray-700 text-sm font-semibold">12 book reports</span>
 										</li>
 										<li className="flex items-start gap-3">
 											<CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -327,7 +327,7 @@ export default async function Home() {
 						</div>
 
 						<p className="text-xs text-gray-500 text-center mt-8">
-							All plans include comprehensive AI-enhanced analysis with human review • Secure payment via Stripe
+							All plans include comprehensive AI-enhanced reports with human review • Secure payment via Stripe
 						</p>
 
 						<div className="text-center mt-6">
@@ -455,8 +455,8 @@ export default async function Home() {
 					<div className="container mx-auto px-4 py-8">
 						<div className="text-center">
 							<div className="flex items-center justify-center space-x-3 mb-4">
-								<BookOpen className="h-8 w-8 text-orange-600" />
-								<span className="text-2xl font-bold text-gray-900">Get Lost</span>
+								<img src="/logo256.png" alt="Get Lost" className="h-8 w-8" />
+								<span className="text-2xl font-bold text-orange-600">Get Lost</span>
 							</div>
 							<p className="text-sm text-gray-600">
 								© 2024 Get Lost. All rights reserved.

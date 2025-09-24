@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ArrowLeft, Upload, FileText, Clock, CheckCircle, AlertCircle,
-  Download, Eye, CreditCard, Loader2, ChevronDown, ChevronRight
+  Download, Eye, CreditCard, Loader2, ChevronDown, ChevronRight, Edit2, Save, X, Image
 } from "lucide-react";
 
 interface BookVersion {
@@ -34,6 +34,7 @@ interface Book {
   id: string;
   title: string;
   personalNotes?: string;
+  coverImageUrl?: string;
   createdAt: string;
   versions: BookVersion[];
 }
@@ -49,6 +50,12 @@ export default function BookDetail() {
   const [expandedVersions, setExpandedVersions] = useState<Set<string>>(new Set());
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [newVersionFile, setNewVersionFile] = useState<File | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editedTitle, setEditedTitle] = useState("");
+  const [editedNotes, setEditedNotes] = useState("");
+  const [newCoverImage, setNewCoverImage] = useState<File | null>(null);
+  const [newCoverImagePreview, setNewCoverImagePreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -64,6 +71,8 @@ export default function BookDetail() {
       if (response.ok) {
         const data = await response.json();
         setBook(data);
+        setEditedTitle(data.title);
+        setEditedNotes(data.personalNotes || "");
 
         // Auto-expand latest version
         if (data.versions.length > 0) {
@@ -104,6 +113,67 @@ export default function BookDetail() {
     } finally {
       setPurchasing(false);
     }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editedTitle.trim()) return;
+
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      formData.append("title", editedTitle);
+      formData.append("personalNotes", editedNotes);
+      if (newCoverImage) {
+        formData.append("coverImage", newCoverImage);
+      }
+
+      const response = await fetch(`/api/books/${params.id}`, {
+        method: "PATCH",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBook(data);
+        setEditMode(false);
+        setNewCoverImage(null);
+        setNewCoverImagePreview(null);
+      }
+    } catch (error) {
+      console.error("Failed to update book:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditedTitle(book?.title || "");
+    setEditedNotes(book?.personalNotes || "");
+    setNewCoverImage(null);
+    setNewCoverImagePreview(null);
+    setEditMode(false);
+  };
+
+  const handleCoverImageChange = (file: File) => {
+    // Check if it's an image
+    if (!file.type.startsWith('image/')) {
+      return;
+    }
+
+    // Check file size (max 5MB for images)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      return;
+    }
+
+    setNewCoverImage(file);
+
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setNewCoverImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleUploadNewVersion = async () => {
@@ -213,18 +283,154 @@ export default function BookDetail() {
             {/* Book Info */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-2xl">{book.title}</CardTitle>
-                <CardDescription>
-                  Created {new Date(book.createdAt).toLocaleDateString()}
-                </CardDescription>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    {editMode ? (
+                      <input
+                        type="text"
+                        value={editedTitle}
+                        onChange={(e) => setEditedTitle(e.target.value)}
+                        className="text-2xl font-bold w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="Book title"
+                      />
+                    ) : (
+                      <CardTitle className="text-2xl">{book.title}</CardTitle>
+                    )}
+                    <CardDescription className="mt-1">
+                      Created {new Date(book.createdAt).toLocaleDateString()}
+                    </CardDescription>
+                  </div>
+                  {!editMode ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditMode(true)}
+                    >
+                      <Edit2 className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                  ) : (
+                    <div className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCancelEdit}
+                        disabled={saving}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-orange-600 hover:bg-orange-700"
+                        onClick={handleSaveEdit}
+                        disabled={saving || !editedTitle.trim()}
+                      >
+                        {saving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Save className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                {book.personalNotes && (
-                  <div className="mb-4">
-                    <h3 className="font-semibold text-gray-700 mb-2">Personal Notes</h3>
-                    <p className="text-gray-600">{book.personalNotes}</p>
+                <div className="flex gap-6">
+                  {/* Cover Image */}
+                  <div className="flex-shrink-0">
+                    {editMode ? (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Cover Image</label>
+                        <div className="relative">
+                          {newCoverImagePreview ? (
+                            <div className="relative">
+                              <img
+                                src={newCoverImagePreview}
+                                alt="New cover"
+                                className="w-32 h-48 object-cover rounded-lg border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setNewCoverImage(null);
+                                  setNewCoverImagePreview(null);
+                                }}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : book.coverImageUrl ? (
+                            <div className="relative">
+                              <img
+                                src={book.coverImageUrl}
+                                alt="Cover"
+                                className="w-32 h-48 object-cover rounded-lg border"
+                              />
+                              <label className="absolute bottom-2 right-2 bg-white rounded-full p-2 shadow cursor-pointer hover:bg-gray-100">
+                                <Edit2 className="w-3 h-3" />
+                                <input
+                                  type="file"
+                                  className="sr-only"
+                                  accept="image/*"
+                                  onChange={(e) => e.target.files && handleCoverImageChange(e.target.files[0])}
+                                />
+                              </label>
+                            </div>
+                          ) : (
+                            <label className="flex items-center justify-center w-32 h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-orange-600">
+                              <div className="text-center">
+                                <Image className="mx-auto h-8 w-8 text-gray-400" />
+                                <p className="mt-1 text-xs text-gray-600">Add Cover</p>
+                              </div>
+                              <input
+                                type="file"
+                                className="sr-only"
+                                accept="image/*"
+                                onChange={(e) => e.target.files && handleCoverImageChange(e.target.files[0])}
+                              />
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      book.coverImageUrl && (
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">Cover Image</label>
+                          <img
+                            src={book.coverImageUrl}
+                            alt="Cover"
+                            className="w-32 h-48 object-cover rounded-lg border"
+                          />
+                        </div>
+                      )
+                    )}
                   </div>
-                )}
+
+                  {/* Notes */}
+                  <div className="flex-1">
+                    {editMode ? (
+                      <div>
+                        <h3 className="font-semibold text-gray-700 mb-2">Personal Notes</h3>
+                        <textarea
+                          value={editedNotes}
+                          onChange={(e) => setEditedNotes(e.target.value)}
+                          className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          rows={4}
+                          placeholder="Add any notes about this book (optional)"
+                        />
+                      </div>
+                    ) : (
+                      book.personalNotes && (
+                        <div>
+                          <h3 className="font-semibold text-gray-700 mb-2">Personal Notes</h3>
+                          <p className="text-gray-600">{book.personalNotes}</p>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
 
                 {/* Upload New Version */}
                 <div className="border-t pt-4">

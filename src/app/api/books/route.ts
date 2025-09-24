@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
         id: books.id,
         title: books.title,
         personalNotes: books.personalNotes,
+        coverImageUrl: books.coverImageUrl,
         createdAt: books.createdAt,
       })
       .from(books)
@@ -62,9 +63,21 @@ export async function POST(request: NextRequest) {
     const title = formData.get("title") as string;
     const personalNotes = formData.get("personalNotes") as string;
     const file = formData.get("file") as File;
+    const coverImage = formData.get("coverImage") as File | null;
 
     if (!title || !file) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    // Handle cover image upload if provided
+    let coverImageUrl: string | null = null;
+    if (coverImage) {
+      // Convert to base64 data URL for simplicity (in production, upload to S3 or similar)
+      const bytes = await coverImage.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const base64 = buffer.toString('base64');
+      const mimeType = coverImage.type;
+      coverImageUrl = `data:${mimeType};base64,${base64}`;
     }
 
     // Create book
@@ -74,6 +87,7 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         title,
         personalNotes,
+        coverImageUrl,
       })
       .returning();
 

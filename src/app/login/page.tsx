@@ -96,6 +96,9 @@ export default function LoginPage() {
 						</Button>
 					</Link>
 
+					<div className="flex justify-center mb-4">
+						<img src="/logo256.png" alt="Get Lost" className="h-16 w-16" />
+					</div>
 					<h1 className="text-3xl font-bold mb-4 text-gray-900">Welcome Back</h1>
 					<p className="text-gray-600">
 						Sign in to access your author dashboard
