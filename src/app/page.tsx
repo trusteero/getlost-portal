@@ -74,7 +74,7 @@ export default async function Home() {
 							</p>
 							<div className="mb-8">
 								<img
-									src="/file_to_report.png"
+									src="/booktoreport.png"
 									alt="Manuscript to Report Transformation"
 									className="mx-auto my-4 md:my-16 w-2/3 md:w-2/4 max-w-xl h-auto"
 								/>
@@ -198,9 +198,9 @@ export default async function Home() {
 							</p>
 						</div>
 
-						<div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-end">
+						<div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
 							{/* Starter Plan */}
-							<Card className="relative border shadow-lg hover:shadow-xl transition-shadow h-full flex flex-col">
+							<Card className="relative border shadow-lg hover:shadow-xl transition-shadow flex flex-col">
 								<CardContent className="p-6 flex flex-col flex-grow">
 									<div className="text-center mb-6">
 										<h3 className="text-xl font-bold text-gray-900 mb-2">Starter</h3>
@@ -238,9 +238,9 @@ export default async function Home() {
 							</Card>
 
 							{/* Author Plan - Popular */}
-							<Card className="relative border-2 border-orange-300 shadow-xl hover:shadow-2xl transition-shadow transform md:-translate-y-4 h-full flex flex-col">
+							<Card className="relative border-2 border-orange-300 shadow-xl hover:shadow-2xl transition-shadow flex flex-col">
 								{/* Popular badge */}
-								<div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+								<div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
 									<span className="bg-orange-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
 										MOST POPULAR
 									</span>
@@ -291,7 +291,7 @@ export default async function Home() {
 							</Card>
 
 							{/* Business Plan */}
-							<Card className="relative border shadow-lg hover:shadow-xl transition-shadow h-full flex flex-col">
+							<Card className="relative border shadow-lg hover:shadow-xl transition-shadow flex flex-col">
 								<CardContent className="p-6 flex flex-col flex-grow">
 									<div className="text-center mb-6">
 										<h3 className="text-xl font-bold text-gray-900 mb-2">Business</h3>
