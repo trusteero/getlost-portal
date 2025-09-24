@@ -35,6 +35,7 @@ export default function Dashboard() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -42,6 +43,7 @@ export default function Dashboard() {
     } else if (status === "authenticated") {
       fetchBooks();
       fetchNotifications();
+      checkAdminStatus();
     }
   }, [status]);
 
@@ -69,6 +71,18 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
+    }
+  };
+
+  const checkAdminStatus = async () => {
+    try {
+      const response = await fetch("/api/admin/check");
+      if (response.ok) {
+        const data = await response.json();
+        setIsAdmin(data.isAdmin);
+      }
+    } catch (error) {
+      console.error("Failed to check admin status:", error);
     }
   };
 
@@ -164,6 +178,17 @@ export default function Dashboard() {
                       </div>
 
                       <div className="py-1">
+                        {isAdmin && (
+                          <Link
+                            href="/admin"
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                          >
+                            <User className="w-4 h-4 mr-3 text-gray-500" />
+                            Admin Panel
+                          </Link>
+                        )}
+
                         <Link
                           href="/settings"
                           onClick={() => setDropdownOpen(false)}

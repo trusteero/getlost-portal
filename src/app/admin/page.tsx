@@ -56,15 +56,27 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Check if user is admin from environment variable
-    const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").map(e => e.trim()) || [];
+    // Check admin status via API
+    const checkAdmin = async () => {
+      try {
+        const response = await fetch("/api/admin/check");
+        const data = await response.json();
 
-    if (session?.user?.role !== "admin" && !adminEmails.includes(session?.user?.email || "")) {
-      router.push("/dashboard");
-      return;
+        if (!data.isAdmin) {
+          router.push("/dashboard");
+          return;
+        }
+
+        fetchReports();
+      } catch (error) {
+        console.error("Failed to check admin status:", error);
+        router.push("/dashboard");
+      }
+    };
+
+    if (session) {
+      checkAdmin();
     }
-
-    fetchReports();
   }, [status, session]);
 
   const fetchReports = async () => {
