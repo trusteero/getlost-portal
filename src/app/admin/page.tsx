@@ -93,7 +93,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleStatusChange = async (reportId: string, newStatus: "analyzing" | "completed") => {
+  const handleStatusChange = async (reportId: string, newStatus: "pending" | "analyzing" | "completed") => {
     try {
       const response = await fetch(`/api/admin/reports/${reportId}/status`, {
         method: "PATCH",
@@ -187,8 +187,9 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold text-orange-600">
-                Get Lost
+              <Link href="/" className="flex items-center space-x-2">
+                <img src="/logo256.png" alt="Get Lost" className="h-8 w-8" />
+                <span className="text-2xl font-bold text-orange-600">Get Lost</span>
               </Link>
               <span className="ml-4 text-gray-600">Admin Dashboard</span>
             </div>
@@ -341,8 +342,8 @@ export default function AdminDashboard() {
         {/* Reports Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Analysis Reports</CardTitle>
-            <CardDescription>Manage and upload analysis reports for users</CardDescription>
+            <CardTitle>Book Reports</CardTitle>
+            <CardDescription>Manage and upload book reports for users</CardDescription>
           </CardHeader>
           <CardContent>
             {filteredReports.length === 0 ? (
@@ -350,112 +351,113 @@ export default function AdminDashboard() {
                 No reports found
               </div>
             ) : (
-              <div className="space-y-4">
-                {filteredReports.map((report) => (
-                  <div
-                    key={report.id}
-                    className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => setSelectedReport(report)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          {getStatusIcon(report.status)}
-                          <h3 className="font-semibold">{report.bookVersion.book.title}</h3>
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-gray-600">
-                          <div className="flex items-center">
-                            <User className="w-4 h-4 mr-1" />
-                            {report.bookVersion.book.user.name || report.bookVersion.book.user.email}
-                          </div>
-                          <div className="flex items-center">
-                            <FileText className="w-4 h-4 mr-1" />
-                            {report.bookVersion.fileName}
-                          </div>
-                          <div className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-1" />
-                            {new Date(report.requestedAt).toLocaleDateString()}
-                          </div>
-                          {report.notificationSent && (
-                            <div className="flex items-center text-green-600">
-                              <Bell className="w-4 h-4 mr-1" />
-                              Notified
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex space-x-2 ml-4">
-                        {report.status === "pending" && (
-                          <Button
-                            size="sm"
-                            className="bg-orange-600 hover:bg-orange-700"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStatusChange(report.id, "analyzing");
-                            }}
-                          >
-                            Start Analysis
-                          </Button>
-                        )}
-
-                        {report.status === "analyzing" && (
-                          <label
-                            className="inline-flex items-center px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 cursor-pointer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Upload className="w-4 h-4 mr-1" />
-                            Upload Result
-                            <input
-                              type="file"
-                              className="hidden"
-                              accept=".html,.pdf"
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 px-2">Status</th>
+                      <th className="text-left py-2 px-2">Book Title</th>
+                      <th className="text-left py-2 px-2">Author</th>
+                      <th className="text-left py-2 px-2">File</th>
+                      <th className="text-left py-2 px-2">Submitted</th>
+                      <th className="text-left py-2 px-2">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredReports.map((report) => (
+                      <tr key={report.id} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-2">
+                          <div className="flex items-center space-x-2">
+                            {getStatusIcon(report.status)}
+                            <select
+                              value={report.status}
                               onChange={(e) => {
-                                if (e.target.files?.[0]) {
-                                  handleUploadResult(report.id, e.target.files[0]);
+                                if (e.target.value === "pending" || e.target.value === "analyzing" || e.target.value === "completed") {
+                                  handleStatusChange(report.id, e.target.value as "analyzing" | "completed");
                                 }
                               }}
-                            />
-                          </label>
-                        )}
-
-                        {report.status === "completed" && !report.notificationSent && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleNotifyUser(report.id, report.bookVersion.book.user.id);
-                            }}
-                            disabled={notifying}
-                          >
-                            {notifying ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <>
-                                <Bell className="w-4 h-4 mr-1" />
-                                Notify User
-                              </>
+                              className="text-xs border rounded px-2 py-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="analyzing">Analyzing</option>
+                              <option value="completed">Completed</option>
+                            </select>
+                          </div>
+                        </td>
+                        <td className="py-3 px-2 font-medium">{report.bookVersion.book.title}</td>
+                        <td className="py-3 px-2">{report.bookVersion.book.user.name || report.bookVersion.book.user.email?.split('@')[0]}</td>
+                        <td className="py-3 px-2">
+                          <div className="flex items-center space-x-1">
+                            <FileText className="w-4 h-4 text-gray-400" />
+                            <span className="truncate max-w-[150px]" title={report.bookVersion.fileName}>
+                              {report.bookVersion.fileName}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-2">
+                          {new Date(report.requestedAt).toLocaleDateString()} {new Date(report.requestedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="py-3 px-2">
+                          <div className="flex items-center space-x-1">
+                            {report.status === "analyzing" && (
+                              <label className="inline-flex items-center px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer">
+                                <Upload className="w-3 h-3 mr-1" />
+                                Upload
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  accept=".html,.pdf"
+                                  onChange={(e) => {
+                                    if (e.target.files?.[0]) {
+                                      handleUploadResult(report.id, e.target.files[0]);
+                                    }
+                                  }}
+                                />
+                              </label>
                             )}
-                          </Button>
-                        )}
 
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(report.bookVersion.fileUrl, "_blank");
-                          }}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View File
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                            {report.status === "completed" && !report.notificationSent && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => handleNotifyUser(report.id, report.bookVersion.book.user.id)}
+                                disabled={notifying}
+                              >
+                                {notifying ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Bell className="w-3 h-3 mr-1" />
+                                    Notify
+                                  </>
+                                )}
+                              </Button>
+                            )}
+
+                            {report.notificationSent && (
+                              <span className="text-xs text-green-600 flex items-center">
+                                <Bell className="w-3 h-3 mr-1" />
+                                Sent
+                              </span>
+                            )}
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => window.open(report.bookVersion.fileUrl, "_blank")}
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              View
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>
