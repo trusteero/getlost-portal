@@ -1,0 +1,299 @@
+import { db } from "@/server/db";
+import { digestJobs, books } from "@/server/db/schema";
+import { eq, and } from "drizzle-orm";
+
+const BOOKDIGEST_URL = process.env.BOOKDIGEST_URL || "https://bookdigest.onrender.com";
+const BOOKDIGEST_API_KEY = process.env.BOOKDIGEST_API_KEY || "";
+
+interface BookDigestJobResponse {
+  job_id: string;
+}
+
+interface BookDigestStatusResponse {
+  id: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  format?: string;
+  error?: string;
+  result?: {
+    text_url?: string;
+    cover_url?: string;
+    meta?: {
+      title?: string;
+      author?: string;
+      pages?: number;
+      words?: number;
+      language?: string;
+      format?: string;
+    };
+    brief?: string;
+    short_summary?: string;
+    summary?: string;
+    ai_processed?: boolean;
+    token_count?: number;
+    input_tokens?: number;
+    output_tokens?: number;
+  };
+}
+
+export async function triggerBookDigest(bookId: string, fileBuffer: Buffer, fileName: string) {
+  try {
+    // Check if a job already exists for this book
+    const existingJob = await db
+      .select()
+      .from(digestJobs)
+      .where(and(
+        eq(digestJobs.bookId, bookId),
+        eq(digestJobs.status, "processing")
+      ))
+      .limit(1);
+
+    if (existingJob.length > 0) {
+      console.log(`Digest job already in progress for book ${bookId}`);
+      return existingJob[0];
+    }
+
+    // Create a new digest job record
+    const [newJob] = await db
+      .insert(digestJobs)
+      .values({
+        bookId,
+        status: "pending",
+        attempts: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    // Create FormData for file upload
+    const formData = new FormData();
+    const file = new Blob([fileBuffer], { type: 'application/octet-stream' });
+    formData.append("file", file, fileName);
+
+    // Send request to BookDigest service
+    const response = await fetch(`${BOOKDIGEST_URL}/v1/ingest`, {
+      method: "POST",
+      headers: {
+        "X-API-Key": BOOKDIGEST_API_KEY,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`BookDigest API error: ${error}`);
+    }
+
+    const data: BookDigestJobResponse = await response.json();
+
+    // Update job with external ID
+    await db
+      .update(digestJobs)
+      .set({
+        externalJobId: data.job_id,
+        status: "processing",
+        startedAt: new Date(),
+        attempts: 1,
+        lastAttemptAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(digestJobs.id, newJob.id));
+
+    console.log(`BookDigest job ${data.job_id} started for book ${bookId}`);
+
+    return {
+      ...newJob,
+      externalJobId: data.job_id,
+      status: "processing",
+    };
+  } catch (error) {
+    console.error("Failed to trigger BookDigest:", error);
+
+    // Update job status to failed if it exists
+    await db
+      .update(digestJobs)
+      .set({
+        status: "failed",
+        error: error instanceof Error ? error.message : "Unknown error",
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(digestJobs.bookId, bookId),
+        eq(digestJobs.status, "pending")
+      ));
+
+    throw error;
+  }
+}
+
+export async function checkBookDigestStatus(jobId: string) {
+  try {
+    // Get the digest job from database
+    const [job] = await db
+      .select()
+      .from(digestJobs)
+      .where(eq(digestJobs.id, jobId))
+      .limit(1);
+
+    if (!job || !job.externalJobId) {
+      throw new Error("Digest job not found or no external ID");
+    }
+
+    // Check status from BookDigest service
+    const response = await fetch(`${BOOKDIGEST_URL}/v1/jobs/${job.externalJobId}`, {
+      headers: {
+        "X-API-Key": BOOKDIGEST_API_KEY,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`BookDigest API error: ${error}`);
+    }
+
+    const data: BookDigestStatusResponse = await response.json();
+
+    // Update job based on status
+    if (data.status === "completed" && data.result) {
+      const result = data.result;
+
+      // Download and store cover image locally if present
+      let coverImageUrl: string | null = null;
+      if (result.cover_url) {
+        try {
+          // Build the URL to fetch from BookDigest
+          const sourceUrl = result.cover_url.startsWith("/")
+            ? `${BOOKDIGEST_URL}${result.cover_url}`
+            : result.cover_url;
+
+          // Fetch the image
+          const imageResponse = await fetch(sourceUrl, {
+            headers: {
+              "X-API-Key": BOOKDIGEST_API_KEY,
+            },
+          });
+
+          if (imageResponse.ok) {
+            const imageBuffer = await imageResponse.arrayBuffer();
+            const buffer = Buffer.from(imageBuffer);
+
+            // Convert to base64 data URL for storage
+            const contentType = imageResponse.headers.get("content-type") || "image/jpeg";
+            coverImageUrl = `data:${contentType};base64,${buffer.toString('base64')}`;
+          }
+        } catch (error) {
+          console.error("Failed to download cover image:", error);
+          // Continue without cover if download fails
+        }
+      }
+
+      // Update digest job with results
+      await db
+        .update(digestJobs)
+        .set({
+          status: "completed",
+          completedAt: new Date(),
+          textUrl: result.text_url,
+          coverUrl: result.cover_url,
+          title: result.meta?.title,
+          author: result.meta?.author,
+          pages: result.meta?.pages,
+          words: result.meta?.words,
+          language: result.meta?.language,
+          brief: result.brief,
+          shortSummary: result.short_summary,
+          summary: result.summary,
+          updatedAt: new Date(),
+        })
+        .where(eq(digestJobs.id, jobId));
+
+      // Update book with cover if extracted
+      if (coverImageUrl && job.bookId) {
+        await db
+          .update(books)
+          .set({
+            coverImageUrl,
+            updatedAt: new Date(),
+          })
+          .where(eq(books.id, job.bookId));
+      }
+
+      // Update book with brief as description if extracted and empty
+      if (result.brief && job.bookId) {
+        const [book] = await db
+          .select()
+          .from(books)
+          .where(eq(books.id, job.bookId))
+          .limit(1);
+
+        // Update the book's description if empty
+        if (book && !book.description) {
+          await db
+            .update(books)
+            .set({
+              description: result.brief,
+              updatedAt: new Date(),
+            })
+            .where(eq(books.id, job.bookId));
+        }
+      }
+
+      return { ...job, status: "completed", result };
+    } else if (data.status === "failed") {
+      await db
+        .update(digestJobs)
+        .set({
+          status: "failed",
+          error: data.error || "Processing failed",
+          updatedAt: new Date(),
+        })
+        .where(eq(digestJobs.id, jobId));
+
+      return { ...job, status: "failed", error: data.error };
+    } else {
+      // Still processing
+      return { ...job, status: data.status };
+    }
+  } catch (error) {
+    console.error("Failed to check BookDigest status:", error);
+
+    // Increment attempts
+    await db
+      .update(digestJobs)
+      .set({
+        attempts: job.attempts + 1,
+        lastAttemptAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(digestJobs.id, jobId));
+
+    throw error;
+  }
+}
+
+// Retry failed or stuck jobs
+export async function retryFailedDigestJobs() {
+  try {
+    // Find jobs that are stuck or failed but haven't exceeded max attempts
+    const stuckJobs = await db
+      .select()
+      .from(digestJobs)
+      .where(and(
+        eq(digestJobs.status, "processing"),
+        // Consider jobs stuck if they've been processing for over 10 minutes
+        // This would need a more complex query in production
+      ))
+      .limit(10);
+
+    for (const job of stuckJobs) {
+      if (job.externalJobId && job.attempts < 5) {
+        try {
+          await checkBookDigestStatus(job.id);
+        } catch (error) {
+          console.error(`Failed to check status for job ${job.id}:`, error);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Failed to retry digest jobs:", error);
+  }
+}

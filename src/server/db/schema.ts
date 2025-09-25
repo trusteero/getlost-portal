@@ -94,7 +94,7 @@ export const books = createTable(
 		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 		userId: d.text({ length: 255 }).notNull().references(() => users.id),
 		title: d.text({ length: 500 }).notNull(),
-		personalNotes: d.text(),
+		description: d.text(),
 		coverImageUrl: d.text({ length: 1000 }),
 		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
 		updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
@@ -147,6 +147,39 @@ export const reports = createTable(
 	],
 );
 
+// Digest Jobs table for tracking BookDigest service jobs
+export const digestJobs = createTable(
+	"digest_job",
+	(d) => ({
+		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+		bookId: d.text({ length: 255 }).notNull().references(() => books.id),
+		externalJobId: d.text({ length: 255 }), // Job ID from BookDigest service
+		status: d.text({ length: 50 }).notNull().default("pending"), // pending, processing, completed, failed
+		attempts: d.integer({ mode: "number" }).notNull().default(0),
+		startedAt: d.integer({ mode: "timestamp" }),
+		completedAt: d.integer({ mode: "timestamp" }),
+		lastAttemptAt: d.integer({ mode: "timestamp" }),
+		error: d.text(),
+		// Results from the service
+		textUrl: d.text({ length: 500 }),
+		coverUrl: d.text({ length: 500 }),
+		title: d.text({ length: 500 }),
+		author: d.text({ length: 500 }),
+		pages: d.integer({ mode: "number" }),
+		words: d.integer({ mode: "number" }),
+		language: d.text({ length: 10 }),
+		brief: d.text(),
+		shortSummary: d.text(),
+		summary: d.text(),
+		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+		updatedAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+	}),
+	(t) => [
+		index("digest_job_book_idx").on(t.bookId),
+		index("digest_job_status_idx").on(t.status),
+	],
+);
+
 // Notifications table
 export const notifications = createTable(
 	"notification",
@@ -171,6 +204,7 @@ export const notifications = createTable(
 export const booksRelations = relations(books, ({ one, many }) => ({
 	user: one(users, { fields: [books.userId], references: [users.id] }),
 	versions: many(bookVersions),
+	digestJobs: many(digestJobs),
 }));
 
 export const bookVersionsRelations = relations(bookVersions, ({ one, many }) => ({
@@ -184,4 +218,8 @@ export const reportsRelations = relations(reports, ({ one }) => ({
 
 export const notificationsRelations = relations(notifications, ({ one }) => ({
 	user: one(users, { fields: [notifications.userId], references: [users.id] }),
+}));
+
+export const digestJobsRelations = relations(digestJobs, ({ one }) => ({
+	book: one(books, { fields: [digestJobs.bookId], references: [books.id] }),
 }));

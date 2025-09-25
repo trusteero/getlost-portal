@@ -14,8 +14,10 @@ export default function DashboardHeader() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     fetchNotifications();
     checkAdminStatus();
   }, []);
@@ -52,16 +54,24 @@ export default function DashboardHeader() {
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
               <img src="/logo256.png" alt="Get Lost" className="h-8 w-8" />
-              <span className="hidden sm:block text-2xl font-bold text-orange-600">Get Lost</span>
+              {mounted && <span className="hidden sm:block text-2xl font-bold text-orange-600">Get Lost</span>}
             </Link>
-            <span className="ml-3 sm:ml-4 text-gray-600">Author Dashboard</span>
+            <span className={mounted ? "ml-3 sm:ml-4 text-gray-600" : "ml-3 text-gray-600"}>Author Dashboard</span>
           </div>
           <div className="flex items-center space-x-4">
             {/* Notifications */}
             <div className="relative">
               <button
-                onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
-                className="relative p-2 text-gray-600 hover:text-orange-600"
+                onClick={() => {
+                  setNotificationDropdownOpen(!notificationDropdownOpen);
+                  // Mark all as read when opened
+                  if (!notificationDropdownOpen && unreadCount > 0) {
+                    setUnreadCount(0);
+                    // Mark notifications as read in the backend
+                    fetch("/api/notifications/mark-read", { method: "POST" });
+                  }
+                }}
+                className="relative p-2 text-gray-600 hover:text-orange-600 cursor-pointer"
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
@@ -127,16 +137,18 @@ export default function DashboardHeader() {
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center space-x-2 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
                   <span className="text-white text-sm font-medium">
                     {session?.user?.name?.charAt(0)?.toUpperCase() || session?.user?.email?.charAt(0)?.toUpperCase()}
                   </span>
                 </div>
-                <span className="hidden sm:block text-sm font-medium text-gray-700">
-                  {session?.user?.name || session?.user?.email?.split('@')[0]}
-                </span>
+                {mounted && (
+                  <span className="hidden sm:block text-sm font-medium text-gray-700">
+                    {session?.user?.name || session?.user?.email?.split('@')[0]}
+                  </span>
+                )}
                 <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 

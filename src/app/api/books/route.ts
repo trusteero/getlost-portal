@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
-import { books, bookVersions } from "@/server/db/schema";
+import { books, bookVersions, digestJobs } from "@/server/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { triggerBookDigest } from "@/server/services/bookdigest";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
       .select({
         id: books.id,
         title: books.title,
-        personalNotes: books.personalNotes,
+        description: books.description,
         coverImageUrl: books.coverImageUrl,
         createdAt: books.createdAt,
       })
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
       .where(eq(books.userId, session.user.id))
       .orderBy(desc(books.createdAt));
 
-    // Get latest version and report for each book
+    // Get latest version, report, and digest status for each book
     const booksWithDetails = await Promise.all(
       userBooks.map(async (book) => {
         const latestVersion = await db
@@ -34,12 +35,23 @@ export async function GET(request: NextRequest) {
           .orderBy(desc(bookVersions.uploadedAt))
           .limit(1);
 
+        // Get digest job status
+        const digestJob = await db
+          .select({
+            status: digestJobs.status,
+          })
+          .from(digestJobs)
+          .where(eq(digestJobs.bookId, book.id))
+          .orderBy(desc(digestJobs.createdAt))
+          .limit(1);
+
         // TODO: Add report fetching when reports API is ready
 
         return {
           ...book,
           latestVersion: latestVersion[0],
           latestReport: null, // TODO: fetch from reports
+          isProcessing: digestJob[0]?.status === "processing" || digestJob[0]?.status === "pending",
         };
       })
     );
@@ -61,7 +73,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const title = formData.get("title") as string;
-    const personalNotes = formData.get("personalNotes") as string || "";
+    const description = formData.get("description") as string || "";
     const summary = formData.get("summary") as string || "";
     const file = formData.get("file") as File;
     const coverImage = formData.get("coverImage") as File | null;
@@ -87,7 +99,7 @@ export async function POST(request: NextRequest) {
       .values({
         userId: session.user.id,
         title,
-        personalNotes,
+        description,
         coverImageUrl,
       })
       .returning();
@@ -112,6 +124,17 @@ export async function POST(request: NextRequest) {
         summary,
       })
       .returning();
+
+    // Trigger BookDigest job asynchronously
+    try {
+      const fileBytes = await file.arrayBuffer();
+      const fileBuffer = Buffer.from(fileBytes);
+      await triggerBookDigest(newBook[0].id, fileBuffer, fileName);
+      console.log(`BookDigest job triggered for book ${newBook[0].id}`);
+    } catch (error) {
+      // Log error but don't fail the book creation
+      console.error("Failed to trigger BookDigest job:", error);
+    }
 
     return NextResponse.json({
       bookId: newBook[0].id,

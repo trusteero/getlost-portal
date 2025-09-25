@@ -11,9 +11,10 @@ import { BookOpen, Plus, FileText, Clock, CheckCircle, Image } from "lucide-reac
 interface Book {
   id: string;
   title: string;
-  personalNotes: string;
+  description: string;
   coverImageUrl?: string;
   createdAt: string;
+  isProcessing?: boolean;
   latestVersion?: {
     id: string;
     fileName: string;
@@ -40,8 +41,22 @@ export default function Dashboard() {
       router.push("/login");
     } else if (status === "authenticated") {
       fetchBooks();
+      checkProcessingJobs();
     }
   }, [status]);
+
+  useEffect(() => {
+    // Check for processing jobs periodically
+    const hasProcessing = books.some(book => book.isProcessing);
+    if (hasProcessing) {
+      const interval = setInterval(() => {
+        fetchBooks();
+        checkProcessingJobs();
+      }, 10000); // Check every 10 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [books]);
 
   const fetchBooks = async () => {
     try {
@@ -54,6 +69,21 @@ export default function Dashboard() {
       console.error("Failed to fetch books:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkProcessingJobs = async () => {
+    try {
+      const response = await fetch("/api/digest/check-jobs", { method: "POST" });
+      if (response.ok) {
+        const data = await response.json();
+        // If any jobs were updated to completed, refresh the books
+        if (data.updated && data.updated.some((job: any) => job.status === "completed" || job.status === "failed")) {
+          await fetchBooks();
+        }
+      }
+    } catch (error) {
+      console.error("Failed to check processing jobs:", error);
     }
   };
 
@@ -123,10 +153,10 @@ export default function Dashboard() {
             {books.map((book) => (
               <Link key={book.id} href={`/dashboard/book/${book.id}`}>
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full overflow-hidden">
-                  <div className="flex flex-col sm:flex-row p-4">
+                  <div className="flex p-4">
                     {/* Cover Image */}
                     {book.coverImageUrl ? (
-                      <div className="w-24 h-36 flex-shrink-0 mb-4 sm:mb-0 sm:mr-8 relative mx-auto sm:mx-0">
+                      <div className="w-20 h-[120px] flex-shrink-0 mr-4 sm:mr-6 relative">
                         <div className="absolute inset-0 bg-gray-500" style={{ transform: 'translate(4px, 4px)' }}></div>
                         <div className="absolute inset-0 bg-gray-400" style={{ transform: 'translate(3px, 3px)' }}></div>
                         <div className="absolute inset-0 bg-gray-300" style={{ transform: 'translate(2px, 2px)' }}></div>
@@ -138,48 +168,48 @@ export default function Dashboard() {
                         />
                       </div>
                     ) : (
-                      <div className="w-24 h-36 flex-shrink-0 mb-4 sm:mb-0 sm:mr-8 relative mx-auto sm:mx-0">
+                      <div className="w-20 h-[120px] flex-shrink-0 mr-4 sm:mr-6 relative">
                         <div className="absolute inset-0 bg-gray-500" style={{ transform: 'translate(4px, 4px)' }}></div>
                         <div className="absolute inset-0 bg-gray-400" style={{ transform: 'translate(3px, 3px)' }}></div>
                         <div className="absolute inset-0 bg-gray-300" style={{ transform: 'translate(2px, 2px)' }}></div>
                         <div className="absolute inset-0 bg-gray-200" style={{ transform: 'translate(1px, 1px)' }}></div>
                         <div className="relative w-full h-full bg-gray-100 flex items-center justify-center border border-gray-200">
-                          <Image className="w-8 h-8 text-gray-400" />
+                          <Image className="w-6 h-6 text-gray-400" />
                         </div>
                       </div>
                     )}
 
                     {/* Book Details */}
-                    <div className="flex-1 min-w-0 text-center sm:text-left">
-                      <div className="pb-2">
-                        <h3 className="text-lg font-semibold line-clamp-2 sm:line-clamp-1">{book.title}</h3>
-                        <p className="text-xs text-gray-500">
-                          Added {new Date(book.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="pt-2">
-                        {book.personalNotes && (
-                          <p className="text-xs text-gray-600 mb-2 line-clamp-2">{book.personalNotes}</p>
+                    <div className="flex-1 min-w-0 text-left flex flex-col">
+                      <div className="flex-1">
+                        <h3 className="text-base font-semibold line-clamp-2 sm:line-clamp-1">{book.title}</h3>
+
+                        {book.description && (
+                          <p className="text-xs text-gray-600 line-clamp-2 mt-2">{book.description}</p>
                         )}
 
-                        <div className="space-y-1">
-                          {book.latestVersion && (
-                            <div className="flex items-center text-xs text-gray-500">
-                              <FileText className="w-3 h-3 mr-1" />
-                              <span className="truncate">{book.latestVersion.fileName}</span>
+                        {book.isProcessing && (
+                          <div className="flex items-center mt-2">
+                            <div className="flex items-center text-xs">
+                              <div className="w-3 h-3 mr-1 border border-orange-600 border-t-transparent rounded-full animate-spin" />
+                              <span className="text-orange-600">Processing</span>
                             </div>
-                          )}
+                          </div>
+                        )}
 
-                          {book.latestReport && (
-                            <div className="flex items-center">
-                              <div className="flex items-center text-xs">
-                                {getStatusIcon(book.latestReport.status)}
-                                <span className="ml-1">{getStatusText(book.latestReport.status)}</span>
-                              </div>
+                        {!book.isProcessing && book.latestReport && (
+                          <div className="flex items-center mt-2">
+                            <div className="flex items-center text-xs">
+                              {getStatusIcon(book.latestReport.status)}
+                              <span className="ml-1">{getStatusText(book.latestReport.status)}</span>
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
+
+                      <p className="text-xs text-gray-500 mt-auto pt-2">
+                        Added {new Date(book.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                 </Card>

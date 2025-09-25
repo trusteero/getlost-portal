@@ -6,9 +6,10 @@ import { eq, desc } from "drizzle-orm";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
+  const { id } = await params;
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -19,7 +20,7 @@ export async function POST(
     const book = await db
       .select()
       .from(books)
-      .where(eq(books.id, params.id))
+      .where(eq(books.id, id))
       .limit(1);
 
     if (book.length === 0) {
@@ -41,7 +42,7 @@ export async function POST(
     const latestVersion = await db
       .select()
       .from(bookVersions)
-      .where(eq(bookVersions.bookId, params.id))
+      .where(eq(bookVersions.bookId, id))
       .orderBy(desc(bookVersions.versionNumber))
       .limit(1);
 
@@ -51,13 +52,13 @@ export async function POST(
     const fileName = file.name;
     const fileType = file.type;
     const fileSize = file.size;
-    const fileUrl = `/uploads/${params.id}/v${nextVersionNumber}/${fileName}`;
+    const fileUrl = `/uploads/${id}/v${nextVersionNumber}/${fileName}`;
 
     // Create new version
     const newVersion = await db
       .insert(bookVersions)
       .values({
-        bookId: params.id,
+        bookId: id,
         versionNumber: nextVersionNumber,
         fileName,
         fileUrl,

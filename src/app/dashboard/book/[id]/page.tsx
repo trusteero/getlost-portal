@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -35,10 +35,28 @@ interface Report {
 interface Book {
   id: string;
   title: string;
-  personalNotes?: string;
+  description?: string;
   coverImageUrl?: string;
   createdAt: string;
   versions: BookVersion[];
+}
+
+interface DigestJob {
+  id: string;
+  status: "pending" | "processing" | "completed" | "failed" | "no_job";
+  attempts?: number;
+  startedAt?: string;
+  completedAt?: string;
+  error?: string;
+  title?: string;
+  author?: string;
+  pages?: number;
+  words?: number;
+  language?: string;
+  brief?: string;
+  shortSummary?: string;
+  summary?: string;
+  coverUrl?: string;
 }
 
 export default function BookDetail() {
@@ -56,17 +74,29 @@ export default function BookDetail() {
   const [newVersionFile, setNewVersionFile] = useState<File | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
-  const [editedNotes, setEditedNotes] = useState("");
+  const [editedDescription, setEditedDescription] = useState("");
   const [newCoverImage, setNewCoverImage] = useState<File | null>(null);
   const [newCoverImagePreview, setNewCoverImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [digestJob, setDigestJob] = useState<DigestJob | null>(null);
+  const [digestLoaded, setDigestLoaded] = useState(false);
+  const [checkingDigest, setCheckingDigest] = useState(false);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
     } else if (status === "authenticated") {
       fetchBook();
+      fetchDigestStatus();
     }
+
+    // Cleanup on unmount
+    return () => {
+      if (pollingRef.current) {
+        clearTimeout(pollingRef.current);
+      }
+    };
   }, [status, params.id]);
 
   const fetchBook = async () => {
@@ -76,7 +106,7 @@ export default function BookDetail() {
         const data = await response.json();
         setBook(data);
         setEditedTitle(data.title);
-        setEditedNotes(data.personalNotes || "");
+        setEditedDescription(data.description || "");
 
         // Auto-expand latest version
         if (data.versions.length > 0) {
@@ -95,6 +125,80 @@ export default function BookDetail() {
       console.error("Failed to fetch book:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDigestStatus = async () => {
+    try {
+      const response = await fetch(`/api/books/${params.id}/digest`);
+      if (response.ok) {
+        const data = await response.json();
+        const prevStatus = digestJob?.status;
+        const isFirstLoad = !digestJob;
+
+        console.log("Digest status check:", {
+          isFirstLoad,
+          prevStatus,
+          newStatus: data.status,
+          hasCompletedRecently: data.status === "completed" && data.completedAt &&
+            (new Date().getTime() - new Date(data.completedAt).getTime()) < 30000 // completed in last 30 seconds
+        });
+
+        setDigestJob(data);
+        setDigestLoaded(true);
+
+        // If just completed (either transition or recently completed on first load)
+        if (data.status === "completed") {
+          // Check if it completed recently (within last 30 seconds)
+          if (data.completedAt && (new Date().getTime() - new Date(data.completedAt).getTime()) < 30000) {
+            if (isFirstLoad && !window.location.search.includes("test=1")) {
+              console.log("Recently completed! Reloading to ensure data is fresh...");
+              setTimeout(() => {
+                window.location.href = window.location.pathname + "?test=1";
+              }, 2000);
+              return;
+            }
+          }
+          // Or if we saw the transition
+          if ((prevStatus === "processing" || prevStatus === "pending")) {
+            console.log("Processing completed! Reloading in 5 seconds...");
+            setTimeout(() => {
+              window.location.href = window.location.pathname + "?test=1";
+            }, 5000);
+            return;
+          }
+        }
+
+        // Keep polling if still processing or pending
+        if (data.status === "processing" || data.status === "pending") {
+          // Clear any existing timeout before setting a new one
+          if (pollingRef.current) {
+            clearTimeout(pollingRef.current);
+          }
+          pollingRef.current = setTimeout(() => fetchDigestStatus(), 5000); // Check every 5 seconds
+        }
+      } else {
+        setDigestLoaded(true);
+      }
+    } catch (error) {
+      console.error("Failed to fetch digest status:", error);
+      setDigestLoaded(true);
+    }
+  };
+
+  const checkDigestStatus = async () => {
+    setCheckingDigest(true);
+    try {
+      const response = await fetch(`/api/books/${params.id}/digest/check`, {
+        method: "POST",
+      });
+      if (response.ok) {
+        await fetchDigestStatus();
+      }
+    } catch (error) {
+      console.error("Failed to check digest status:", error);
+    } finally {
+      setCheckingDigest(false);
     }
   };
 
@@ -120,6 +224,14 @@ export default function BookDetail() {
     }
   };
 
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setEditedTitle(book?.title || "");
+    setEditedDescription(book?.description || "");
+    setNewCoverImage(null);
+    setNewCoverImagePreview(null);
+  };
+
   const handleSaveEdit = async () => {
     if (!editedTitle.trim()) return;
 
@@ -127,7 +239,7 @@ export default function BookDetail() {
     try {
       const formData = new FormData();
       formData.append("title", editedTitle);
-      formData.append("personalNotes", editedNotes);
+      formData.append("description", editedDescription);
       if (newCoverImage) {
         formData.append("coverImage", newCoverImage);
       }
@@ -151,13 +263,6 @@ export default function BookDetail() {
     }
   };
 
-  const handleCancelEdit = () => {
-    setEditedTitle(book?.title || "");
-    setEditedNotes(book?.personalNotes || "");
-    setNewCoverImage(null);
-    setNewCoverImagePreview(null);
-    setEditMode(false);
-  };
 
   const handleCoverImageChange = (file: File) => {
     // Check if it's an image
@@ -285,8 +390,8 @@ export default function BookDetail() {
         <div className="space-y-6">
             {/* Book Info */}
             <Card>
-              <CardContent className="p-6">
-                <div className="flex gap-6">
+              <CardContent className="p-4">
+                <div className="flex gap-4">
                   {/* Left side - Cover Image */}
                   <div className="flex-shrink-0">
                     {editMode ? (
@@ -367,18 +472,20 @@ export default function BookDetail() {
                           <h2 className="text-2xl font-bold text-gray-900">{book.title}</h2>
                         )}
                         <p className="text-sm text-gray-500 mt-1">
-                          Created {new Date(book.createdAt).toLocaleDateString()}
+                          Added {new Date(book.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                       {!editMode ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setEditMode(true)}
-                        >
-                          <Edit2 className="w-4 h-4 mr-1" />
-                          Edit
-                        </Button>
+                        !(digestJob?.status === "processing" || digestJob?.status === "pending") && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setEditMode(true)}
+                          >
+                            <Edit2 className="w-4 h-4 mr-1" />
+                            Edit
+                          </Button>
+                        )
                       ) : (
                         <div className="flex items-center gap-2 ml-4">
                           <Button
@@ -412,23 +519,23 @@ export default function BookDetail() {
                       )}
                     </div>
 
-                    {/* Personal Notes */}
+                    {/* Description */}
                     {editMode ? (
                       <div>
-                        <h3 className="font-semibold text-gray-700 mb-2">Personal Notes</h3>
+                        <h3 className="font-semibold text-gray-700 mb-2">Description</h3>
                         <textarea
-                          value={editedNotes}
-                          onChange={(e) => setEditedNotes(e.target.value)}
+                          value={editedDescription}
+                          onChange={(e) => setEditedDescription(e.target.value)}
                           className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
                           rows={6}
-                          placeholder="Add any notes about this book (optional)"
+                          placeholder="Add a description of this book (optional)"
                         />
                       </div>
                     ) : (
-                      book.personalNotes && (
+                      book.description && (
                         <div>
-                          <h3 className="font-semibold text-gray-700 mb-2">Personal Notes</h3>
-                          <p className="text-gray-600">{book.personalNotes}</p>
+                          <h3 className="font-semibold text-gray-700 mb-2">Description</h3>
+                          <p className="text-gray-600">{book.description}</p>
                         </div>
                       )
                     )}
@@ -438,7 +545,21 @@ export default function BookDetail() {
               </CardContent>
             </Card>
 
-            {/* Book Report */}
+            {/* Processing Status Banner */}
+            {digestJob && (digestJob.status === "processing" || digestJob.status === "pending") && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
+                  <div className="flex-1">
+                    <p className="text-orange-900 font-medium">Processing your manuscript</p>
+                    <p className="text-orange-700 text-sm">Please wait while we analyze your book. This may take a few minutes.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Book Report - Hide when processing or loading */}
+            {digestLoaded && !(digestJob && (digestJob.status === "processing" || digestJob.status === "pending")) && (
             <Card>
               <CardHeader>
                 <CardTitle>Book Report</CardTitle>
@@ -547,7 +668,17 @@ export default function BookDetail() {
                                     Free
                                   </span>
                                 </div>
-                                {version.summary ? (
+                                {digestJob && digestJob.status === "completed" && digestJob.summary ? (
+                                  <div className="space-y-4">
+                                    <p className="text-gray-700">{digestJob.summary}</p>
+                                    {digestJob.shortSummary && digestJob.shortSummary !== digestJob.summary && (
+                                      <div>
+                                        <h4 className="font-semibold text-gray-700 mb-1">Short Summary:</h4>
+                                        <p className="text-gray-600 text-sm">{digestJob.shortSummary}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : version.summary ? (
                                   <p className="text-gray-700">{version.summary}</p>
                                 ) : (
                                   <p className="text-gray-500 italic">No summary available yet.</p>
@@ -663,6 +794,7 @@ export default function BookDetail() {
                 )}
               </CardContent>
             </Card>
+            )}
         </div>
       </main>
     </>
