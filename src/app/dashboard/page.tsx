@@ -7,7 +7,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Plus, FileText, Clock, CheckCircle, Image } from "lucide-react";
-import DashboardLayout from "@/components/dashboard-layout";
 
 interface Book {
   id: string;
@@ -19,6 +18,8 @@ interface Book {
     id: string;
     fileName: string;
     uploadedAt: string;
+    fileSize: number;
+    summary?: string;
   };
   latestReport?: {
     id: string;
@@ -92,9 +93,7 @@ export default function Dashboard() {
   };
 
   return (
-    <DashboardLayout>
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Your Books</h1>
           <Link href="/dashboard/new-book">
@@ -120,35 +119,45 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {books.map((book) => (
               <Link key={book.id} href={`/dashboard/book/${book.id}`}>
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full overflow-hidden">
-                  <div className="flex">
+                  <div className="flex flex-col sm:flex-row p-4">
                     {/* Cover Image */}
                     {book.coverImageUrl ? (
-                      <div className="w-24 h-36 flex-shrink-0">
+                      <div className="w-24 h-36 flex-shrink-0 mb-4 sm:mb-0 sm:mr-8 relative mx-auto sm:mx-0">
+                        <div className="absolute inset-0 bg-gray-500" style={{ transform: 'translate(4px, 4px)' }}></div>
+                        <div className="absolute inset-0 bg-gray-400" style={{ transform: 'translate(3px, 3px)' }}></div>
+                        <div className="absolute inset-0 bg-gray-300" style={{ transform: 'translate(2px, 2px)' }}></div>
+                        <div className="absolute inset-0 bg-gray-200" style={{ transform: 'translate(1px, 1px)' }}></div>
                         <img
                           src={book.coverImageUrl}
                           alt={book.title}
-                          className="w-full h-full object-cover"
+                          className="relative w-full h-full object-cover border border-gray-200"
                         />
                       </div>
                     ) : (
-                      <div className="w-24 h-36 flex-shrink-0 bg-gray-100 flex items-center justify-center">
-                        <Image className="w-8 h-8 text-gray-400" />
+                      <div className="w-24 h-36 flex-shrink-0 mb-4 sm:mb-0 sm:mr-8 relative mx-auto sm:mx-0">
+                        <div className="absolute inset-0 bg-gray-500" style={{ transform: 'translate(4px, 4px)' }}></div>
+                        <div className="absolute inset-0 bg-gray-400" style={{ transform: 'translate(3px, 3px)' }}></div>
+                        <div className="absolute inset-0 bg-gray-300" style={{ transform: 'translate(2px, 2px)' }}></div>
+                        <div className="absolute inset-0 bg-gray-200" style={{ transform: 'translate(1px, 1px)' }}></div>
+                        <div className="relative w-full h-full bg-gray-100 flex items-center justify-center border border-gray-200">
+                          <Image className="w-8 h-8 text-gray-400" />
+                        </div>
                       </div>
                     )}
 
                     {/* Book Details */}
-                    <div className="flex-1 min-w-0">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg line-clamp-1">{book.title}</CardTitle>
-                        <CardDescription className="text-xs">
+                    <div className="flex-1 min-w-0 text-center sm:text-left">
+                      <div className="pb-2">
+                        <h3 className="text-lg font-semibold line-clamp-2 sm:line-clamp-1">{book.title}</h3>
+                        <p className="text-xs text-gray-500">
                           Added {new Date(book.createdAt).toLocaleDateString()}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="pt-2">
+                        </p>
+                      </div>
+                      <div className="pt-2">
                         {book.personalNotes && (
                           <p className="text-xs text-gray-600 mb-2 line-clamp-2">{book.personalNotes}</p>
                         )}
@@ -170,7 +179,7 @@ export default function Dashboard() {
                             </div>
                           )}
                         </div>
-                      </CardContent>
+                      </div>
                     </div>
                   </div>
                 </Card>
@@ -178,7 +187,6 @@ export default function Dashboard() {
             ))}
           </div>
         )}
-      </main>
-    </DashboardLayout>
+    </main>
   );
 }

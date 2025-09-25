@@ -459,7 +459,7 @@ export default async function Home() {
 								<span className="text-2xl font-bold text-orange-600">Get Lost</span>
 							</div>
 							<p className="text-sm text-gray-600">
-								© 2024 Get Lost. All rights reserved.
+								© 2025 Get Lost. All rights reserved.
 							</p>
 						</div>
 					</div>

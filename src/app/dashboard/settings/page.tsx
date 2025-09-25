@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, User, Mail, Shield, Save, Loader2 } from "lucide-react";
-import DashboardLayout from "@/components/dashboard-layout";
 
 export default function Settings() {
   const { data: session, status, update } = useSession();
@@ -107,7 +106,7 @@ export default function Settings() {
   }
 
   return (
-    <DashboardLayout>
+    <>
       {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -272,6 +271,6 @@ export default function Settings() {
           </Card>
         </div>
       </main>
-    </DashboardLayout>
+    </>
   );
 }

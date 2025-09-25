@@ -61,7 +61,8 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const title = formData.get("title") as string;
-    const personalNotes = formData.get("personalNotes") as string;
+    const personalNotes = formData.get("personalNotes") as string || "";
+    const summary = formData.get("summary") as string || "";
     const file = formData.get("file") as File;
     const coverImage = formData.get("coverImage") as File | null;
 
@@ -108,6 +109,7 @@ export async function POST(request: NextRequest) {
         fileUrl,
         fileSize,
         fileType,
+        summary,
       })
       .returning();
 

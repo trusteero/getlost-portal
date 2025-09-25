@@ -12,6 +12,7 @@
 		"db:migrate": "drizzle-kit migrate",
 		"db:push": "drizzle-kit push",
 		"db:studio": "drizzle-kit studio",
+		"db:init": "node scripts/init-db.js",
 		"dev": "node scripts/kill-port.js 3000 && next dev --turbo --port 3000",
 		"preview": "next build && next start",
 		"start": "next start",

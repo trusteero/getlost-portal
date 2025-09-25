@@ -12,6 +12,7 @@ export default function DashboardHeader() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -51,20 +52,76 @@ export default function DashboardHeader() {
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
               <img src="/logo256.png" alt="Get Lost" className="h-8 w-8" />
-              <span className="text-2xl font-bold text-orange-600">Get Lost</span>
+              <span className="hidden sm:block text-2xl font-bold text-orange-600">Get Lost</span>
             </Link>
-            <span className="ml-4 text-gray-600">Author Dashboard</span>
+            <span className="ml-3 sm:ml-4 text-gray-600">Author Dashboard</span>
           </div>
           <div className="flex items-center space-x-4">
             {/* Notifications */}
-            <button className="relative p-2 text-gray-600 hover:text-orange-600">
-              <Bell className="w-5 h-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-                  {unreadCount}
-                </span>
+            <div className="relative">
+              <button
+                onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
+                className="relative p-2 text-gray-600 hover:text-orange-600"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification dropdown */}
+              {notificationDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setNotificationDropdownOpen(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg border border-gray-200 z-20">
+                    <div className="px-4 py-3 border-b border-gray-200">
+                      <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="px-4 py-8 text-center">
+                          <Bell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500">No new notifications</p>
+                        </div>
+                      ) : (
+                        <div className="py-1">
+                          {notifications.slice(0, 5).map((notification, index) => (
+                            <div
+                              key={index}
+                              className={`px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 ${
+                                notification.read ? 'opacity-60' : ''
+                              }`}
+                            >
+                              <p className="text-sm text-gray-900">{notification.title}</p>
+                              <p className="text-xs text-gray-500 mt-1">{notification.message}</p>
+                              <p className="text-xs text-gray-400 mt-1">
+                                {new Date(notification.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {notifications.length > 5 && (
+                      <div className="px-4 py-2 border-t border-gray-200">
+                        <Link
+                          href="/dashboard/notifications"
+                          onClick={() => setNotificationDropdownOpen(false)}
+                          className="text-xs text-orange-600 hover:text-orange-700"
+                        >
+                          View all notifications
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
-            </button>
+            </div>
 
             {/* User menu dropdown */}
             <div className="relative">
@@ -77,7 +134,7 @@ export default function DashboardHeader() {
                     {session?.user?.name?.charAt(0)?.toUpperCase() || session?.user?.email?.charAt(0)?.toUpperCase()}
                   </span>
                 </div>
-                <span className="text-sm font-medium text-gray-700">
+                <span className="hidden sm:block text-sm font-medium text-gray-700">
                   {session?.user?.name || session?.user?.email?.split('@')[0]}
                 </span>
                 <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
@@ -113,7 +170,7 @@ export default function DashboardHeader() {
                       )}
 
                       <Link
-                        href="/settings"
+                        href="/dashboard/settings"
                         onClick={() => setDropdownOpen(false)}
                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                       >

@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ArrowLeft, Upload, FileText, Clock, CheckCircle, AlertCircle,
-  Download, Eye, CreditCard, Loader2, ChevronDown, ChevronRight, Edit2, Save, X, Image
+  Download, Eye, CreditCard, Loader2, ChevronDown, ChevronRight, Edit2, Save, X, Image,
+  Lock, Users, Megaphone, BookOpen, MessageCircle
 } from "lucide-react";
-import DashboardLayout from "@/components/dashboard-layout";
 
 interface BookVersion {
   id: string;
@@ -19,6 +19,7 @@ interface BookVersion {
   fileUrl: string;
   fileSize: number;
   uploadedAt: string;
+  summary?: string;
   reports: Report[];
 }
 
@@ -50,6 +51,8 @@ export default function BookDetail() {
   const [uploadingNewVersion, setUploadingNewVersion] = useState(false);
   const [expandedVersions, setExpandedVersions] = useState<Set<string>>(new Set());
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [selectedVersion, setSelectedVersion] = useState<BookVersion | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("summary");
   const [newVersionFile, setNewVersionFile] = useState<File | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
@@ -78,6 +81,7 @@ export default function BookDetail() {
         // Auto-expand latest version
         if (data.versions.length > 0) {
           setExpandedVersions(new Set([data.versions[0].id]));
+          setSelectedVersion(data.versions[0]);
 
           // Auto-select latest completed report
           const latestVersion = data.versions[0];
@@ -263,7 +267,7 @@ export default function BookDetail() {
   }
 
   return (
-    <DashboardLayout>
+    <>
       {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -278,9 +282,7 @@ export default function BookDetail() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Left Column - Book Info & Versions */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6">
             {/* Book Info */}
             <Card>
               <CardContent className="p-6">
@@ -433,203 +435,236 @@ export default function BookDetail() {
                   </div>
                 </div>
 
-                {/* Upload New Version */}
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold text-gray-700 mb-3">Upload New Version</h3>
-                  {newVersionFile ? (
-                    <div className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
-                      <div className="flex items-center">
-                        <FileText className="w-5 h-5 text-orange-600 mr-2" />
-                        <span className="text-sm">{newVersionFile.name}</span>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setNewVersionFile(null)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="bg-orange-600 hover:bg-orange-700"
-                          onClick={handleUploadNewVersion}
-                          disabled={uploadingNewVersion}
-                        >
-                          {uploadingNewVersion ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            "Upload"
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <label className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-orange-600">
-                      <Upload className="w-5 h-5 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-600">Click to upload new version</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept=".doc,.docx,.pdf,.epub"
-                        onChange={(e) => e.target.files && setNewVersionFile(e.target.files[0])}
-                      />
-                    </label>
-                  )}
-                </div>
               </CardContent>
             </Card>
 
-            {/* Versions & Reports */}
+            {/* Book Report */}
             <Card>
               <CardHeader>
-                <CardTitle>Versions & Reports</CardTitle>
+                <CardTitle>Book Report</CardTitle>
                 <CardDescription>
-                  Manage your manuscript versions and their analysis reports
+                  View and manage your book analysis
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 {book.versions.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No versions uploaded yet</p>
+                  <p className="text-gray-500 text-center py-8">No manuscript uploaded yet</p>
                 ) : (
-                  <div className="space-y-3">
-                    {book.versions.map((version) => (
-                      <div key={version.id} className="border rounded-lg">
-                        <button
-                          className="w-full p-3 flex items-center justify-between hover:bg-gray-50"
-                          onClick={() => toggleVersion(version.id)}
-                        >
-                          <div className="flex items-center">
-                            {expandedVersions.has(version.id) ? (
-                              <ChevronDown className="w-4 h-4 mr-2" />
-                            ) : (
-                              <ChevronRight className="w-4 h-4 mr-2" />
-                            )}
-                            <div className="text-left">
-                              <p className="font-medium">Version {version.versionNumber}</p>
-                              <p className="text-sm text-gray-500">{version.fileName}</p>
+                  <>
+                    {/* Use first version for now - easy to add version selector later */}
+                    {(() => {
+                      const version = book.versions[0];
+                      return (
+                        <>
+                          {/* Tabs */}
+                          <div className="border-b bg-gray-50">
+                            <div className="flex">
+                              <button
+                                onClick={() => {
+                                  setSelectedVersion(version);
+                                  setActiveTab("summary");
+                                }}
+                                className={`flex-1 px-4 py-3 text-sm font-medium text-center border-b-2 transition-colors ${
+                                  activeTab === "summary"
+                                    ? "text-orange-600 border-orange-600 bg-white"
+                                    : "text-gray-600 border-transparent hover:text-gray-900"
+                                }`}
+                              >
+                                <BookOpen className="w-4 h-4 inline-block mr-1" />
+                                Summary
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedVersion(version);
+                                  setActiveTab("author");
+                                  if (version.reports.length > 0) {
+                                    setSelectedReport(version.reports[0]);
+                                  }
+                                }}
+                                className={`flex-1 px-4 py-3 text-sm font-medium text-center border-b-2 transition-colors ${
+                                  activeTab === "author"
+                                    ? "text-orange-600 border-orange-600 bg-white"
+                                    : "text-gray-600 border-transparent hover:text-gray-900"
+                                }`}
+                              >
+                                <FileText className="w-4 h-4 inline-block mr-1" />
+                                Author Report
+                                {version.reports.some(r => r.status === "completed") && (
+                                  <CheckCircle className="w-3.5 h-3.5 inline-block ml-1 text-green-600" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedVersion(version);
+                                  setActiveTab("marketing");
+                                }}
+                                className={`flex-1 px-4 py-3 text-sm font-medium text-center border-b-2 transition-colors ${
+                                  activeTab === "marketing"
+                                    ? "text-orange-600 border-orange-600 bg-white"
+                                    : "text-gray-600 border-transparent hover:text-gray-900"
+                                }`}
+                              >
+                                <Megaphone className="w-4 h-4 inline-block mr-1" />
+                                Marketing
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedVersion(version);
+                                  setActiveTab("campaigns");
+                                }}
+                                className={`flex-1 px-4 py-3 text-sm font-medium text-center border-b-2 transition-colors ${
+                                  activeTab === "campaigns"
+                                    ? "text-orange-600 border-orange-600 bg-white"
+                                    : "text-gray-600 border-transparent hover:text-gray-900"
+                                }`}
+                              >
+                                <Users className="w-4 h-4 inline-block mr-1" />
+                                Campaigns
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedVersion(version);
+                                  setActiveTab("community");
+                                }}
+                                className={`flex-1 px-4 py-3 text-sm font-medium text-center border-b-2 transition-colors ${
+                                  activeTab === "community"
+                                    ? "text-orange-600 border-orange-600 bg-white"
+                                    : "text-gray-600 border-transparent hover:text-gray-900"
+                                }`}
+                              >
+                                <MessageCircle className="w-4 h-4 inline-block mr-1" />
+                                Community
+                              </button>
                             </div>
                           </div>
-                          <span className="text-sm text-gray-500">
-                            {new Date(version.uploadedAt).toLocaleDateString()}
-                          </span>
-                        </button>
 
-                        {expandedVersions.has(version.id) && (
-                          <div className="px-3 pb-3 border-t">
-                            {version.reports.length === 0 ? (
-                              <div className="py-4 text-center">
-                                <p className="text-gray-500 mb-3">No analysis report yet</p>
-                                <Button
-                                  className="bg-orange-600 hover:bg-orange-700"
-                                  onClick={() => handlePurchaseAnalysis(version.id)}
-                                  disabled={purchasing}
-                                >
-                                  {purchasing ? (
-                                    <>
-                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                      Processing...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <CreditCard className="w-4 h-4 mr-2" />
-                                      Get Analysis ($39)
-                                    </>
-                                  )}
-                                </Button>
+                          {/* Tab Content */}
+                          <div className="p-6">
+                            {activeTab === "summary" && (
+                              <div>
+                                <div className="mb-4">
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Free
+                                  </span>
+                                </div>
+                                {version.summary ? (
+                                  <p className="text-gray-700">{version.summary}</p>
+                                ) : (
+                                  <p className="text-gray-500 italic">No summary available yet.</p>
+                                )}
                               </div>
-                            ) : (
-                              <div className="pt-3 space-y-2">
-                                {version.reports.map((report) => (
-                                  <div
-                                    key={report.id}
-                                    className={`p-3 rounded-md border cursor-pointer ${
-                                      selectedReport?.id === report.id
-                                        ? "bg-orange-50 border-orange-300"
-                                        : "hover:bg-gray-50"
-                                    }`}
-                                    onClick={() => setSelectedReport(report)}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center">
-                                        {getStatusIcon(report.status)}
-                                        <span className="ml-2 text-sm font-medium">
-                                          {getStatusText(report.status)}
-                                        </span>
-                                      </div>
-                                      {report.status === "completed" && (
-                                        <div className="flex space-x-2">
-                                          <Button size="sm" variant="outline">
-                                            <Eye className="w-4 h-4 mr-1" />
-                                            View
-                                          </Button>
-                                          {report.pdfUrl && (
-                                            <Button size="sm" variant="outline">
-                                              <Download className="w-4 h-4 mr-1" />
-                                              PDF
-                                            </Button>
+                            )}
+
+                            {activeTab === "author" && (
+                              <div>
+                                {version.reports.length === 0 ? (
+                                  <div className="text-center py-8">
+                                    <Lock className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                    <p className="text-gray-600 mb-4">Get a professional analysis of your manuscript</p>
+                                    <Button
+                                      className="bg-orange-600 hover:bg-orange-700"
+                                      onClick={() => handlePurchaseAnalysis(version.id)}
+                                      disabled={purchasing}
+                                    >
+                                      {purchasing ? (
+                                        <>
+                                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                          Processing...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <CreditCard className="w-4 h-4 mr-2" />
+                                          Get Analysis ($39)
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    {version.reports[0].status === "completed" ? (
+                                      <>
+                                        <div className="mb-4">
+                                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <CheckCircle className="w-3 h-3 mr-1" />
+                                            Unlocked
+                                          </span>
+                                        </div>
+                                        {version.reports[0].htmlContent && (
+                                          <div className="prose prose-sm max-w-none"
+                                               dangerouslySetInnerHTML={{ __html: version.reports[0].htmlContent }} />
+                                        )}
+                                      </>
+                                    ) : (
+                                      <div className="text-center py-8">
+                                        <div className="flex flex-col items-center">
+                                          {getStatusIcon(version.reports[0].status)}
+                                          <p className="mt-2 text-gray-600">{getStatusText(version.reports[0].status)}</p>
+                                          {version.reports[0].status === "pending" && (
+                                            <p className="text-sm text-gray-500 mt-1">
+                                              Your report will be ready in 1-3 business days
+                                            </p>
+                                          )}
+                                          {version.reports[0].status === "analyzing" && (
+                                            <p className="text-sm text-gray-500 mt-1">
+                                              Our team is currently analyzing your manuscript
+                                            </p>
                                           )}
                                         </div>
-                                      )}
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      Requested {new Date(report.requestedAt).toLocaleString()}
-                                    </p>
+                                      </div>
+                                    )}
                                   </div>
-                                ))}
+                                )}
+                              </div>
+                            )}
+
+                            {activeTab === "marketing" && (
+                              <div className="text-center py-8">
+                                <Megaphone className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                <h3 className="font-semibold text-gray-900 mb-2">Marketing Report</h3>
+                                <p className="text-gray-600 text-sm mb-4">
+                                  Get personalized marketing strategies, target audience analysis, and promotional campaigns tailored to your book.
+                                </p>
+                                <Button variant="outline" disabled>
+                                  Coming Soon
+                                </Button>
+                              </div>
+                            )}
+
+                            {activeTab === "campaigns" && (
+                              <div className="text-center py-8">
+                                <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                <h3 className="font-semibold text-gray-900 mb-2">Campaign Management</h3>
+                                <p className="text-gray-600 text-sm mb-4">
+                                  Launch and manage book campaigns, pre-orders, and reader engagement initiatives.
+                                </p>
+                                <Button variant="outline" disabled>
+                                  Coming Soon
+                                </Button>
+                              </div>
+                            )}
+
+                            {activeTab === "community" && (
+                              <div className="text-center py-8">
+                                <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                <h3 className="font-semibold text-gray-900 mb-2">Community Features</h3>
+                                <p className="text-gray-600 text-sm mb-4">
+                                  Connect with other authors, share experiences, and get feedback from the writing community.
+                                </p>
+                                <Button variant="outline" disabled>
+                                  Coming Soon
+                                </Button>
                               </div>
                             )}
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                        </>
+                      );
+                    })()}
+                  </>
                 )}
               </CardContent>
             </Card>
-          </div>
-
-          {/* Right Column - Report Preview */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-4">
-              <CardHeader>
-                <CardTitle>Report Preview</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedReport ? (
-                  selectedReport.status === "completed" && selectedReport.htmlContent ? (
-                    <div className="prose prose-sm max-w-none">
-                      <div dangerouslySetInnerHTML={{ __html: selectedReport.htmlContent }} />
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="flex flex-col items-center">
-                        {getStatusIcon(selectedReport.status)}
-                        <p className="mt-2 text-gray-600">{getStatusText(selectedReport.status)}</p>
-                        {selectedReport.status === "pending" && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            Your report will be ready in 1-3 business days
-                          </p>
-                        )}
-                        {selectedReport.status === "analyzing" && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            Our team is currently analyzing your manuscript
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                    <p>Select a report to preview</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </main>
-    </DashboardLayout>
+    </>
   );
 }
