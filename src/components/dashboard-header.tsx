@@ -191,9 +191,10 @@ export default function DashboardHeader() {
                       </Link>
 
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           setDropdownOpen(false);
-                          signOut({ callbackUrl: "/" });
+                          await signOut({ redirect: false });
+                          window.location.href = "/";
                         }}
                         className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                       >

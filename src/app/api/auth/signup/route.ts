@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { db } from "@/server/db";
-import { users } from "@/server/db/schema";
+import { users, verificationTokens } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
+import { sendVerificationEmail } from "@/server/services/email";
 
 export async function POST(request: Request) {
 	try {
@@ -51,7 +53,7 @@ export async function POST(request: Request) {
 		// Hash the password
 		const hashedPassword = await bcrypt.hash(password, 10);
 
-		// Create the user
+		// Create the user (with emailVerified as null to require verification)
 		const newUser = await db
 			.insert(users)
 			.values({
@@ -59,6 +61,7 @@ export async function POST(request: Request) {
 				email: email.toLowerCase().trim(),
 				password: hashedPassword,
 				role: "user",
+				emailVerified: null, // User needs to verify email
 			})
 			.returning({
 				id: users.id,
@@ -67,15 +70,38 @@ export async function POST(request: Request) {
 				role: users.role,
 			});
 
+		// Generate verification token
+		const verificationToken = crypto.randomBytes(32).toString("hex");
+		const expires = new Date();
+		expires.setHours(expires.getHours() + 24); // Token expires in 24 hours
+
+		// Store verification token
+		await db.insert(verificationTokens).values({
+			identifier: email.toLowerCase().trim(),
+			token: verificationToken,
+			expires: expires,
+		});
+
+		// Send verification email
+		const emailSent = await sendVerificationEmail(
+			email.toLowerCase().trim(),
+			verificationToken
+		);
+
+		if (!emailSent) {
+			console.error("Failed to send verification email to:", email);
+		}
+
 		// Return success (user is created but not logged in)
 		return NextResponse.json(
 			{
-				message: "Account created successfully",
+				message: "Account created successfully. Please check your email to verify your account.",
 				user: {
 					id: newUser[0].id,
 					email: newUser[0].email,
 					name: newUser[0].name,
 				},
+				emailSent,
 			},
 			{ status: 201 }
 		);

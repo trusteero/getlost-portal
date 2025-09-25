@@ -38,6 +38,14 @@ declare module "next-auth" {
  * @see https://next-auth.js.org/configuration/options
  */
 export const authConfig = {
+	session: {
+		strategy: "jwt", // Use JWT for both OAuth and credentials
+	},
+	pages: {
+		signIn: "/login",
+		error: "/login",
+		verifyRequest: "/auth/verify-email",
+	},
 	providers: [
 		GoogleProvider({
 			allowDangerousEmailAccountLinking: true,
@@ -74,6 +82,11 @@ export const authConfig = {
 					return null;
 				}
 
+				// Check if email is verified
+				if (!user[0].emailVerified) {
+					throw new Error("Please verify your email before signing in");
+				}
+
 				return {
 					id: user[0].id,
 					email: user[0].email,
@@ -90,14 +103,53 @@ export const authConfig = {
 		verificationTokensTable: verificationTokens,
 	}),
 	callbacks: {
-		session: ({ session, user }) => ({
-			...session,
-			user: {
-				...session.user,
-				id: user.id,
-				role: user.role || "user",
-			},
-		}),
+		async jwt({ token, user }) {
+			// Persist the user info in the JWT token
+			if (user) {
+				token.id = user.id;
+				token.role = user.role || "user";
+			}
+
+			// Validate that the user still exists in the database
+			if (token.id) {
+				const existingUser = await db
+					.select()
+					.from(users)
+					.where(eq(users.id, token.id as string))
+					.limit(1);
+
+				// If user doesn't exist, return null to invalidate the session
+				if (existingUser.length === 0) {
+					return null;
+				}
+			}
+
+			return token;
+		},
+		session: ({ session, user, token }) => {
+			// For OAuth providers, user will be available
+			// For credentials provider, use token
+			if (user) {
+				return {
+					...session,
+					user: {
+						...session.user,
+						id: user.id,
+						role: user.role || "user",
+					},
+				};
+			} else if (token) {
+				return {
+					...session,
+					user: {
+						...session.user,
+						id: token.id as string,
+						role: (token.role as string) || "user",
+					},
+				};
+			}
+			return session;
+		},
 		async signIn({ user, account }) {
 			// Ensure all users have a role (default to "user")
 			if (user.id && !user.role) {

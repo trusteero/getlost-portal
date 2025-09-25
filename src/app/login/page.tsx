@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,23 @@ import { ArrowLeft, Mail, Lock, Send, Loader2, BookOpen } from "lucide-react";
 
 export default function LoginPage() {
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const [activeTab, setActiveTab] = useState<"email" | "magic">("email");
 	const [emailLogin, setEmailLogin] = useState({ email: "", password: "" });
 	const [magicEmail, setMagicEmail] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [magicLinkSent, setMagicLinkSent] = useState(false);
 	const [error, setError] = useState("");
+	const [successMessage, setSuccessMessage] = useState("");
+
+	useEffect(() => {
+		if (searchParams.get("verified") === "true") {
+			setSuccessMessage("Email verified successfully! You can now sign in.");
+		}
+		if (searchParams.get("reset") === "true") {
+			setSuccessMessage("Password reset successfully! You can now sign in with your new password.");
+		}
+	}, [searchParams]);
 
 	const handleEmailLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -32,7 +43,17 @@ export default function LoginPage() {
 			});
 
 			if (result?.error) {
-				throw new Error(result.error);
+				// Check various error types
+				if (result.error.includes("verify your email")) {
+					throw new Error("Please verify your email before signing in. Check your inbox for the verification link.");
+				} else if (result.error === "CredentialsSignin") {
+					throw new Error("Invalid email or password. Please try again.");
+				} else if (result.error === "Configuration" || result.error === "CallbackRouteError") {
+					// This often means email verification is needed
+					throw new Error("Please verify your email before signing in. Check your inbox for the verification link.");
+				} else {
+					throw new Error(result.error);
+				}
 			}
 
 			router.push("/dashboard");
@@ -138,6 +159,11 @@ export default function LoginPage() {
 								</button>
 							</div>
 
+							{successMessage && (
+								<div className="bg-green-50 border border-green-200 text-green-600 px-4 py-2 rounded-md text-sm">
+									{successMessage}
+								</div>
+							)}
 							{error && (
 								<div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-md text-sm">
 									{error}
@@ -168,7 +194,7 @@ export default function LoginPage() {
 										<div className="flex items-center justify-between mb-2">
 											<Label htmlFor="password">Password</Label>
 											<Link
-												href="/reset-password"
+												href="/auth/forgot-password"
 												className="text-sm text-orange-600 hover:text-orange-700"
 											>
 												Forgot password?

@@ -60,30 +60,9 @@ export default function SignupPage() {
 				throw new Error(signupData.error || "Unable to create account");
 			}
 
-			// Then, sign them in automatically
-			const signInResult = await signIn("credentials", {
-				redirect: false,
-				email: formData.email,
-				password: formData.password,
-			});
-
-			if (signInResult?.error) {
-				// Account was created but sign in failed
-				// Still show success and redirect to login
-				setSignupSuccess(true);
-				setTimeout(() => {
-					router.push("/login");
-				}, 2000);
-				return;
-			}
-
-			// Show success message
+			// Show success message - don't try to sign in automatically since email verification is required
 			setSignupSuccess(true);
-
-			// Redirect after a short delay
-			setTimeout(() => {
-				router.push("/dashboard");
-			}, 2000);
+			// Don't redirect - let user stay on the page to see the verification message
 		} catch (error: any) {
 			console.error("Signup failed:", error);
 			setError(error.message || "Unable to create account");
@@ -110,16 +89,19 @@ export default function SignupPage() {
 							<div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center">
 								<CheckCircle className="w-8 h-8 text-green-600" />
 							</div>
-							<h2 className="text-2xl font-bold text-gray-900">Welcome to Get Lost!</h2>
+							<h2 className="text-2xl font-bold text-gray-900">Check Your Email!</h2>
 							<p className="text-gray-600">
 								Your account has been created successfully.
 							</p>
 							<p className="text-sm text-gray-500">
-								Get ready to transform your manuscript into your best work.
+								We've sent a verification link to your email address. Please check your inbox and click the link to verify your account.
 							</p>
-							<div className="pt-4">
-								<Loader2 className="w-4 h-4 animate-spin mx-auto text-orange-600" />
-								<p className="text-sm text-gray-500 mt-2">Redirecting to dashboard...</p>
+							<div className="pt-6">
+								<Link href="/login">
+									<Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-white">
+										Go to Login
+									</Button>
+								</Link>
 							</div>
 						</div>
 					</CardContent>

@@ -5,6 +5,7 @@ import { auth } from "@/server/auth";
 import { HydrateClient, api } from "@/trpc/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import SignOutButton from "@/components/signout-button";
 
 export default async function Home() {
 	const session = await auth();
@@ -35,11 +36,7 @@ export default async function Home() {
 												Dashboard
 											</Button>
 										</Link>
-										<Link href="/api/auth/signout">
-											<Button variant="outline" className="border-gray-300">
-												Sign out
-											</Button>
-										</Link>
+										<SignOutButton />
 									</>
 								) : (
 									<>
@@ -65,12 +62,13 @@ export default async function Home() {
 					<div className="container mx-auto px-4">
 						<div className="max-w-4xl mx-auto text-center">
 							<h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 leading-tight">
-								Transform Your Manuscript
-								<span className="block text-orange-600" style={{ textShadow: '0 0 4px rgba(255, 255, 255, 1), 0 0 8px rgba(255, 255, 255, 0.9)' }}>Into Your Best Work</span>
+								Every book has its own
+								<span className="block">unique <span className="text-orange-600" style={{ textShadow: '0 0 4px rgba(255, 255, 255, 1), 0 0 8px rgba(255, 255, 255, 0.9)' }}>fingerprint</span></span>
 							</h1>
 							<p className="text-xl text-gray-600 mb-6 max-w-2xl mx-auto leading-relaxed">
-								Get comprehensive, AI-enhanced book reports with actionable feedback. Perfect for
-								iterative writing, early feedback, and polishing multiple manuscripts.
+								Your story is unique, and your readers are waiting. We uncover what makes your book special,
+								map the audiences most likely to connect, and guide you with strategies that turn insight into action.
+								It all begins with your book's digital fingerprint.
 							</p>
 							<div className="mb-8">
 								<img
@@ -347,10 +345,10 @@ export default async function Home() {
 						<div className="max-w-4xl mx-auto">
 							<div className="text-center mb-10">
 								<h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-									Three Easy Steps to Better Writing
+									How it works
 								</h2>
 								<p className="text-gray-600">
-									From submission to insights in just a few days
+									From submission to insights in minutes
 								</p>
 							</div>
 
@@ -360,9 +358,9 @@ export default async function Home() {
 										<span className="text-orange-600 font-bold">1</span>
 									</div>
 									<div>
-										<h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Your Manuscript</h3>
+										<h3 className="text-lg font-semibold text-gray-900 mb-2">Upload</h3>
 										<p className="text-gray-600">
-											Simply upload your book in any format - DOCX, PDF, EPUB, or plain text. Complete the secure checkout process.
+											Upload your manuscript with confidence. Security and privacy come first.
 										</p>
 									</div>
 								</div>
@@ -372,9 +370,9 @@ export default async function Home() {
 										<span className="text-orange-600 font-bold">2</span>
 									</div>
 									<div>
-										<h3 className="text-lg font-semibold text-gray-900 mb-2">AI-Enhanced Analysis</h3>
+										<h3 className="text-lg font-semibold text-gray-900 mb-2">Fingerprint</h3>
 										<p className="text-gray-600">
-											Our AI analyzes your manuscript while our team reviews key elements, ensuring both technological precision and human insight.
+											We create a digital fingerprint that maps your story across our advanced sub-genre system.
 										</p>
 									</div>
 								</div>
@@ -384,9 +382,9 @@ export default async function Home() {
 										<span className="text-orange-600 font-bold">3</span>
 									</div>
 									<div>
-										<h3 className="text-lg font-semibold text-gray-900 mb-2">Receive Your Report</h3>
+										<h3 className="text-lg font-semibold text-gray-900 mb-2">Insights</h3>
 										<p className="text-gray-600">
-											Within 1-3 business days, receive your comprehensive report with detailed feedback, market insights, and specific recommendations for improvement.
+											Your book, translated for the market. See how your story connects, where it fits, and how to reach the readers who will love it.
 										</p>
 									</div>
 								</div>
@@ -403,13 +401,14 @@ export default async function Home() {
 							<Card className="border-0 shadow-lg">
 								<CardContent className="p-8">
 									<p className="text-lg text-gray-700 italic mb-6">
-										"Get Lost helped me realize my memoir about moving to Finland for love needed more cultural context
-										and emotional depth. The analysis pinpointed exactly where readers might disconnect from my journey,
-										and the suggestions transformed it from a simple love story to a rich cross-cultural narrative."
+										"Get Lost revealed my book's perfect audience—readers who love Nordic noir with a romantic twist.
+										The fingerprint analysis showed me exactly which keywords and categories to target on Amazon.
+										Within weeks of implementing their marketing strategies, I found my tribe of readers who were
+										hungry for exactly what I'd written."
 									</p>
 									<div className="flex items-center justify-center">
 										<div>
-											<p className="font-semibold text-gray-900">Crames Jamer</p>
+											<p className="font-semibold text-gray-900">Jim Crumbler</p>
 											<p className="text-sm text-gray-600">Author of "Northern Hearts: A Love Letter to Helsinki"</p>
 										</div>
 									</div>
@@ -432,7 +431,7 @@ export default async function Home() {
 							</p>
 							<Link href="/signup">
 								<Button size="lg" className="bg-orange-600 text-white hover:bg-orange-700 px-8">
-									Get Your Report - $39
+									Start Your Analysis
 									<ArrowRight className="ml-2 h-4 w-4" />
 								</Button>
 							</Link>
@@ -458,8 +457,11 @@ export default async function Home() {
 								<img src="/logo256.png" alt="Get Lost" className="h-8 w-8" />
 								<span className="text-2xl font-bold text-orange-600">Get Lost</span>
 							</div>
-							<p className="text-sm text-gray-600">
+							<p className="text-sm text-gray-600 mb-2">
 								© 2025 Get Lost. All rights reserved.
+							</p>
+							<p className="text-sm text-gray-600">
+								Contact: <a href="mailto:info@getlost.ai" className="text-orange-600 hover:text-orange-700">info@getlost.ai</a>
 							</p>
 						</div>
 					</div>

@@ -705,7 +705,7 @@ export default function BookDetail() {
                                       ) : (
                                         <>
                                           <CreditCard className="w-4 h-4 mr-2" />
-                                          Get Analysis ($39)
+                                          Start Your Analysis
                                         </>
                                       )}
                                     </Button>

@@ -64,6 +64,10 @@ export default function Dashboard() {
       if (response.ok) {
         const data = await response.json();
         setBooks(data);
+      } else if (response.status === 401) {
+        // Session is invalid, clear cookies and redirect to login
+        await fetch("/api/auth/clear-session", { method: "POST" });
+        router.push("/login");
       }
     } catch (error) {
       console.error("Failed to fetch books:", error);
