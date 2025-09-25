@@ -144,30 +144,26 @@ export default function BookDetail() {
             (new Date().getTime() - new Date(data.completedAt).getTime()) < 30000 // completed in last 30 seconds
         });
 
-        setDigestJob(data);
-        setDigestLoaded(true);
-
         // If just completed (either transition or recently completed on first load)
         if (data.status === "completed") {
           // Check if it completed recently (within last 30 seconds)
           if (data.completedAt && (new Date().getTime() - new Date(data.completedAt).getTime()) < 30000) {
             if (isFirstLoad && !window.location.search.includes("test=1")) {
-              console.log("Recently completed! Reloading to ensure data is fresh...");
-              setTimeout(() => {
-                window.location.href = window.location.pathname + "?test=1";
-              }, 2000);
+              console.log("Recently completed! Reloading immediately...");
+              window.location.href = window.location.pathname + "?test=1";
               return;
             }
           }
           // Or if we saw the transition
           if ((prevStatus === "processing" || prevStatus === "pending")) {
-            console.log("Processing completed! Reloading in 5 seconds...");
-            setTimeout(() => {
-              window.location.href = window.location.pathname + "?test=1";
-            }, 5000);
+            console.log("Processing completed! Reloading immediately...");
+            window.location.href = window.location.pathname + "?test=1";
             return;
           }
         }
+
+        setDigestJob(data);
+        setDigestLoaded(true);
 
         // Keep polling if still processing or pending
         if (data.status === "processing" || data.status === "pending") {
@@ -388,10 +384,10 @@ export default function BookDetail() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
-            {/* Book Info */}
+            {/* Combined Book Info and Report */}
             <Card>
-              <CardContent className="p-4">
-                <div className="flex gap-4">
+              <CardContent className="p-3">
+                <div className="flex gap-4 mb-6">
                   {/* Left side - Cover Image */}
                   <div className="flex-shrink-0">
                     {editMode ? (
@@ -401,7 +397,7 @@ export default function BookDetail() {
                             <img
                               src={newCoverImagePreview || book.coverImageUrl}
                               alt={book.title}
-                              className="w-32 h-48 object-cover rounded-lg shadow-md"
+                              className="w-32 h-auto rounded-lg shadow-md"
                             />
                             <label className="absolute bottom-2 right-2 bg-white/90 backdrop-blur rounded-full p-2 shadow-lg cursor-pointer hover:bg-white transition-colors">
                               <Edit2 className="w-4 h-4 text-gray-700" />
@@ -425,7 +421,7 @@ export default function BookDetail() {
                             )}
                           </div>
                         ) : (
-                          <label className="flex items-center justify-center w-32 h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-orange-600 bg-gray-50">
+                          <label className="flex items-center justify-center w-32 min-h-[12rem] border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-orange-600 bg-gray-50">
                             <div className="text-center">
                               <Image className="mx-auto h-8 w-8 text-gray-400" />
                               <p className="mt-1 text-xs text-gray-600">Add Cover</p>
@@ -445,7 +441,7 @@ export default function BookDetail() {
                           <img
                             src={book.coverImageUrl}
                             alt={book.title}
-                            className="w-32 h-48 object-cover rounded-lg shadow-md"
+                            className="w-32 h-auto rounded-lg shadow-md"
                           />
                         ) : (
                           <div className="w-32 h-48 bg-gradient-to-br from-orange-100 to-orange-50 rounded-lg flex items-center justify-center">
@@ -542,32 +538,23 @@ export default function BookDetail() {
                   </div>
                 </div>
 
-              </CardContent>
-            </Card>
 
-            {/* Processing Status Banner */}
-            {digestJob && (digestJob.status === "processing" || digestJob.status === "pending") && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
-                  <div className="flex-1">
-                    <p className="text-orange-900 font-medium">Processing your manuscript</p>
-                    <p className="text-orange-700 text-sm">Please wait while we analyze your book. This may take a few minutes.</p>
+                {/* Processing Status Banner */}
+                {digestJob && (digestJob.status === "processing" || digestJob.status === "pending") && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mt-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-5 h-5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
+                      <div className="flex-1">
+                        <p className="text-orange-900 font-medium">Processing your manuscript</p>
+                        <p className="text-orange-700 text-sm">Please wait while we analyze your book. This may take a few minutes.</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
+                )}
 
-            {/* Book Report - Hide when processing or loading */}
-            {digestLoaded && !(digestJob && (digestJob.status === "processing" || digestJob.status === "pending")) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Book Report</CardTitle>
-                <CardDescription>
-                  View and manage your book analysis
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
+                {/* Book Report section - Hide when processing or loading */}
+                {digestLoaded && !(digestJob && (digestJob.status === "processing" || digestJob.status === "pending")) && (
+                <div className="border-t pt-4 mt-4">
                 {book.versions.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">No manuscript uploaded yet</p>
                 ) : (
@@ -792,9 +779,10 @@ export default function BookDetail() {
                     })()}
                   </>
                 )}
+                </div>
+                )}
               </CardContent>
             </Card>
-            )}
         </div>
       </main>
     </>

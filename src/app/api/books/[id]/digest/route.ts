@@ -51,22 +51,30 @@ export async function GET(
     if (job.status === "processing" && job.externalJobId) {
       try {
         const updatedStatus = await checkBookDigestStatus(job.id);
+
+        // Get the updated job data after checking status
+        const [updatedJob] = await db
+          .select()
+          .from(digestJobs)
+          .where(eq(digestJobs.id, job.id))
+          .limit(1);
+
         return NextResponse.json({
-          id: job.id,
-          status: updatedStatus.status,
-          attempts: job.attempts,
-          startedAt: job.startedAt,
-          completedAt: job.completedAt,
-          error: job.error,
-          title: job.title,
-          author: job.author,
-          pages: job.pages,
-          words: job.words,
-          language: job.language,
-          brief: job.brief,
-          shortSummary: job.shortSummary,
-          summary: job.summary,
-          coverUrl: job.coverUrl,
+          id: updatedJob.id,
+          status: updatedJob.status,
+          attempts: updatedJob.attempts,
+          startedAt: updatedJob.startedAt,
+          completedAt: updatedJob.completedAt,
+          error: updatedJob.error,
+          title: updatedJob.title,
+          author: updatedJob.author,
+          pages: updatedJob.pages,
+          words: updatedJob.words,
+          language: updatedJob.language,
+          brief: updatedJob.brief,
+          shortSummary: updatedJob.shortSummary,
+          summary: updatedJob.summary,
+          coverUrl: updatedJob.coverUrl,
         });
       } catch (error) {
         console.error("Failed to check digest status:", error);

@@ -49,9 +49,9 @@ export async function POST(request: NextRequest) {
             // Create notification for user
             await db.insert(notifications).values({
               userId: book.userId,
-              type: "processing_complete",
+              type: "processing_completed",
               title: "Book Processing Complete",
-              message: `Your book "${book.title}" has been processed successfully.`,
+              message: `"${book.title}" has been successfully analyzed and is ready to view.`,
               data: JSON.stringify({ bookId: job.bookId }),
               read: false,
             });
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
           });
         } else if (result.status === "failed") {
           // Get book and user info for failure notification
-          const [book] = await db
+          const [failedBook] = await db
             .select({
               title: books.title,
               userId: books.userId,
@@ -73,12 +73,12 @@ export async function POST(request: NextRequest) {
             .where(eq(books.id, job.bookId))
             .limit(1);
 
-          if (book) {
+          if (failedBook) {
             await db.insert(notifications).values({
-              userId: book.userId,
+              userId: failedBook.userId,
               type: "processing_failed",
               title: "Book Processing Failed",
-              message: `Processing failed for "${book.title}". Please try uploading again.`,
+              message: `Processing failed for "${failedBook.title}". Please try uploading again.`,
               data: JSON.stringify({ bookId: job.bookId }),
               read: false,
             });

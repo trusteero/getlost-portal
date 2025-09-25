@@ -160,7 +160,7 @@ export default function Dashboard() {
                   <div className="flex p-4">
                     {/* Cover Image */}
                     {book.coverImageUrl ? (
-                      <div className="w-20 h-[120px] flex-shrink-0 mr-4 sm:mr-6 relative">
+                      <div className="w-20 flex-shrink-0 mr-4 sm:mr-6 relative">
                         <div className="absolute inset-0 bg-gray-500" style={{ transform: 'translate(4px, 4px)' }}></div>
                         <div className="absolute inset-0 bg-gray-400" style={{ transform: 'translate(3px, 3px)' }}></div>
                         <div className="absolute inset-0 bg-gray-300" style={{ transform: 'translate(2px, 2px)' }}></div>
@@ -168,7 +168,7 @@ export default function Dashboard() {
                         <img
                           src={book.coverImageUrl}
                           alt={book.title}
-                          className="relative w-full h-full object-cover border border-gray-200"
+                          className="relative w-full h-auto rounded border border-gray-200"
                         />
                       </div>
                     ) : (
