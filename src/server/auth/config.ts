@@ -174,9 +174,11 @@ export const authConfig = {
 		},
 		session: async ({ session, user, token }) => {
 			// Handle session errors gracefully
-			if (!session || !token) {
+			if (!session || !token || !token.id) {
+				// Return null to indicate no valid session
 				return null as any;
 			}
+
 			// Track user activity for DAU
 			let userId: string | undefined;
 
@@ -192,7 +194,7 @@ export const authConfig = {
 						role: user.role || "user",
 					},
 				};
-			} else if (token) {
+			} else if (token && token.id) {
 				userId = token.id as string;
 				session = {
 					...session,
@@ -202,6 +204,9 @@ export const authConfig = {
 						role: (token.role as "user" | "admin" | "super_admin") || "user",
 					},
 				};
+			} else {
+				// No valid user or token, return null
+				return null as any;
 			}
 
 			// Track activity (fire and forget)
