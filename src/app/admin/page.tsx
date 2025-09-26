@@ -313,14 +313,27 @@ export default function AdminDashboard() {
       if (response.ok) {
         // Update the selected book immediately
         if (selectedBook && selectedBook.id === bookId) {
-          const updatedReport = status === "not_requested"
-            ? undefined
-            : {
-                ...selectedBook.latestReport,
-                status: status as any,
-                requestedAt: selectedBook.latestReport?.requestedAt || new Date().toISOString(),
-                completedAt: status === "completed" ? new Date().toISOString() : selectedBook.latestReport?.completedAt,
-              };
+          let updatedReport: Report | undefined;
+
+          if (status === "not_requested") {
+            updatedReport = undefined;
+          } else if (selectedBook.latestReport) {
+            // Update existing report
+            updatedReport = {
+              ...selectedBook.latestReport,
+              status: status as "requested" | "analyzing" | "completed",
+              completedAt: status === "completed" ? new Date().toISOString() : selectedBook.latestReport.completedAt,
+            };
+          } else {
+            // Create new report
+            updatedReport = {
+              id: crypto.randomUUID(),
+              bookVersionId: selectedBook.latestVersion?.id || "",
+              status: status as "requested" | "analyzing" | "completed",
+              requestedAt: new Date().toISOString(),
+              completedAt: status === "completed" ? new Date().toISOString() : undefined,
+            };
+          }
 
           setSelectedBook({
             ...selectedBook,
@@ -886,7 +899,9 @@ export default function AdminDashboard() {
                                     </div>
                                   )}
                                   {!user.hasGoogleAuth && user.password && (
-                                    <Mail className="w-4 h-4 text-gray-500" title="Email/Password" />
+                                    <span title="Email/Password">
+                                      <Mail className="w-4 h-4 text-gray-500" />
+                                    </span>
                                   )}
                                 </div>
                               </td>

@@ -7,6 +7,10 @@ const execAsync = promisify(exec);
 
 const port = process.argv[2] || '3000';
 
+/**
+ * Kill processes running on specified port
+ * @param {string} port - The port number
+ */
 async function killPort(port) {
   try {
     // Find process using the port
@@ -21,7 +25,7 @@ async function killPort(port) {
             await execAsync(`kill -9 ${pid}`);
             console.log(`Process ${pid} killed successfully.`);
           } catch (killError) {
-            console.log(`Could not kill process ${pid}: ${killError.message}`);
+            console.log(`Could not kill process ${pid}: ${killError?.['message'] || killError}`);
           }
         }
       }
@@ -30,10 +34,10 @@ async function killPort(port) {
     }
   } catch (error) {
     // lsof returns error if no process found, which is fine
-    if (error.code === 1) {
+    if (error?.['code'] === 1) {
       console.log(`Port ${port} is free.`);
     } else {
-      console.error(`Error checking port: ${error.message}`);
+      console.error(`Error checking port: ${error?.['message'] || error}`);
     }
   }
 }

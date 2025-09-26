@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
 
@@ -22,6 +22,7 @@ export async function PATCH(
 
   try {
     const { role } = await req.json();
+    const { id } = await params;
 
     // Validate role
     if (!["user", "admin"].includes(role)) {
@@ -35,7 +36,7 @@ export async function PATCH(
     const targetUser = await db
       .select()
       .from(users)
-      .where(eq(users.id, params.id))
+      .where(eq(users.id, id))
       .limit(1);
 
     if (targetUser.length === 0) {
@@ -67,7 +68,7 @@ export async function PATCH(
         role,
         updatedAt: new Date(),
       })
-      .where(eq(users.id, params.id));
+      .where(eq(users.id, id));
 
     return NextResponse.json({ success: true, role });
   } catch (error) {

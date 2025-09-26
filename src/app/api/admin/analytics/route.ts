@@ -39,13 +39,19 @@ export async function GET() {
     const allUsers = await db.select().from(users);
 
     const newUsersToday = allUsers.filter(u => {
-      const createdAt = u.createdAt || 0;
-      return createdAt >= todayTimestamp && createdAt < tomorrowTimestamp;
+      if (!u.createdAt) return false;
+      const createdAtTimestamp = typeof u.createdAt === 'number'
+        ? u.createdAt
+        : Math.floor(u.createdAt.getTime() / 1000);
+      return createdAtTimestamp >= todayTimestamp && createdAtTimestamp < tomorrowTimestamp;
     }).length;
 
     const newUsersYesterday = allUsers.filter(u => {
-      const createdAt = u.createdAt || 0;
-      return createdAt >= yesterdayTimestamp && createdAt < todayTimestamp;
+      if (!u.createdAt) return false;
+      const createdAtTimestamp = typeof u.createdAt === 'number'
+        ? u.createdAt
+        : Math.floor(u.createdAt.getTime() / 1000);
+      return createdAtTimestamp >= yesterdayTimestamp && createdAtTimestamp < todayTimestamp;
     }).length;
 
     // Get DAU from activity tracking
