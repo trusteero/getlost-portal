@@ -3,7 +3,7 @@ import { db } from "@/server/db";
 import { users, verificationTokens } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
-import { sendVerificationEmail } from "@/server/email";
+import { sendVerificationEmail } from "@/server/services/email";
 
 export async function POST(req: NextRequest) {
   try {
