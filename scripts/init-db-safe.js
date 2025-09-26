@@ -11,13 +11,29 @@ const __dirname = path.dirname(__filename);
 console.log('🔧 Checking database...');
 
 try {
-  const dbPath = 'db.sqlite';
+  // Get database path from DATABASE_URL or use default
+  let dbPath = 'db.sqlite';
+
+  if (process.env.DATABASE_URL) {
+    // DATABASE_URL might be like "file:./db.sqlite" or "file:/var/data/db.sqlite"
+    dbPath = process.env.DATABASE_URL.replace('file:', '');
+  }
+
+  // Ensure the database directory exists
+  const dbDir = path.dirname(dbPath);
+
+  // Create directory if it doesn't exist and it's not the current directory
+  if (dbDir !== '.' && !fs.existsSync(dbDir)) {
+    console.log(`📁 Creating database directory: ${dbDir}`);
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+
   const dbExists = fs.existsSync(dbPath);
 
   if (dbExists) {
-    console.log('📦 Database already exists, checking for pending migrations...');
+    console.log(`📦 Database already exists at ${dbPath}, checking for pending migrations...`);
   } else {
-    console.log('📦 Database does not exist, creating new database...');
+    console.log(`📦 Database does not exist, creating new database at ${dbPath}...`);
   }
 
   // Create database connection (will create file if doesn't exist)
