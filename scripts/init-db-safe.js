@@ -22,10 +22,21 @@ try {
   // Ensure the database directory exists
   const dbDir = path.dirname(dbPath);
 
-  // Create directory if it doesn't exist and it's not the current directory
-  if (dbDir !== '.' && !fs.existsSync(dbDir)) {
-    console.log(`📁 Creating database directory: ${dbDir}`);
-    fs.mkdirSync(dbDir, { recursive: true });
+  console.log(`📁 Checking directory: ${dbDir}`);
+
+  // Check if directory exists
+  if (fs.existsSync(dbDir)) {
+    console.log(`✅ Directory exists: ${dbDir}`);
+  } else if (dbDir !== '.' && dbDir !== '/') {
+    console.log(`📁 Directory does not exist, attempting to create: ${dbDir}`);
+    try {
+      fs.mkdirSync(dbDir, { recursive: true });
+      console.log(`✅ Created directory: ${dbDir}`);
+    } catch (mkdirError) {
+      console.log(`⚠️ Could not create ${dbDir}: ${mkdirError.message}`);
+      console.log(`📍 Using current directory instead`);
+      dbPath = 'db.sqlite';
+    }
   }
 
   const dbExists = fs.existsSync(dbPath);

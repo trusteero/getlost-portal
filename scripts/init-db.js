@@ -23,9 +23,15 @@ try {
   const dbDir = path.dirname(dbPath);
 
   // Create directory if it doesn't exist and it's not the current directory
-  if (dbDir !== '.' && !fs.existsSync(dbDir)) {
-    console.log(`📁 Creating database directory: ${dbDir}`);
-    fs.mkdirSync(dbDir, { recursive: true });
+  if (dbDir !== '.' && dbDir !== '/' && !fs.existsSync(dbDir)) {
+    console.log(`📁 Attempting to create database directory: ${dbDir}`);
+    try {
+      fs.mkdirSync(dbDir, { recursive: true });
+      console.log(`✅ Created directory: ${dbDir}`);
+    } catch (mkdirError) {
+      console.log(`⚠️ Could not create ${dbDir}, using current directory instead`);
+      dbPath = 'db.sqlite';
+    }
   }
 
   // Create database connection
