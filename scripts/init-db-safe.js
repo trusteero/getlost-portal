@@ -52,8 +52,15 @@ try {
   const db = drizzle(sqlite);
 
   // Run migrations (will only apply new ones if database exists)
-  console.log('📦 Running database migrations...');
-  migrate(db, { migrationsFolder: path.join(__dirname, '../drizzle') });
+  const migrationsFolder = process.env.DRIZZLE_MIGRATIONS_FOLDER || path.join(__dirname, '../drizzle');
+  console.log(`📦 Running database migrations from: ${migrationsFolder}`);
+
+  try {
+    migrate(db, { migrationsFolder });
+  } catch (migrateError) {
+    console.error('Migration error:', migrateError instanceof Error ? migrateError.message : 'Unknown error');
+    throw migrateError;
+  }
 
   console.log('✅ Database ready!');
 
