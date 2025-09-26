@@ -146,6 +146,8 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
+    const createdBook = newBook[0]!;
+
     // Save the book file to disk
     const bookStoragePath = process.env.BOOK_STORAGE_PATH || './uploads/books';
     const bookDir = path.resolve(bookStoragePath);
@@ -175,7 +177,7 @@ export async function POST(request: NextRequest) {
     const newVersion = await db
       .insert(bookVersions)
       .values({
-        bookId: newBook[0].id,
+        bookId: createdBook.id,
         versionNumber: 1,
         fileName,
         fileUrl,
@@ -189,16 +191,16 @@ export async function POST(request: NextRequest) {
 
     // Trigger BookDigest job asynchronously
     try {
-      await triggerBookDigest(newBook[0].id, fileBuffer, fileName);
-      console.log(`BookDigest job triggered for book ${newBook[0].id}`);
+      await triggerBookDigest(createdBook.id, fileBuffer, fileName);
+      console.log(`BookDigest job triggered for book ${createdBook.id}`);
     } catch (error) {
       // Log error but don't fail the book creation
       console.error("Failed to trigger BookDigest job:", error);
     }
 
     return NextResponse.json({
-      bookId: newBook[0].id,
-      versionId: newVersion[0].id,
+      bookId: createdBook.id,
+      versionId: newVersion[0]!.id,
     });
   } catch (error) {
     console.error("Failed to create book:", error);

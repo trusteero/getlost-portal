@@ -27,7 +27,9 @@ export async function POST(
       return NextResponse.json({ error: "Book not found" }, { status: 404 });
     }
 
-    if (book[0].userId !== session.user.id) {
+    const bookData = book[0]!;
+
+    if (bookData.userId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -46,7 +48,7 @@ export async function POST(
       .orderBy(desc(bookVersions.versionNumber))
       .limit(1);
 
-    const nextVersionNumber = latestVersion.length > 0 ? latestVersion[0].versionNumber + 1 : 1;
+    const nextVersionNumber = latestVersion.length > 0 ? latestVersion[0]!.versionNumber + 1 : 1;
 
     // TODO: Upload file to storage
     const fileName = file.name;

@@ -34,7 +34,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Version not found" }, { status: 404 });
     }
 
-    if (version[0].userId !== session.user.id) {
+    const versionData = version[0]!;
+
+    if (versionData.userId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

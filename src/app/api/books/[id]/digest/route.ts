@@ -29,7 +29,9 @@ export async function GET(
       return NextResponse.json({ error: "Book not found" }, { status: 404 });
     }
 
-    if (book[0].userId !== session.user.id && session.user.role !== "admin") {
+    const bookData = book[0]!;
+
+    if (bookData.userId !== session.user.id && session.user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -45,7 +47,7 @@ export async function GET(
       return NextResponse.json({ status: "no_job" });
     }
 
-    const job = latestJob[0];
+    const job = latestJob[0]!;
 
     // If job is processing, check for updates
     if (job.status === "processing" && job.externalJobId) {
@@ -53,11 +55,13 @@ export async function GET(
         const updatedStatus = await checkBookDigestStatus(job.id);
 
         // Get the updated job data after checking status
-        const [updatedJob] = await db
+        const updatedJobResult = await db
           .select()
           .from(digestJobs)
           .where(eq(digestJobs.id, job.id))
           .limit(1);
+
+        const updatedJob = updatedJobResult[0]!;
 
         return NextResponse.json({
           id: updatedJob.id,
@@ -128,7 +132,9 @@ export async function POST(
       return NextResponse.json({ error: "Book not found" }, { status: 404 });
     }
 
-    if (book[0].userId !== session.user.id && session.user.role !== "admin") {
+    const bookData = book[0]!;
+
+    if (bookData.userId !== session.user.id && session.user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -144,7 +150,7 @@ export async function POST(
       return NextResponse.json({ error: "No digest job found" }, { status: 404 });
     }
 
-    const job = latestJob[0];
+    const job = latestJob[0]!;
 
     if (!job.externalJobId) {
       return NextResponse.json({ error: "No external job ID" }, { status: 400 });

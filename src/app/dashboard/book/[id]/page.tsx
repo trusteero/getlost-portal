@@ -147,7 +147,9 @@ export default function BookDetail() {
         // Only reload if we see a transition from processing/pending to completed
         if (data.status === "completed" && (prevStatus === "processing" || prevStatus === "pending")) {
           console.log("Processing completed! Reloading page...");
-          window.location.href = window.location.pathname;
+          setTimeout(() => {
+            window.location.href = window.location.pathname;
+          }, 3000);
           return;
         }
 
@@ -396,7 +398,7 @@ export default function BookDetail() {
                                 type="file"
                                 className="sr-only"
                                 accept="image/*"
-                                onChange={(e) => e.target.files && handleCoverImageChange(e.target.files[0])}
+                                onChange={(e) => e.target.files?.[0] && handleCoverImageChange(e.target.files[0])}
                               />
                             </label>
                             {newCoverImagePreview && (
@@ -421,7 +423,7 @@ export default function BookDetail() {
                               type="file"
                               className="sr-only"
                               accept="image/*"
-                              onChange={(e) => e.target.files && handleCoverImageChange(e.target.files[0])}
+                              onChange={(e) => e.target.files?.[0] && handleCoverImageChange(e.target.files[0])}
                             />
                           </label>
                         )}
@@ -553,6 +555,7 @@ export default function BookDetail() {
                     {/* Use first version for now - easy to add version selector later */}
                     {(() => {
                       const version = book.versions[0];
+                      if (!version) return null;
                       return (
                         <>
                           {/* Tabs */}
@@ -576,7 +579,7 @@ export default function BookDetail() {
                                 onClick={() => {
                                   setSelectedVersion(version);
                                   setActiveTab("author");
-                                  if (version.reports.length > 0) {
+                                  if (version.reports.length > 0 && version.reports[0]) {
                                     setSelectedReport(version.reports[0]);
                                   }
                                 }}
@@ -689,9 +692,9 @@ export default function BookDetail() {
                                       )}
                                     </Button>
                                   </div>
-                                ) : (
+                                ) : version.reports.length > 0 && version.reports[0] ? (
                                   <div>
-                                    {version.reports[0].status === "completed" ? (
+                                    {version.reports[0]!.status === "completed" ? (
                                       <>
                                         <div className="text-center py-12">
                                           <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-600" />
@@ -705,15 +708,15 @@ export default function BookDetail() {
                                             Download Report
                                           </Button>
                                         </div>
-                                        {version.reports[0].htmlContent && (
+                                        {version.reports[0]!.htmlContent && (
                                           <div className="mt-8 border-t pt-8">
                                             <h4 className="text-lg font-semibold mb-4">Report Preview</h4>
                                             <div className="prose prose-sm max-w-none"
-                                                 dangerouslySetInnerHTML={{ __html: version.reports[0].htmlContent }} />
+                                                 dangerouslySetInnerHTML={{ __html: version.reports[0]!.htmlContent }} />
                                           </div>
                                         )}
                                       </>
-                                    ) : version.reports[0].status === "analyzing" ? (
+                                    ) : version.reports[0]!.status === "analyzing" ? (
                                       <div className="text-center py-16">
                                         <div className="flex flex-col items-center">
                                           <div className="w-20 h-20 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mb-6" />
@@ -722,7 +725,7 @@ export default function BookDetail() {
                                           <p className="text-sm text-gray-500 mt-2">This usually takes a few hours</p>
                                         </div>
                                       </div>
-                                    ) : (version.reports[0].status === "pending" || version.reports[0].status === "requested") ? (
+                                    ) : (version.reports[0]!.status === "pending" || version.reports[0]!.status === "requested") ? (
                                       <div className="text-center py-16">
                                         <Clock className="w-16 h-16 mx-auto mb-4 text-yellow-600" />
                                         <h3 className="text-2xl font-semibold text-gray-900 mb-2">Report Requested</h3>
@@ -737,7 +740,7 @@ export default function BookDetail() {
                                       </div>
                                     )}
                                   </div>
-                                )}
+                                ) : null}
                               </div>
                             )}
 

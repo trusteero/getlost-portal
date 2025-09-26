@@ -81,7 +81,7 @@ export async function GET(
     headers.set('Content-Disposition', `attachment; filename="${latestVersion.fileName}"`);
     headers.set('Content-Length', fileBuffer.length.toString());
 
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(fileBuffer as any, {
       status: 200,
       headers,
     });

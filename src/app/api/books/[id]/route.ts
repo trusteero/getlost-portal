@@ -27,8 +27,10 @@ export async function GET(
       return NextResponse.json({ error: "Book not found" }, { status: 404 });
     }
 
+    const bookData = book[0]!;
+
     // Check if user owns the book
-    if (book[0].userId !== session.user.id && session.user.role !== "admin") {
+    if (bookData.userId !== session.user.id && session.user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -124,9 +126,11 @@ export async function PATCH(
       return NextResponse.json({ error: "Book not found" }, { status: 404 });
     }
 
+    const bookRecord = book[0]!;
+
     // Update book
     const updateData: any = {
-      title: title || book[0].title,
+      title: title || bookRecord.title,
       description: description,
       updatedAt: new Date(),
     };
@@ -151,7 +155,7 @@ export async function PATCH(
     const versions = await db
       .select()
       .from(bookVersions)
-      .where(eq(bookVersions.bookId, params.id))
+      .where(eq(bookVersions.bookId, id))
       .orderBy(desc(bookVersions.uploadedAt));
 
     // Get reports for each version

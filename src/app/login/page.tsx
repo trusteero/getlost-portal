@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ArrowLeft, Mail, Lock, Send, Loader2, BookOpen } from "lucide-react";
 
-export default function LoginPage() {
+function LoginContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	// Magic link disabled for now
@@ -22,6 +22,7 @@ export default function LoginPage() {
 	const [magicLinkSent, setMagicLinkSent] = useState(false);
 	const [error, setError] = useState("");
 	const [successMessage, setSuccessMessage] = useState("");
+	const [emailNotVerified, setEmailNotVerified] = useState(false);
 
 	useEffect(() => {
 		if (searchParams.get("verified") === "true") {
@@ -35,6 +36,7 @@ export default function LoginPage() {
 	const handleEmailLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError("");
+		setEmailNotVerified(false);
 		setIsSubmitting(true);
 
 		try {
@@ -46,15 +48,20 @@ export default function LoginPage() {
 
 			if (result?.error) {
 				// Check various error types
-				if (result.error.includes("verify your email")) {
-					throw new Error("Please verify your email before signing in. Check your inbox for the verification link.");
+				if (result.error.includes("EMAIL_NOT_VERIFIED")) {
+					setEmailNotVerified(true);
+					throw new Error("Please verify your email before signing in. Check your inbox (and spam folder) for the verification link.");
+				} else if (result.error.includes("verify your email")) {
+					setEmailNotVerified(true);
+					throw new Error("Please verify your email before signing in. Check your inbox (and spam folder) for the verification link.");
 				} else if (result.error.includes("OAUTH_USER")) {
 					throw new Error("This account uses Google sign-in. Please use the 'Sign in with Google' button below.");
 				} else if (result.error === "CredentialsSignin") {
 					throw new Error("Invalid email or password. Please try again.");
 				} else if (result.error === "Configuration" || result.error === "CallbackRouteError") {
 					// This often means email verification is needed
-					throw new Error("Please verify your email before signing in. Check your inbox for the verification link.");
+					setEmailNotVerified(true);
+					throw new Error("Please verify your email before signing in. Check your inbox (and spam folder) for the verification link.");
 				} else {
 					throw new Error(result.error);
 				}
@@ -103,6 +110,38 @@ export default function LoginPage() {
 		} catch (error) {
 			console.error("Google signin failed:", error);
 			setError("Unable to authenticate with Google");
+		}
+	};
+
+	const handleResendVerification = async () => {
+		if (!emailLogin.email) {
+			setError("Please enter your email address first");
+			return;
+		}
+
+		setIsSubmitting(true);
+		setError("");
+		setSuccessMessage("");
+
+		try {
+			const response = await fetch("/api/auth/resend-verification", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email: emailLogin.email }),
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				throw new Error(data.error || "Failed to resend verification email");
+			}
+
+			setSuccessMessage("Verification email sent! Please check your inbox and spam folder.");
+			setEmailNotVerified(false);
+		} catch (error: any) {
+			setError(error.message || "Failed to resend verification email");
+		} finally {
+			setIsSubmitting(false);
 		}
 	};
 
@@ -171,6 +210,17 @@ export default function LoginPage() {
 							{error && (
 								<div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-md text-sm">
 									{error}
+									{emailNotVerified && (
+										<Button
+											type="button"
+											variant="link"
+											className="mt-2 text-red-700 underline p-0 h-auto font-normal"
+											onClick={handleResendVerification}
+											disabled={isSubmitting}
+										>
+											Resend verification email
+										</Button>
+									)}
 								</div>
 							)}
 
@@ -236,74 +286,6 @@ export default function LoginPage() {
 								</form>
 							)}
 
-							{/* Magic Link Tab */}
-							{activeTab === "magic" && !magicLinkSent && (
-								<form onSubmit={handleMagicLink} className="space-y-4">
-									<p className="text-sm text-gray-600">
-										Enter your email and we'll send you a magic link to sign in instantly
-									</p>
-									<div>
-										<Label htmlFor="magic-email" className="mb-2">Email</Label>
-										<div className="relative mt-1">
-											<Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-											<Input
-												id="magic-email"
-												type="email"
-												placeholder="author@example.com"
-												value={magicEmail}
-												onChange={(e) => setMagicEmail(e.target.value)}
-												className="pl-10 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
-												required
-												disabled={isSubmitting}
-											/>
-										</div>
-									</div>
-
-									<Button
-										type="submit"
-										className="w-full bg-cyan-600 hover:bg-cyan-700 text-white"
-										disabled={isSubmitting}
-									>
-										{isSubmitting ? (
-											<>
-												<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-												Sending Magic Link...
-											</>
-										) : (
-											<>
-												<Send className="w-4 h-4 mr-2" />
-												Send Magic Link
-											</>
-										)}
-									</Button>
-								</form>
-							)}
-
-							{/* Magic Link Sent Confirmation */}
-							{activeTab === "magic" && magicLinkSent && (
-								<div className="text-center py-8 space-y-4">
-									<div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center">
-										<Mail className="w-8 h-8 text-green-600" />
-									</div>
-									<h3 className="font-semibold text-gray-900">Check Your Email</h3>
-									<p className="text-sm text-gray-600">
-										If an account exists for <strong>{magicEmail}</strong>, we've sent you a magic link
-									</p>
-									<p className="text-xs text-gray-500">
-										Click the link in the email to sign in instantly. The link expires in 1 hour.
-									</p>
-									<Button
-										variant="outline"
-										onClick={() => {
-											setMagicLinkSent(false);
-											setMagicEmail("");
-										}}
-										className="border-gray-300"
-									>
-										Try Another Email
-									</Button>
-								</div>
-							)}
 
 							{!magicLinkSent && (
 								<>
@@ -360,5 +342,17 @@ export default function LoginPage() {
 				</Card>
 			</div>
 		</div>
+	);
+}
+
+export default function LoginPage() {
+	return (
+		<Suspense fallback={
+			<div className="min-h-screen bg-gradient-to-br from-orange-50 to-cyan-50 flex items-center justify-center">
+				<div className="animate-pulse">Loading...</div>
+			</div>
+		}>
+			<LoginContent />
+		</Suspense>
 	);
 }

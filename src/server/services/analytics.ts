@@ -8,9 +8,12 @@ import { eq, and, sql } from "drizzle-orm";
  */
 export async function trackUserActivity(userId: string) {
   try {
-    // Get current date in YYYY-MM-DD format
+    // Get current date in YYYY-MM-DD format (local time)
     const today = new Date();
-    const dateStr = today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
 
     // Try to find existing activity record for today
     const existingActivity = await db
@@ -32,7 +35,7 @@ export async function trackUserActivity(userId: string) {
           lastActivityAt: new Date(),
           activityCount: sql`${userActivity.activityCount} + 1`,
         })
-        .where(eq(userActivity.id, existingActivity[0].id));
+        .where(eq(userActivity.id, existingActivity[0]!.id));
     } else {
       // Create new record for today
       await db
@@ -55,14 +58,20 @@ export async function trackUserActivity(userId: string) {
  * Get analytics data for admin dashboard
  */
 export async function getAnalytics() {
+  // Use local date string to avoid timezone issues
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
 
+  // Calculate yesterday's date
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-
-  const todayStr = today.toISOString().split('T')[0];
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  const yesterdayYear = yesterday.getFullYear();
+  const yesterdayMonth = String(yesterday.getMonth() + 1).padStart(2, '0');
+  const yesterdayDay = String(yesterday.getDate()).padStart(2, '0');
+  const yesterdayStr = `${yesterdayYear}-${yesterdayMonth}-${yesterdayDay}`;
 
   // Get DAU for today
   const dauToday = await db

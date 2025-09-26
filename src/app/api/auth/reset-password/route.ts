@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const tokenData = resetToken[0];
+    const tokenData = resetToken[0]!;
 
     // Check if token is a reset token (has "reset:" prefix)
     if (!tokenData.identifier.startsWith("reset:")) {
@@ -130,7 +130,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const tokenData = resetToken[0];
+    const tokenData = resetToken[0]!;
 
     // Check if token is a reset token
     if (!tokenData.identifier.startsWith("reset:")) {

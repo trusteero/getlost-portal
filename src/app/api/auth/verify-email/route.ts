@@ -32,7 +32,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const tokenData = verificationToken[0];
+    const tokenData = verificationToken[0]!;
 
     // Check if token has expired
     if (new Date(tokenData.expires) < new Date()) {
@@ -72,14 +72,16 @@ export async function GET(request: Request) {
       .delete(verificationTokens)
       .where(eq(verificationTokens.token, token));
 
+    const verifiedUser = updatedUser[0]!;
+
     // Send welcome email
-    await sendWelcomeEmail(updatedUser[0].email, updatedUser[0].name || undefined);
+    await sendWelcomeEmail(verifiedUser.email, verifiedUser.name || undefined);
 
     // Don't create a session here - let the user sign in through the normal flow
     // This avoids JWT/session conflicts
     return NextResponse.json({
       message: "Email verified successfully",
-      user: updatedUser[0],
+      user: verifiedUser,
       requiresSignIn: true,
     });
   } catch (error) {
@@ -117,7 +119,9 @@ export async function POST(request: Request) {
       );
     }
 
-    if (user[0].emailVerified) {
+    const userData = user[0]!;
+
+    if (userData.emailVerified) {
       return NextResponse.json(
         { message: "Email is already verified" },
         { status: 200 }

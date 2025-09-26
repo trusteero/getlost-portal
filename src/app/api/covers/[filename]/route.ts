@@ -43,7 +43,7 @@ export async function GET(
     }
 
     // Return the image
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(fileBuffer as any, {
       status: 200,
       headers: {
         'Content-Type': mimeType,

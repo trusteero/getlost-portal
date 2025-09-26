@@ -26,10 +26,11 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const userData = user[0]!;
     const updateData: any = {};
 
     // Update name if provided
-    if (name && name !== user[0].name) {
+    if (name && name !== userData.name) {
       updateData.name = name;
     }
 
@@ -40,14 +41,14 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: "Current password is required" }, { status: 400 });
       }
 
-      if (!user[0].password) {
+      if (!userData.password) {
         return NextResponse.json(
           { error: "Cannot change password for OAuth accounts" },
           { status: 400 }
         );
       }
 
-      const isValidPassword = await bcrypt.compare(currentPassword, user[0].password);
+      const isValidPassword = await bcrypt.compare(currentPassword, userData.password);
       if (!isValidPassword) {
         return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
       }

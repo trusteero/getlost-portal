@@ -69,7 +69,7 @@ export const authConfig = {
 				const user = await db
 					.select()
 					.from(users)
-					.where(eq(users.email, credentials.email.toLowerCase()))
+					.where(eq(users.email, (credentials.email as string).toLowerCase()))
 					.limit(1);
 
 				console.log("User found:", user.length > 0 ? "Yes" : "No");
@@ -79,7 +79,9 @@ export const authConfig = {
 					return null;
 				}
 
-				if (!user[0].password) {
+				const userData = user[0]!;
+
+				if (!userData.password) {
 					console.log("User has no password (OAuth only user)");
 					// This is an OAuth user trying to login with credentials
 					throw new Error("OAUTH_USER");
@@ -87,8 +89,8 @@ export const authConfig = {
 
 				// Verify password
 				const isValid = await bcrypt.compare(
-					credentials.password,
-					user[0].password
+					credentials.password as string,
+					userData.password
 				);
 
 				console.log("Password valid:", isValid);
@@ -97,18 +99,19 @@ export const authConfig = {
 					return null;
 				}
 
-				// Check if email is verified (commented out for now to allow login)
-				// if (!user[0].emailVerified) {
-				//	throw new Error("Please verify your email before signing in");
-				// }
+				// Check if email is verified
+				if (!userData.emailVerified) {
+					console.log("User email not verified");
+					throw new Error("EMAIL_NOT_VERIFIED");
+				}
 
-				console.log("Returning user:", user[0].id);
+				console.log("Returning user:", userData.id);
 
 				return {
-					id: user[0].id,
-					email: user[0].email,
-					name: user[0].name,
-					role: user[0].role || "user",
+					id: userData.id,
+					email: userData.email,
+					name: userData.name,
+					role: (userData.role || "user") as "user" | "admin" | "super_admin",
 				};
 			},
 		}),
@@ -118,7 +121,7 @@ export const authConfig = {
 		accountsTable: accounts,
 		sessionsTable: sessions,
 		verificationTokensTable: verificationTokens,
-	}),
+	}) as any,
 	callbacks: {
 		async jwt({ token, user, trigger }) {
 			// Handle token errors gracefully
@@ -145,7 +148,7 @@ export const authConfig = {
 					return null;
 				}
 
-				const currentUser = existingUser[0];
+				const currentUser = existingUser[0]!;
 
 				// Check if user should be super admin
 				const superAdminEmails = process.env.SUPER_ADMIN_EMAILS?.split(",").map(e => e.trim()) || [];
@@ -196,7 +199,7 @@ export const authConfig = {
 					user: {
 						...session.user,
 						id: token.id as string,
-						role: (token.role as string) || "user",
+						role: (token.role as "user" | "admin" | "super_admin") || "user",
 					},
 				};
 			}
@@ -221,7 +224,7 @@ export const authConfig = {
 					.limit(1);
 
 				if (existingUser.length > 0) {
-					const currentUser = existingUser[0];
+					const currentUser = existingUser[0]!;
 
 					// Promote to super_admin if in SUPER_ADMIN_EMAILS list and not already super_admin
 					if (isSuperAdmin && currentUser.role !== "super_admin") {

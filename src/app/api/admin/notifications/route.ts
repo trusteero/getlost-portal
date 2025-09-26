@@ -42,6 +42,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }
 
+    const reportDetail = reportDetails[0]!;
+
     // Create notification
     await db
       .insert(notifications)
@@ -49,10 +51,10 @@ export async function POST(request: NextRequest) {
         userId,
         type,
         title: "Your analysis report is ready!",
-        message: `The analysis report for "${reportDetails[0].bookTitle}" has been completed and is now available for viewing.`,
+        message: `The analysis report for "${reportDetail.bookTitle}" has been completed and is now available for viewing.`,
         data: JSON.stringify({
           reportId,
-          bookId: reportDetails[0].bookId,
+          bookId: reportDetail.bookId,
         }),
         read: false,
       });

@@ -47,7 +47,7 @@ export async function POST(
       htmlContent = await file.text();
     } else if (isPdf) {
       // TODO: Upload PDF to storage and get URL
-      pdfUrl = `/uploads/reports/${params.id}/${file.name}`;
+      pdfUrl = `/uploads/reports/${id}/${file.name}`;
     }
 
     // Update report

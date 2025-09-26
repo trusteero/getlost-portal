@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookVersions, reports } from "@/server/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { promises as fs } from "fs";
 import path from "path";
 
@@ -69,8 +69,10 @@ export async function GET(
     const [report] = await db
       .select()
       .from(reports)
-      .where(eq(reports.bookVersionId, latestVersion.id))
-      .where(eq(reports.status, "completed"))
+      .where(and(
+        eq(reports.bookVersionId, latestVersion.id),
+        eq(reports.status, "completed")
+      ))
       .orderBy(desc(reports.requestedAt))
       .limit(1);
 
@@ -121,7 +123,7 @@ export async function GET(
     headers.set('Content-Disposition', `attachment; filename="${fileName}"`);
     headers.set('Content-Length', fileBuffer.length.toString());
 
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(fileBuffer as any, {
       status: 200,
       headers,
     });

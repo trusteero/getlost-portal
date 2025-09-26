@@ -43,7 +43,7 @@ export async function PATCH(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const target = targetUser[0];
+    const target = targetUser[0]!;
 
     // Prevent changing super_admin roles
     if (target.role === "super_admin") {

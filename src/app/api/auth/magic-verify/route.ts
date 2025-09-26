@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const tokenData = magicToken[0];
+    const tokenData = magicToken[0]!;
 
     // Check if token is a magic link token (has "magic:" prefix)
     if (!tokenData.identifier.startsWith("magic:")) {
@@ -71,8 +71,10 @@ export async function POST(request: Request) {
       );
     }
 
+    const userData = user[0]!;
+
     // Check if user has a password (OAuth user check)
-    if (!user[0].password) {
+    if (!userData.password) {
       // Delete the token since we're not using it
       await db
         .delete(verificationTokens)
@@ -96,7 +98,7 @@ export async function POST(request: Request) {
 
     await db.insert(sessions).values({
       sessionToken,
-      userId: user[0].id,
+      userId: userData.id,
       expires: sessionExpiry,
     });
 
@@ -112,7 +114,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       message: "Magic link verified successfully",
-      email: user[0].email,
+      email: userData.email,
     });
   } catch (error) {
     console.error("Magic link verification error:", error);

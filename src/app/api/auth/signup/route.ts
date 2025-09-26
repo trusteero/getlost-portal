@@ -92,14 +92,16 @@ export async function POST(request: Request) {
 			console.error("Failed to send verification email to:", email);
 		}
 
+		const createdUser = newUser[0]!;
+
 		// Return success (user is created but not logged in)
 		return NextResponse.json(
 			{
 				message: "Account created successfully. Please check your email to verify your account.",
 				user: {
-					id: newUser[0].id,
-					email: newUser[0].email,
-					name: newUser[0].name,
+					id: createdUser.id,
+					email: createdUser.email,
+					name: createdUser.name,
 				},
 				emailSent,
 			},

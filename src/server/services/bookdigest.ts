@@ -68,7 +68,7 @@ export async function triggerBookDigest(bookId: string, fileBuffer: Buffer, file
 
     // Create FormData for file upload
     const formData = new FormData();
-    const file = new Blob([fileBuffer], { type: 'application/octet-stream' });
+    const file = new Blob([fileBuffer as any], { type: 'application/octet-stream' });
     formData.append("file", file, fileName);
 
     // Send request to BookDigest service
@@ -98,12 +98,12 @@ export async function triggerBookDigest(bookId: string, fileBuffer: Buffer, file
         lastAttemptAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(eq(digestJobs.id, newJob.id));
+      .where(eq(digestJobs.id, newJob!.id));
 
     console.log(`BookDigest job ${data.job_id} started for book ${bookId}`);
 
     return {
-      ...newJob,
+      ...newJob!,
       externalJobId: data.job_id,
       status: "processing",
     };
@@ -128,17 +128,18 @@ export async function triggerBookDigest(bookId: string, fileBuffer: Buffer, file
 }
 
 export async function checkBookDigestStatus(jobId: string) {
-  try {
-    // Get the digest job from database
-    const [job] = await db
-      .select()
-      .from(digestJobs)
-      .where(eq(digestJobs.id, jobId))
-      .limit(1);
+  // Get the digest job from database first (outside try block)
+  const [job] = await db
+    .select()
+    .from(digestJobs)
+    .where(eq(digestJobs.id, jobId))
+    .limit(1);
 
-    if (!job || !job.externalJobId) {
-      throw new Error("Digest job not found or no external ID");
-    }
+  if (!job || !job.externalJobId) {
+    throw new Error("Digest job not found or no external ID");
+  }
+
+  try {
 
     // Check status from BookDigest service
     const response = await fetch(`${BOOKDIGEST_URL}/v1/jobs/${job.externalJobId}`, {

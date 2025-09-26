@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Get all reports with related data
-    const allReports = await db
+    const allReportsFlat = await db
       .select({
         id: reports.id,
         status: reports.status,
@@ -28,26 +28,44 @@ export async function GET(request: NextRequest) {
         startedAt: reports.startedAt,
         completedAt: reports.completedAt,
         analyzedBy: reports.analyzedBy,
-        bookVersion: {
-          id: bookVersions.id,
-          fileName: bookVersions.fileName,
-          fileUrl: bookVersions.fileUrl,
-          book: {
-            id: books.id,
-            title: books.title,
-            user: {
-              id: users.id,
-              name: users.name,
-              email: users.email,
-            },
-          },
-        },
+        bookVersionId: bookVersions.id,
+        bookVersionFileName: bookVersions.fileName,
+        bookVersionFileUrl: bookVersions.fileUrl,
+        bookId: books.id,
+        bookTitle: books.title,
+        userId: users.id,
+        userName: users.name,
+        userEmail: users.email,
       })
       .from(reports)
       .innerJoin(bookVersions, eq(reports.bookVersionId, bookVersions.id))
       .innerJoin(books, eq(bookVersions.bookId, books.id))
       .innerJoin(users, eq(books.userId, users.id))
       .orderBy(desc(reports.requestedAt));
+
+    // Transform flat data to nested structure
+    const allReports = allReportsFlat.map(report => ({
+      id: report.id,
+      status: report.status,
+      requestedAt: report.requestedAt,
+      startedAt: report.startedAt,
+      completedAt: report.completedAt,
+      analyzedBy: report.analyzedBy,
+      bookVersion: {
+        id: report.bookVersionId,
+        fileName: report.bookVersionFileName,
+        fileUrl: report.bookVersionFileUrl,
+        book: {
+          id: report.bookId,
+          title: report.bookTitle,
+          user: {
+            id: report.userId,
+            name: report.userName,
+            email: report.userEmail,
+          },
+        },
+      },
+    }));
 
     // Check if notifications were sent (simplified for now)
     const reportsWithNotificationStatus = allReports.map(report => ({
