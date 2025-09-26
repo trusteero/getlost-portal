@@ -116,6 +116,8 @@ export const bookVersions = createTable(
 		fileUrl: d.text({ length: 1000 }).notNull(),
 		fileSize: d.integer({ mode: "number" }).notNull(),
 		fileType: d.text({ length: 100 }).notNull(),
+		fileData: d.text(), // Base64 encoded file data (legacy, will migrate to file system)
+		mimeType: d.text({ length: 100 }), // MIME type of the file
 		summary: d.text(),
 		uploadedAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
 	}),

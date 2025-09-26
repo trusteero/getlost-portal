@@ -331,8 +331,8 @@ export default async function Home() {
 						<div className="text-center mt-6">
 							<p className="text-sm text-gray-600">
 								Need a custom plan? Contact us at{" "}
-								<a href="mailto:info@getlost.ai" className="text-orange-600 hover:text-orange-700 underline">
-									info@getlost.ai
+								<a href="mailto:info@getlost.ink" className="text-orange-600 hover:text-orange-700 underline">
+									info@getlost.ink
 								</a>
 							</p>
 						</div>
@@ -461,7 +461,7 @@ export default async function Home() {
 								© 2025 Get Lost. All rights reserved.
 							</p>
 							<p className="text-sm text-gray-600">
-								Contact: <a href="mailto:info@getlost.ai" className="text-orange-600 hover:text-orange-700">info@getlost.ai</a>
+								Contact: <a href="mailto:info@getlost.ink" className="text-orange-600 hover:text-orange-700">info@getlost.ink</a>
 							</p>
 						</div>
 					</div>

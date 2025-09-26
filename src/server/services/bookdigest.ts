@@ -1,6 +1,8 @@
 import { db } from "@/server/db";
 import { digestJobs, books } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
+import { promises as fs } from "fs";
+import path from "path";
 
 const BOOKDIGEST_URL = process.env.BOOKDIGEST_URL || "https://bookdigest.onrender.com";
 const BOOKDIGEST_API_KEY = process.env.BOOKDIGEST_API_KEY || "";
@@ -176,9 +178,32 @@ export async function checkBookDigestStatus(jobId: string) {
             const imageBuffer = await imageResponse.arrayBuffer();
             const buffer = Buffer.from(imageBuffer);
 
-            // Convert to base64 data URL for storage
-            const contentType = imageResponse.headers.get("content-type") || "image/jpeg";
-            coverImageUrl = `data:${contentType};base64,${buffer.toString('base64')}`;
+            // Get the book ID from the digest job
+            const [job] = await db.select({ bookId: digestJobs.bookId })
+              .from(digestJobs)
+              .where(eq(digestJobs.id, jobId))
+              .limit(1);
+
+            if (job) {
+              // Save cover to file system
+              const coverStoragePath = process.env.COVER_STORAGE_PATH || './uploads/covers';
+              const coverDir = path.resolve(coverStoragePath);
+
+              // Create directory if it doesn't exist
+              await fs.mkdir(coverDir, { recursive: true });
+
+              // Determine file extension from content type
+              const contentType = imageResponse.headers.get("content-type") || "image/jpeg";
+              const ext = contentType.split('/')[1] || 'jpg';
+              const coverFileName = `${job.bookId}.${ext}`;
+              const coverFilePath = path.join(coverDir, coverFileName);
+
+              // Save cover image to disk
+              await fs.writeFile(coverFilePath, buffer);
+
+              // Store the API path for serving
+              coverImageUrl = `/api/covers/${job.bookId}.${ext}`;
+            }
           }
         } catch (error) {
           console.error("Failed to download cover image:", error);

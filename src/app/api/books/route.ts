@@ -4,6 +4,8 @@ import { db } from "@/server/db";
 import { books, bookVersions, digestJobs } from "@/server/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { triggerBookDigest } from "@/server/services/bookdigest";
+import { promises as fs } from "fs";
+import path from "path";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -82,21 +84,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // Generate book ID first
+    const bookId = crypto.randomUUID();
+
     // Handle cover image upload if provided
     let coverImageUrl: string | null = null;
     if (coverImage) {
-      // Convert to base64 data URL for simplicity (in production, upload to S3 or similar)
+      const coverStoragePath = process.env.COVER_STORAGE_PATH || './uploads/covers';
+      const coverDir = path.resolve(coverStoragePath);
+
+      // Create directory if it doesn't exist
+      await fs.mkdir(coverDir, { recursive: true });
+
+      // Get file extension from MIME type
+      const ext = coverImage.type.split('/')[1] || 'jpg';
+      const coverFileName = `${bookId}.${ext}`;
+      const coverFilePath = path.join(coverDir, coverFileName);
+
+      // Save cover image to disk
       const bytes = await coverImage.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      const base64 = buffer.toString('base64');
-      const mimeType = coverImage.type;
-      coverImageUrl = `data:${mimeType};base64,${base64}`;
+      await fs.writeFile(coverFilePath, buffer);
+
+      // Store the path for serving
+      coverImageUrl = `/api/covers/${bookId}.${ext}`;
     }
 
-    // Create book
+    // Create book with pre-generated ID
     const newBook = await db
       .insert(books)
       .values({
+        id: bookId,
         userId: session.user.id,
         title,
         description,
@@ -104,13 +122,31 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
+    // Save the book file to disk
+    const bookStoragePath = process.env.BOOK_STORAGE_PATH || './uploads/books';
+    const bookDir = path.resolve(bookStoragePath);
+
+    // Create directory if it doesn't exist
+    await fs.mkdir(bookDir, { recursive: true });
+
+    // Save file with book ID as name (preserving extension for download)
+    const fileExt = path.extname(file.name);
+    const storedFileName = `${bookId}${fileExt}`;
+    const bookFilePath = path.join(bookDir, storedFileName);
+
+    // Save book file to disk
+    const fileBytes = await file.arrayBuffer();
+    const fileBuffer = Buffer.from(fileBytes);
+    await fs.writeFile(bookFilePath, fileBuffer);
+
+    // Also store file data in database for now (for backward compatibility)
+    const fileBase64 = fileBuffer.toString('base64');
+
     // Create first version
     const fileName = file.name;
     const fileType = file.type;
     const fileSize = file.size;
-
-    // TODO: Upload file to storage (S3, local, etc.)
-    const fileUrl = `/uploads/${newBook[0].id}/v1/${fileName}`;
+    const fileUrl = `/api/books/${bookId}/file`;
 
     const newVersion = await db
       .insert(bookVersions)
@@ -121,14 +157,14 @@ export async function POST(request: NextRequest) {
         fileUrl,
         fileSize,
         fileType,
+        fileData: fileBase64,
+        mimeType: fileType,
         summary,
       })
       .returning();
 
     // Trigger BookDigest job asynchronously
     try {
-      const fileBytes = await file.arrayBuffer();
-      const fileBuffer = Buffer.from(fileBytes);
       await triggerBookDigest(newBook[0].id, fileBuffer, fileName);
       console.log(`BookDigest job triggered for book ${newBook[0].id}`);
     } catch (error) {

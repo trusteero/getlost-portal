@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -8,44 +8,72 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   FileText, Clock, CheckCircle, Upload, Bell, Eye, User, Calendar,
-  Loader2, AlertCircle, Home, LogOut, ChevronDown, Settings
+  Loader2, AlertCircle, Home, LogOut, ChevronDown, ChevronRight, Settings,
+  RefreshCw, Users, TrendingUp, BookOpen, Image, Download
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 
-interface Report {
+interface DigestJob {
   id: string;
-  status: "pending" | "analyzing" | "completed";
-  requestedAt: string;
+  status: string;
+  createdAt: string;
   startedAt?: string;
   completedAt?: string;
-  analyzedBy?: string;
-  bookVersion: {
+  attempts: number;
+  error?: string;
+  brief?: string;
+  summary?: string;
+  title?: string;
+  author?: string;
+  pages?: number;
+  words?: number;
+  language?: string;
+}
+
+interface Book {
+  id: string;
+  title: string;
+  description?: string;
+  coverImageUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    name?: string;
+    email: string;
+  };
+  digestJob?: DigestJob;
+  latestVersion?: {
     id: string;
     fileName: string;
-    fileUrl: string;
-    book: {
-      id: string;
-      title: string;
-      user: {
-        id: string;
-        name: string;
-        email: string;
-      };
-    };
+    fileSize: number;
+    uploadedAt: string;
   };
-  notificationSent?: boolean;
 }
+
+interface Analytics {
+  newUsersToday: number;
+  newUsersYesterday: number;
+  dailyActiveUsers: number;
+  totalUsers: number;
+}
+
+type SortField = "title" | "user" | "status" | "createdAt" | "updatedAt";
+type SortDirection = "asc" | "desc";
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [reports, setReports] = useState<Report[]>([]);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "pending" | "analyzing" | "completed">("all");
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [uploadingResult, setUploadingResult] = useState(false);
-  const [notifying, setNotifying] = useState(false);
+  const [expandedBooks, setExpandedBooks] = useState<Set<string>>(new Set());
+  const [refreshing, setRefreshing] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [sortField, setSortField] = useState<SortField>("createdAt");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   // Check if user is admin
   useEffect(() => {
@@ -67,7 +95,7 @@ export default function AdminDashboard() {
           return;
         }
 
-        fetchReports();
+        fetchData();
       } catch (error) {
         console.error("Failed to check admin status:", error);
         router.push("/dashboard");
@@ -79,98 +107,150 @@ export default function AdminDashboard() {
     }
   }, [status, session]);
 
-  const fetchReports = async () => {
+  const fetchData = async () => {
     try {
-      const response = await fetch("/api/admin/reports");
-      if (response.ok) {
-        const data = await response.json();
-        setReports(data);
+      // Fetch books and analytics in parallel
+      const [booksRes, analyticsRes] = await Promise.all([
+        fetch("/api/admin/books"),
+        fetch("/api/admin/analytics")
+      ]);
+
+      if (booksRes.ok) {
+        const booksData = await booksRes.json();
+        setBooks(booksData);
+      }
+
+      if (analyticsRes.ok) {
+        const analyticsData = await analyticsRes.json();
+        setAnalytics(analyticsData);
       }
     } catch (error) {
-      console.error("Failed to fetch reports:", error);
+      console.error("Failed to fetch data:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStatusChange = async (reportId: string, newStatus: "pending" | "analyzing" | "completed") => {
+  const handleRefreshDigestStatus = async () => {
+    setRefreshing(true);
     try {
-      const response = await fetch(`/api/admin/reports/${reportId}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (response.ok) {
-        await fetchReports();
-      }
-    } catch (error) {
-      console.error("Failed to update status:", error);
-    }
-  };
-
-  const handleUploadResult = async (reportId: string, file: File) => {
-    setUploadingResult(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("reportId", reportId);
-
-      const response = await fetch(`/api/admin/reports/${reportId}/upload`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        await fetchReports();
-        setSelectedReport(null);
-      }
-    } catch (error) {
-      console.error("Failed to upload result:", error);
+      await fetchData();
     } finally {
-      setUploadingResult(false);
+      setRefreshing(false);
     }
   };
 
-  const handleNotifyUser = async (reportId: string, userId: string) => {
-    setNotifying(true);
-    try {
-      const response = await fetch(`/api/admin/notifications`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reportId,
-          userId,
-          type: "report_ready",
-        }),
-      });
-
-      if (response.ok) {
-        await fetchReports();
-      }
-    } catch (error) {
-      console.error("Failed to send notification:", error);
-    } finally {
-      setNotifying(false);
+  const toggleBookExpansion = (bookId: string) => {
+    const newExpanded = new Set(expandedBooks);
+    if (newExpanded.has(bookId)) {
+      newExpanded.delete(bookId);
+    } else {
+      newExpanded.add(bookId);
     }
+    setExpandedBooks(newExpanded);
   };
 
-  const getStatusIcon = (status: string) => {
+  const getDigestStatusIcon = (status?: string) => {
+    if (!status) return <Clock className="w-4 h-4 text-gray-400" />;
+
     switch (status) {
       case "pending":
         return <Clock className="w-4 h-4 text-yellow-600" />;
-      case "analyzing":
+      case "processing":
         return <div className="w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />;
       case "completed":
         return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case "failed":
+        return <AlertCircle className="w-4 h-4 text-red-600" />;
       default:
-        return null;
+        return <Clock className="w-4 h-4 text-gray-400" />;
     }
   };
 
-  const filteredReports = reports.filter(report =>
-    filter === "all" || report.status === filter
+  const getDigestStatusText = (status?: string) => {
+    if (!status) return "No digest";
+
+    switch (status) {
+      case "pending":
+        return "Pending";
+      case "processing":
+        return "Processing";
+      case "completed":
+        return "Completed";
+      case "failed":
+        return "Failed";
+      default:
+        return status;
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+    setCurrentPage(1);
+  };
+
+  const sortedBooks = [...books].sort((a, b) => {
+    let aValue: any, bValue: any;
+
+    switch (sortField) {
+      case "title":
+        aValue = a.title.toLowerCase();
+        bValue = b.title.toLowerCase();
+        break;
+      case "user":
+        aValue = (a.user.name || a.user.email).toLowerCase();
+        bValue = (b.user.name || b.user.email).toLowerCase();
+        break;
+      case "status":
+        aValue = a.digestJob?.status || "none";
+        bValue = b.digestJob?.status || "none";
+        break;
+      case "createdAt":
+        aValue = new Date(a.createdAt).getTime();
+        bValue = new Date(b.createdAt).getTime();
+        break;
+      case "updatedAt":
+        aValue = new Date(a.updatedAt).getTime();
+        bValue = new Date(b.updatedAt).getTime();
+        break;
+      default:
+        return 0;
+    }
+
+    if (sortDirection === "asc") {
+      return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+    } else {
+      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+    }
+  });
+
+  const totalPages = Math.ceil(sortedBooks.length / itemsPerPage);
+  const paginatedBooks = sortedBooks.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return <ChevronDown className="w-3 h-3 text-gray-400" />;
+    }
+    return sortDirection === "asc" ? (
+      <ChevronDown className="w-3 h-3 text-gray-600 rotate-180" />
+    ) : (
+      <ChevronDown className="w-3 h-3 text-gray-600" />
+    );
+  };
 
   if (loading || status === "loading") {
     return (
@@ -268,16 +348,16 @@ export default function AdminDashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats */}
+        {/* Analytics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Total Reports</p>
-                  <p className="text-2xl font-bold">{reports.length}</p>
+                  <p className="text-sm text-gray-600">Total Books</p>
+                  <p className="text-2xl font-bold">{books.length}</p>
                 </div>
-                <FileText className="w-8 h-8 text-gray-400" />
+                <BookOpen className="w-8 h-8 text-gray-400" />
               </div>
             </CardContent>
           </Card>
@@ -286,12 +366,18 @@ export default function AdminDashboard() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Pending</p>
-                  <p className="text-2xl font-bold text-yellow-600">
-                    {reports.filter(r => r.status === "pending").length}
+                  <p className="text-sm text-gray-600">New Users Today</p>
+                  <p className="text-2xl font-bold">
+                    {analytics?.newUsersToday || 0}
                   </p>
+                  {analytics && analytics.newUsersYesterday > 0 && (
+                    <p className="text-xs text-gray-500">
+                      {analytics.newUsersToday > analytics.newUsersYesterday ? "+" : ""}
+                      {((analytics.newUsersToday - analytics.newUsersYesterday) / analytics.newUsersYesterday * 100).toFixed(0)}%
+                    </p>
+                  )}
                 </div>
-                <Clock className="w-8 h-8 text-yellow-600" />
+                <Users className="w-8 h-8 text-blue-600" />
               </div>
             </CardContent>
           </Card>
@@ -300,12 +386,12 @@ export default function AdminDashboard() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Analyzing</p>
-                  <p className="text-2xl font-bold text-orange-600">
-                    {reports.filter(r => r.status === "analyzing").length}
+                  <p className="text-sm text-gray-600">Daily Active Users</p>
+                  <p className="text-2xl font-bold">
+                    {analytics?.dailyActiveUsers || 0}
                   </p>
                 </div>
-                <Loader2 className="w-8 h-8 text-orange-600 animate-spin" />
+                <TrendingUp className="w-8 h-8 text-green-600" />
               </div>
             </CardContent>
           </Card>
@@ -314,152 +400,333 @@ export default function AdminDashboard() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Completed</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {reports.filter(r => r.status === "completed").length}
+                  <p className="text-sm text-gray-600">Total Users</p>
+                  <p className="text-2xl font-bold">
+                    {analytics?.totalUsers || 0}
                   </p>
                 </div>
-                <CheckCircle className="w-8 h-8 text-green-600" />
+                <Users className="w-8 h-8 text-purple-600" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex space-x-2 mb-6">
-          {(["all", "pending", "analyzing", "completed"] as const).map((tab) => (
-            <Button
-              key={tab}
-              variant={filter === tab ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilter(tab)}
-              className={filter === tab ? "bg-orange-600 hover:bg-orange-700" : ""}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </Button>
-          ))}
-        </div>
 
-        {/* Reports Table */}
+        {/* Books Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Book Reports</CardTitle>
-            <CardDescription>Manage and upload book reports for users</CardDescription>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>All Books ({books.length})</CardTitle>
+                <CardDescription>Manage all uploaded books and their processing status</CardDescription>
+              </div>
+              <div className="flex items-center space-x-2">
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="text-sm border rounded px-2 py-1"
+                >
+                  <option value={25}>25 per page</option>
+                  <option value={50}>50 per page</option>
+                  <option value={100}>100 per page</option>
+                </select>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleRefreshDigestStatus}
+                  disabled={refreshing}
+                >
+                  {refreshing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  <span className="ml-2">Refresh</span>
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            {filteredReports.length === 0 ? (
+            {books.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                No reports found
+                No books found
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-2">Status</th>
-                      <th className="text-left py-2 px-2">Book Title</th>
-                      <th className="text-left py-2 px-2">Author</th>
-                      <th className="text-left py-2 px-2">File</th>
-                      <th className="text-left py-2 px-2">Submitted</th>
-                      <th className="text-left py-2 px-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredReports.map((report) => (
-                      <tr key={report.id} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-2">
-                          <div className="flex items-center space-x-2">
-                            {getStatusIcon(report.status)}
-                            <select
-                              value={report.status}
-                              onChange={(e) => {
-                                if (e.target.value === "pending" || e.target.value === "analyzing" || e.target.value === "completed") {
-                                  handleStatusChange(report.id, e.target.value as "analyzing" | "completed");
-                                }
-                              }}
-                              className="text-xs border rounded px-2 py-1"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <option value="pending">Pending</option>
-                              <option value="analyzing">Analyzing</option>
-                              <option value="completed">Completed</option>
-                            </select>
-                          </div>
-                        </td>
-                        <td className="py-3 px-2 font-medium">{report.bookVersion.book.title}</td>
-                        <td className="py-3 px-2">{report.bookVersion.book.user.name || report.bookVersion.book.user.email?.split('@')[0]}</td>
-                        <td className="py-3 px-2">
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 px-2 w-8"></th>
+                        <th className="text-left py-2 px-2 w-12">Cover</th>
+                        <th
+                          className="text-left py-2 px-2 cursor-pointer hover:bg-gray-50"
+                          onClick={() => handleSort("title")}
+                        >
                           <div className="flex items-center space-x-1">
-                            <FileText className="w-4 h-4 text-gray-400" />
-                            <span className="truncate max-w-[150px]" title={report.bookVersion.fileName}>
-                              {report.bookVersion.fileName}
-                            </span>
+                            <span>Title</span>
+                            <SortIcon field="title" />
                           </div>
-                        </td>
-                        <td className="py-3 px-2">
-                          {new Date(report.requestedAt).toLocaleDateString()} {new Date(report.requestedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td className="py-3 px-2">
+                        </th>
+                        <th
+                          className="text-left py-2 px-2 cursor-pointer hover:bg-gray-50"
+                          onClick={() => handleSort("user")}
+                        >
                           <div className="flex items-center space-x-1">
-                            {report.status === "analyzing" && (
-                              <label className="inline-flex items-center px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer">
-                                <Upload className="w-3 h-3 mr-1" />
-                                Upload
-                                <input
-                                  type="file"
-                                  className="hidden"
-                                  accept=".html,.pdf"
-                                  onChange={(e) => {
-                                    if (e.target.files?.[0]) {
-                                      handleUploadResult(report.id, e.target.files[0]);
-                                    }
-                                  }}
-                                />
-                              </label>
-                            )}
-
-                            {report.status === "completed" && !report.notificationSent && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 px-2 text-xs"
-                                onClick={() => handleNotifyUser(report.id, report.bookVersion.book.user.id)}
-                                disabled={notifying}
-                              >
-                                {notifying ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <>
-                                    <Bell className="w-3 h-3 mr-1" />
-                                    Notify
-                                  </>
-                                )}
-                              </Button>
-                            )}
-
-                            {report.notificationSent && (
-                              <span className="text-xs text-green-600 flex items-center">
-                                <Bell className="w-3 h-3 mr-1" />
-                                Sent
-                              </span>
-                            )}
-
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 px-2 text-xs"
-                              onClick={() => window.open(report.bookVersion.fileUrl, "_blank")}
-                            >
-                              <Eye className="w-3 h-3 mr-1" />
-                              View
-                            </Button>
+                            <span>User</span>
+                            <SortIcon field="user" />
                           </div>
-                        </td>
+                        </th>
+                        <th
+                          className="text-left py-2 px-2 cursor-pointer hover:bg-gray-50"
+                          onClick={() => handleSort("status")}
+                        >
+                          <div className="flex items-center space-x-1">
+                            <span>Status</span>
+                            <SortIcon field="status" />
+                          </div>
+                        </th>
+                        <th
+                          className="text-left py-2 px-2 cursor-pointer hover:bg-gray-50"
+                          onClick={() => handleSort("createdAt")}
+                        >
+                          <div className="flex items-center space-x-1">
+                            <span>Created</span>
+                            <SortIcon field="createdAt" />
+                          </div>
+                        </th>
+                        <th
+                          className="text-left py-2 px-2 cursor-pointer hover:bg-gray-50"
+                          onClick={() => handleSort("updatedAt")}
+                        >
+                          <div className="flex items-center space-x-1">
+                            <span>Updated</span>
+                            <SortIcon field="updatedAt" />
+                          </div>
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {paginatedBooks.map((book) => (
+                        <React.Fragment key={book.id}>
+                          <tr className="border-b hover:bg-gray-50">
+                            <td className="py-2 px-2">
+                              <button
+                                onClick={() => toggleBookExpansion(book.id)}
+                                className="p-1 hover:bg-gray-200 rounded"
+                              >
+                                {expandedBooks.has(book.id) ? (
+                                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                                ) : (
+                                  <ChevronRight className="w-4 h-4 text-gray-500" />
+                                )}
+                              </button>
+                            </td>
+                            <td className="py-2 px-2">
+                              {book.coverImageUrl ? (
+                                <img
+                                  src={book.coverImageUrl}
+                                  alt={book.title}
+                                  className="w-8 h-11 object-cover rounded"
+                                />
+                              ) : (
+                                <div className="w-8 h-11 bg-gray-100 rounded flex items-center justify-center">
+                                  <Image className="w-3 h-3 text-gray-400" />
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-2 px-2">
+                              <div className="max-w-xs">
+                                <div className="font-medium truncate">{book.title}</div>
+                                {book.description && (
+                                  <div className="text-xs text-gray-500 truncate">{book.description}</div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2 px-2 text-gray-600">
+                              {book.user.name || book.user.email.split('@')[0]}
+                            </td>
+                            <td className="py-2 px-2">
+                              <div className="flex items-center space-x-1">
+                                {getDigestStatusIcon(book.digestJob?.status)}
+                                <span className="text-xs">
+                                  {getDigestStatusText(book.digestJob?.status)}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-2 px-2 text-xs text-gray-600">
+                              {new Date(book.createdAt).toLocaleDateString()}<br/>
+                              {new Date(book.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                            <td className="py-2 px-2 text-xs text-gray-600">
+                              {new Date(book.updatedAt).toLocaleDateString()}<br/>
+                              {new Date(book.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                          </tr>
+                          {expandedBooks.has(book.id) && (
+                            <tr>
+                              <td colSpan={7} className="bg-gray-50 px-8 py-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  {/* Book details */}
+                                  <div>
+                                    <h4 className="font-medium text-sm mb-2">Book Details</h4>
+                                    <div className="space-y-1 text-xs">
+                                      {book.digestJob?.author && (
+                                        <div>
+                                          <span className="text-gray-600">Author:</span> {book.digestJob.author}
+                                        </div>
+                                      )}
+                                      {book.digestJob?.pages && (
+                                        <div>
+                                          <span className="text-gray-600">Pages:</span> {book.digestJob.pages}
+                                        </div>
+                                      )}
+                                      {book.digestJob?.words && (
+                                        <div>
+                                          <span className="text-gray-600">Words:</span> {book.digestJob.words.toLocaleString()}
+                                        </div>
+                                      )}
+                                      {book.digestJob?.language && (
+                                        <div>
+                                          <span className="text-gray-600">Language:</span> {book.digestJob.language}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* File info */}
+                                  {book.latestVersion && (
+                                    <div>
+                                      <h4 className="font-medium text-sm mb-2">File Information</h4>
+                                      <div className="space-y-1 text-xs">
+                                        <div>
+                                          <span className="text-gray-600">File:</span>
+                                          <span className="ml-1 inline-block max-w-[200px] truncate align-bottom" title={book.latestVersion.fileName}>
+                                            {book.latestVersion.fileName}
+                                          </span>
+                                        </div>
+                                        <div>
+                                          <span className="text-gray-600">Size:</span> {formatFileSize(book.latestVersion.fileSize)}
+                                        </div>
+                                        <div>
+                                          <span className="text-gray-600">Uploaded:</span> {new Date(book.latestVersion.uploadedAt).toLocaleString()}
+                                        </div>
+                                        <div className="mt-2">
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-7 text-xs"
+                                            onClick={() => window.location.href = `/api/admin/books/${book.id}/download`}
+                                          >
+                                            <Download className="w-3 h-3 mr-1" />
+                                            Download
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Processing details */}
+                                  <div>
+                                    <h4 className="font-medium text-sm mb-2">Processing</h4>
+                                    <div className="space-y-1 text-xs">
+                                      {book.digestJob?.attempts && book.digestJob.attempts > 0 && (
+                                        <div>
+                                          <span className="text-gray-600">Attempts:</span> {book.digestJob.attempts}
+                                        </div>
+                                      )}
+                                      {book.digestJob?.startedAt && (
+                                        <div>
+                                          <span className="text-gray-600">Started:</span> {new Date(book.digestJob.startedAt).toLocaleString()}
+                                        </div>
+                                      )}
+                                      {book.digestJob?.completedAt && (
+                                        <div>
+                                          <span className="text-gray-600">Completed:</span> {new Date(book.digestJob.completedAt).toLocaleString()}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Brief */}
+                                {book.digestJob?.brief && (
+                                  <div className="mt-4">
+                                    <h4 className="font-medium text-sm mb-1">Brief</h4>
+                                    <p className="text-xs text-gray-600">{book.digestJob.brief}</p>
+                                  </div>
+                                )}
+
+                                {/* Error */}
+                                {book.digestJob?.error && (
+                                  <div className="mt-4 p-2 bg-red-50 rounded">
+                                    <span className="text-red-600 text-xs">Error: {book.digestJob.error}</span>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="text-sm text-gray-600">
+                      Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, books.length)} of {books.length} books
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        Previous
+                      </Button>
+                      <div className="flex items-center space-x-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+                          return (
+                            <Button
+                              key={pageNum}
+                              size="sm"
+                              variant={currentPage === pageNum ? "default" : "outline"}
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={currentPage === pageNum ? "bg-orange-600 hover:bg-orange-700" : ""}
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
