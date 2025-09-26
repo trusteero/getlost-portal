@@ -234,6 +234,7 @@ export async function checkBookDigestStatus(jobId: string) {
 
       // Update book with cover if extracted
       if (coverImageUrl && job.bookId) {
+        console.log(`Updating book ${job.bookId} with cover URL: ${coverImageUrl}`);
         await db
           .update(books)
           .set({
@@ -241,6 +242,9 @@ export async function checkBookDigestStatus(jobId: string) {
             updatedAt: new Date(),
           })
           .where(eq(books.id, job.bookId));
+        console.log(`Successfully updated book ${job.bookId} with cover`);
+      } else {
+        console.log(`No cover URL to update for book ${job.bookId}`);
       }
 
       // Update book with brief as description if extracted and empty

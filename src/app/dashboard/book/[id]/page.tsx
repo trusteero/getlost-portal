@@ -144,11 +144,19 @@ export default function BookDetail() {
             (new Date().getTime() - new Date(data.completedAt).getTime()) < 30000 // completed in last 30 seconds
         });
 
-        // Only reload if we see a transition from processing/pending to completed
-        if (data.status === "completed" && (prevStatus === "processing" || prevStatus === "pending")) {
-          console.log("Processing completed! Reloading page...");
+        // Check if we should reload the page
+        const shouldReload = data.status === "completed" && (
+          // Case 1: We saw a transition from processing/pending to completed
+          (prevStatus === "processing" || prevStatus === "pending") ||
+          // Case 2: First load and it completed recently (within last 60 seconds)
+          (isFirstLoad && data.completedAt &&
+           (new Date().getTime() - new Date(data.completedAt).getTime()) < 60000)
+        );
+
+        if (shouldReload && !window.location.search.includes("ready=1")) {
+          console.log("Processing completed! Reloading page in 3 seconds...");
           setTimeout(() => {
-            window.location.href = window.location.pathname;
+            window.location.href = window.location.pathname + "?ready=1";
           }, 3000);
           return;
         }
