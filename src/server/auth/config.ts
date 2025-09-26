@@ -12,6 +12,7 @@ import {
 	verificationTokens,
 } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
+import { trackUserActivity } from "@/server/services/analytics";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -126,11 +127,15 @@ export const authConfig = {
 
 			return token;
 		},
-		session: ({ session, user, token }) => {
+		session: async ({ session, user, token }) => {
+			// Track user activity for DAU
+			let userId: string | undefined;
+
 			// For OAuth providers, user will be available
 			// For credentials provider, use token
 			if (user) {
-				return {
+				userId = user.id;
+				session = {
 					...session,
 					user: {
 						...session.user,
@@ -139,7 +144,8 @@ export const authConfig = {
 					},
 				};
 			} else if (token) {
-				return {
+				userId = token.id as string;
+				session = {
 					...session,
 					user: {
 						...session.user,
@@ -148,6 +154,12 @@ export const authConfig = {
 					},
 				};
 			}
+
+			// Track activity (fire and forget)
+			if (userId) {
+				trackUserActivity(userId).catch(console.error);
+			}
+
 			return session;
 		},
 		async signIn({ user, account }) {

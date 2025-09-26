@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import { index, primaryKey, sqliteTableCreator } from "drizzle-orm/sqlite-core";
+import { index, uniqueIndex, primaryKey, sqliteTableCreator } from "drizzle-orm/sqlite-core";
 import type { AdapterAccount } from "next-auth/adapters";
 
 /**
@@ -179,6 +179,24 @@ export const digestJobs = createTable(
 	(t) => [
 		index("digest_job_book_idx").on(t.bookId),
 		index("digest_job_status_idx").on(t.status),
+	],
+);
+
+// User Activity table for tracking DAU
+export const userActivity = createTable(
+	"user_activity",
+	(d) => ({
+		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+		userId: d.text({ length: 255 }).notNull().references(() => users.id),
+		date: d.text({ length: 10 }).notNull(), // Format: YYYY-MM-DD
+		firstActivityAt: d.integer({ mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+		lastActivityAt: d.integer({ mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+		activityCount: d.integer({ mode: "number" }).notNull().default(1),
+	}),
+	(t) => [
+		uniqueIndex("activity_user_date_idx").on(t.userId, t.date),
+		index("activity_date_idx").on(t.date),
+		index("activity_user_idx").on(t.userId),
 	],
 );
 

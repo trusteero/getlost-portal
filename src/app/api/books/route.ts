@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
-import { books, bookVersions, digestJobs } from "@/server/db/schema";
+import { books, bookVersions, digestJobs, reports } from "@/server/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { triggerBookDigest } from "@/server/services/bookdigest";
 import { promises as fs } from "fs";
@@ -47,12 +47,36 @@ export async function GET(request: NextRequest) {
           .orderBy(desc(digestJobs.createdAt))
           .limit(1);
 
-        // TODO: Add report fetching when reports API is ready
+        // Get latest report for the latest version
+        let latestReport = null;
+        if (latestVersion[0]) {
+          const [report] = await db
+            .select({
+              id: reports.id,
+              bookVersionId: reports.bookVersionId,
+              status: reports.status,
+              requestedAt: reports.requestedAt,
+              completedAt: reports.completedAt,
+            })
+            .from(reports)
+            .where(eq(reports.bookVersionId, latestVersion[0].id))
+            .orderBy(desc(reports.requestedAt))
+            .limit(1);
+
+          if (report) {
+            // Map database status to UI status for consistency
+            const uiStatus = report.status === "pending" ? "requested" : report.status;
+            latestReport = {
+              ...report,
+              status: uiStatus,
+            };
+          }
+        }
 
         return {
           ...book,
           latestVersion: latestVersion[0],
-          latestReport: null, // TODO: fetch from reports
+          latestReport,
           isProcessing: digestJob[0]?.status === "processing" || digestJob[0]?.status === "pending",
         };
       })

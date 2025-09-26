@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
-import { books, bookVersions, users, digestJobs } from "@/server/db/schema";
+import { books, bookVersions, users, digestJobs, reports } from "@/server/db/schema";
 import { desc, eq } from "drizzle-orm";
 
 export async function GET() {
@@ -78,10 +78,38 @@ export async function GET() {
           .orderBy(desc(bookVersions.uploadedAt))
           .limit(1);
 
+        // Get latest report for the latest version
+        let latestReport = null;
+        if (latestVersion) {
+          const [report] = await db
+            .select({
+              id: reports.id,
+              bookVersionId: reports.bookVersionId,
+              status: reports.status,
+              requestedAt: reports.requestedAt,
+              completedAt: reports.completedAt,
+            })
+            .from(reports)
+            .where(eq(reports.bookVersionId, latestVersion.id))
+            .orderBy(desc(reports.requestedAt))
+            .limit(1);
+
+          if (report) {
+            // Map database status to UI status
+            const uiStatus = report.status === "pending" ? "requested" : report.status;
+            latestReport = {
+              ...report,
+              status: uiStatus,
+              fileName: report.status === "completed" ? `report_${book.id}.pdf` : undefined,
+            };
+          }
+        }
+
         return {
           ...book,
           digestJob: latestDigest || null,
           latestVersion: latestVersion || null,
+          latestReport,
         };
       })
     );

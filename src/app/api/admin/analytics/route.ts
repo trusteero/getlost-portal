@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
-import { users } from "@/server/db/schema";
-import { sql, gte, and } from "drizzle-orm";
+import { users, userActivity } from "@/server/db/schema";
+import { sql, gte, and, eq } from "drizzle-orm";
+import { getAnalytics } from "@/server/services/analytics";
 
 export async function GET() {
   const session = await auth();
@@ -31,14 +32,15 @@ export async function GET() {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     // Get new users today
+    const todayTimestamp = Math.floor(today.getTime() / 1000);
+    const tomorrowTimestamp = Math.floor(tomorrow.getTime() / 1000);
+    const yesterdayTimestamp = Math.floor(yesterday.getTime() / 1000);
+
     const newUsersToday = await db
       .select({ count: sql<number>`count(*)` })
       .from(users)
       .where(
-        and(
-          gte(users.createdAt, today),
-          sql`${users.createdAt} < ${tomorrow}`
-        )
+        sql`${users.createdAt} >= ${todayTimestamp} AND ${users.createdAt} < ${tomorrowTimestamp}`
       );
 
     // Get new users yesterday
@@ -46,24 +48,11 @@ export async function GET() {
       .select({ count: sql<number>`count(*)` })
       .from(users)
       .where(
-        and(
-          gte(users.createdAt, yesterday),
-          sql`${users.createdAt} < ${today}`
-        )
+        sql`${users.createdAt} >= ${yesterdayTimestamp} AND ${users.createdAt} < ${todayTimestamp}`
       );
 
-    // Get daily active users (users who logged in today based on lastLogin)
-    const dailyActiveUsers = await db
-      .select({
-        count: sql<number>`count(*)`
-      })
-      .from(users)
-      .where(
-        and(
-          gte(users.lastLogin, today),
-          sql`${users.lastLogin} < ${tomorrow}`
-        )
-      );
+    // Get DAU from activity tracking
+    const analytics = await getAnalytics();
 
     // Get total users
     const totalUsers = await db
@@ -73,7 +62,7 @@ export async function GET() {
     return NextResponse.json({
       newUsersToday: newUsersToday[0]?.count || 0,
       newUsersYesterday: newUsersYesterday[0]?.count || 0,
-      dailyActiveUsers: dailyActiveUsers[0]?.count || 0,
+      dailyActiveUsers: analytics.dailyActiveUsers,
       totalUsers: totalUsers[0]?.count || 0,
     });
   } catch (error) {

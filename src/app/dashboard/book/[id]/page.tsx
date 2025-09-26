@@ -25,7 +25,7 @@ interface BookVersion {
 
 interface Report {
   id: string;
-  status: "pending" | "analyzing" | "completed";
+  status: "pending" | "requested" | "analyzing" | "completed";
   requestedAt: string;
   completedAt?: string;
   htmlContent?: string;
@@ -144,22 +144,11 @@ export default function BookDetail() {
             (new Date().getTime() - new Date(data.completedAt).getTime()) < 30000 // completed in last 30 seconds
         });
 
-        // If just completed (either transition or recently completed on first load)
-        if (data.status === "completed") {
-          // Check if it completed recently (within last 30 seconds)
-          if (data.completedAt && (new Date().getTime() - new Date(data.completedAt).getTime()) < 30000) {
-            if (isFirstLoad && !window.location.search.includes("test=1")) {
-              console.log("Recently completed! Reloading immediately...");
-              window.location.href = window.location.pathname + "?test=1";
-              return;
-            }
-          }
-          // Or if we saw the transition
-          if ((prevStatus === "processing" || prevStatus === "pending")) {
-            console.log("Processing completed! Reloading immediately...");
-            window.location.href = window.location.pathname + "?test=1";
-            return;
-          }
+        // Only reload if we see a transition from processing/pending to completed
+        if (data.status === "completed" && (prevStatus === "processing" || prevStatus === "pending")) {
+          console.log("Processing completed! Reloading page...");
+          window.location.href = window.location.pathname;
+          return;
         }
 
         setDigestJob(data);
@@ -320,6 +309,7 @@ export default function BookDetail() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "pending":
+      case "requested":
         return <Clock className="w-4 h-4 text-yellow-600" />;
       case "analyzing":
         return <div className="w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />;
@@ -333,7 +323,8 @@ export default function BookDetail() {
   const getStatusText = (status: string) => {
     switch (status) {
       case "pending":
-        return "Waiting for analysis";
+      case "requested":
+        return "Report requested";
       case "analyzing":
         return "Being analyzed";
       case "completed":
@@ -676,9 +667,10 @@ export default function BookDetail() {
                             {activeTab === "author" && (
                               <div>
                                 {version.reports.length === 0 ? (
-                                  <div className="text-center py-8">
-                                    <Lock className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                                    <p className="text-gray-600 mb-4">Get a professional analysis of your manuscript</p>
+                                  <div className="text-center py-12">
+                                    <Lock className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No Report Yet</h3>
+                                    <p className="text-gray-600 mb-6">Get a professional analysis of your manuscript</p>
                                     <Button
                                       className="bg-orange-600 hover:bg-orange-700"
                                       onClick={() => handlePurchaseAnalysis(version.id)}
@@ -701,33 +693,47 @@ export default function BookDetail() {
                                   <div>
                                     {version.reports[0].status === "completed" ? (
                                       <>
-                                        <div className="mb-4">
-                                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            <CheckCircle className="w-3 h-3 mr-1" />
-                                            Unlocked
-                                          </span>
+                                        <div className="text-center py-12">
+                                          <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-600" />
+                                          <h3 className="text-2xl font-semibold text-gray-900 mb-2">Report Ready</h3>
+                                          <p className="text-gray-600 mb-6">Your analysis is complete and ready to download</p>
+                                          <Button
+                                            className="bg-green-600 hover:bg-green-700"
+                                            onClick={() => window.location.href = `/api/books/${book?.id}/report/download`}
+                                          >
+                                            <Download className="w-4 h-4 mr-2" />
+                                            Download Report
+                                          </Button>
                                         </div>
                                         {version.reports[0].htmlContent && (
-                                          <div className="prose prose-sm max-w-none"
-                                               dangerouslySetInnerHTML={{ __html: version.reports[0].htmlContent }} />
+                                          <div className="mt-8 border-t pt-8">
+                                            <h4 className="text-lg font-semibold mb-4">Report Preview</h4>
+                                            <div className="prose prose-sm max-w-none"
+                                                 dangerouslySetInnerHTML={{ __html: version.reports[0].htmlContent }} />
+                                          </div>
                                         )}
                                       </>
-                                    ) : (
-                                      <div className="text-center py-8">
+                                    ) : version.reports[0].status === "analyzing" ? (
+                                      <div className="text-center py-16">
                                         <div className="flex flex-col items-center">
-                                          {getStatusIcon(version.reports[0].status)}
-                                          <p className="mt-2 text-gray-600">{getStatusText(version.reports[0].status)}</p>
-                                          {version.reports[0].status === "pending" && (
-                                            <p className="text-sm text-gray-500 mt-1">
-                                              Your report will be ready in 1-3 business days
-                                            </p>
-                                          )}
-                                          {version.reports[0].status === "analyzing" && (
-                                            <p className="text-sm text-gray-500 mt-1">
-                                              Our team is currently analyzing your manuscript
-                                            </p>
-                                          )}
+                                          <div className="w-20 h-20 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mb-6" />
+                                          <h3 className="text-2xl font-semibold text-gray-900 mb-2">Analyzing Your Manuscript</h3>
+                                          <p className="text-gray-600">Our team is currently analyzing your manuscript</p>
+                                          <p className="text-sm text-gray-500 mt-2">This usually takes a few hours</p>
                                         </div>
+                                      </div>
+                                    ) : (version.reports[0].status === "pending" || version.reports[0].status === "requested") ? (
+                                      <div className="text-center py-16">
+                                        <Clock className="w-16 h-16 mx-auto mb-4 text-yellow-600" />
+                                        <h3 className="text-2xl font-semibold text-gray-900 mb-2">Report Requested</h3>
+                                        <p className="text-gray-600">Your report has been requested</p>
+                                        <p className="text-sm text-gray-500 mt-2">We'll start analyzing it soon</p>
+                                      </div>
+                                    ) : (
+                                      <div className="text-center py-16">
+                                        <AlertCircle className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                                        <h3 className="text-2xl font-semibold text-gray-900 mb-2">Unknown Status</h3>
+                                        <p className="text-gray-600">Please contact support</p>
                                       </div>
                                     )}
                                   </div>

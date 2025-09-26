@@ -24,7 +24,7 @@ interface Book {
   };
   latestReport?: {
     id: string;
-    status: "pending" | "analyzing" | "completed";
+    status: "requested" | "analyzing" | "completed";
     requestedAt: string;
     completedAt?: string;
   };
@@ -102,7 +102,7 @@ export default function Dashboard() {
 
   const getStatusIcon = (status?: string) => {
     switch (status) {
-      case "pending":
+      case "requested":
         return <Clock className="w-4 h-4 text-yellow-600" />;
       case "analyzing":
         return <div className="w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />;
@@ -115,14 +115,14 @@ export default function Dashboard() {
 
   const getStatusText = (status?: string) => {
     switch (status) {
-      case "pending":
-        return "Waiting for analysis";
+      case "requested":
+        return "Report requested";
       case "analyzing":
-        return "Being analyzed";
+        return "Analyzing";
       case "completed":
         return "Report ready";
       default:
-        return "No analysis requested";
+        return "";
     }
   };
 

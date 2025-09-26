@@ -9,9 +9,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import {
   FileText, Clock, CheckCircle, Upload, Bell, Eye, User, Calendar,
   Loader2, AlertCircle, Home, LogOut, ChevronDown, ChevronRight, Settings,
-  RefreshCw, Users, TrendingUp, BookOpen, Image, Download
+  RefreshCw, Users, TrendingUp, BookOpen, Image, Download, ExternalLink,
+  FileUp, XCircle, HelpCircle
 } from "lucide-react";
 import { signOut } from "next-auth/react";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface DigestJob {
   id: string;
@@ -28,6 +43,15 @@ interface DigestJob {
   pages?: number;
   words?: number;
   language?: string;
+}
+
+interface Report {
+  id: string;
+  bookVersionId: string;
+  status: "requested" | "analyzing" | "completed";
+  requestedAt: string;
+  completedAt?: string;
+  fileName?: string;
 }
 
 interface Book {
@@ -49,6 +73,7 @@ interface Book {
     fileSize: number;
     uploadedAt: string;
   };
+  latestReport?: Report;
 }
 
 interface Analytics {
@@ -74,6 +99,9 @@ export default function AdminDashboard() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [uploadingReport, setUploadingReport] = useState(false);
 
   // Check if user is admin
   useEffect(() => {
@@ -181,6 +209,94 @@ export default function AdminDashboard() {
         return "Failed";
       default:
         return status;
+    }
+  };
+
+  const getReportStatusIcon = (status?: string) => {
+    if (!status) return <XCircle className="w-4 h-4 text-gray-400" />;
+
+    switch (status) {
+      case "requested":
+        return <Clock className="w-4 h-4 text-yellow-600" />;
+      case "analyzing":
+        return <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />;
+      case "completed":
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
+      default:
+        return <XCircle className="w-4 h-4 text-gray-400" />;
+    }
+  };
+
+  const getReportStatusText = (status?: string) => {
+    if (!status) return "Not requested";
+
+    switch (status) {
+      case "requested":
+        return "Requested";
+      case "analyzing":
+        return "Analyzing";
+      case "completed":
+        return "Completed";
+      default:
+        return "Not requested";
+    }
+  };
+
+  const handleReportUpload = async (bookId: string, file: File) => {
+    setUploadingReport(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("bookId", bookId);
+
+      const response = await fetch(`/api/admin/books/${bookId}/report`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        await fetchData();
+        alert("Report uploaded successfully");
+      } else {
+        alert("Failed to upload report");
+      }
+    } catch (error) {
+      console.error("Failed to upload report:", error);
+      alert("Failed to upload report");
+    } finally {
+      setUploadingReport(false);
+    }
+  };
+
+  const handleReportStatusChange = async (bookId: string, status: string) => {
+    try {
+      const response = await fetch(`/api/admin/books/${bookId}/report-status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      if (response.ok) {
+        // Update the selected book immediately
+        if (selectedBook && selectedBook.id === bookId) {
+          const updatedReport = status === "not_requested"
+            ? undefined
+            : {
+                ...selectedBook.latestReport,
+                status: status as any,
+                requestedAt: selectedBook.latestReport?.requestedAt || new Date().toISOString(),
+                completedAt: status === "completed" ? new Date().toISOString() : selectedBook.latestReport?.completedAt,
+              };
+
+          setSelectedBook({
+            ...selectedBook,
+            latestReport: updatedReport,
+          });
+        }
+        await fetchData();
+      }
+    } catch (error) {
+      console.error("Failed to update report status:", error);
     }
   };
 
@@ -485,9 +601,12 @@ export default function AdminDashboard() {
                           onClick={() => handleSort("status")}
                         >
                           <div className="flex items-center space-x-1">
-                            <span>Status</span>
+                            <span>Digest Status</span>
                             <SortIcon field="status" />
                           </div>
+                        </th>
+                        <th className="text-left py-2 px-2">
+                          <span>Report Status</span>
                         </th>
                         <th
                           className="text-left py-2 px-2 cursor-pointer hover:bg-gray-50"
@@ -507,6 +626,7 @@ export default function AdminDashboard() {
                             <SortIcon field="updatedAt" />
                           </div>
                         </th>
+                        <th className="text-left py-2 px-2">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -557,6 +677,14 @@ export default function AdminDashboard() {
                                 </span>
                               </div>
                             </td>
+                            <td className="py-2 px-2">
+                              <div className="flex items-center space-x-1">
+                                {getReportStatusIcon(book.latestReport?.status)}
+                                <span className="text-xs">
+                                  {getReportStatusText(book.latestReport?.status)}
+                                </span>
+                              </div>
+                            </td>
                             <td className="py-2 px-2 text-xs text-gray-600">
                               {new Date(book.createdAt).toLocaleDateString()}<br/>
                               {new Date(book.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -565,10 +693,22 @@ export default function AdminDashboard() {
                               {new Date(book.updatedAt).toLocaleDateString()}<br/>
                               {new Date(book.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </td>
+                            <td className="py-2 px-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedBook(book);
+                                  setSheetOpen(true);
+                                }}
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </Button>
+                            </td>
                           </tr>
                           {expandedBooks.has(book.id) && (
                             <tr>
-                              <td colSpan={7} className="bg-gray-50 px-8 py-4">
+                              <td colSpan={9} className="bg-gray-50 px-8 py-4">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                   {/* Book details */}
                                   <div>
@@ -585,8 +725,19 @@ export default function AdminDashboard() {
                                         </div>
                                       )}
                                       {book.digestJob?.words && (
-                                        <div>
-                                          <span className="text-gray-600">Words:</span> {book.digestJob.words.toLocaleString()}
+                                        <div className="flex items-center space-x-1">
+                                          <span className="text-gray-600">Words:</span>
+                                          <span>{book.digestJob.words.toLocaleString()}</span>
+                                          <TooltipProvider>
+                                            <Tooltip>
+                                              <TooltipTrigger>
+                                                <HelpCircle className="w-3 h-3 text-gray-400" />
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p className="max-w-xs text-xs">Word count may not be accurate for books that don't fit within OpenAI's context window</p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
                                         </div>
                                       )}
                                       {book.digestJob?.language && (
@@ -730,6 +881,219 @@ export default function AdminDashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* Book Details Sheet */}
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <SheetContent side="right" className="w-[65vw] sm:w-[65vw] sm:max-w-[65vw] overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle className="text-xl truncate max-w-full" title={selectedBook?.title}>
+                {selectedBook?.title}
+              </SheetTitle>
+              <SheetDescription>
+                Manage book details and reports
+              </SheetDescription>
+            </SheetHeader>
+
+            {selectedBook && (
+              <div className="space-y-6 mt-6">
+                {/* Main content grid with cover image */}
+                <div className="grid grid-cols-3 gap-6">
+                  {/* Left column - Cover Image */}
+                  <div className="col-span-1">
+                    {selectedBook.coverImageUrl ? (
+                      <img
+                        src={selectedBook.coverImageUrl}
+                        alt={selectedBook.title}
+                        className="w-full rounded-lg shadow-lg object-contain max-h-[400px]"
+                      />
+                    ) : (
+                      <div className="w-full h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
+                        <BookOpen className="w-20 h-20 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right columns - Book Info */}
+                  <div className="col-span-2 space-y-4">
+                    <div>
+                      <h3 className="font-semibold mb-2">Book Details</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-start">
+                          <span className="text-gray-600 flex-shrink-0">ID:</span>
+                          <span className="ml-1 truncate" title={selectedBook.id}>{selectedBook.id}</span>
+                        </div>
+                        <div className="flex items-start">
+                          <span className="text-gray-600 flex-shrink-0">Title:</span>
+                          <span className="ml-1 truncate" title={selectedBook.title}>{selectedBook.title}</span>
+                        </div>
+                        <div className="flex items-start">
+                          <span className="text-gray-600 flex-shrink-0">Description:</span>
+                          <span className="ml-1 line-clamp-2">{selectedBook.description || "N/A"}</span>
+                        </div>
+                        <div><span className="text-gray-600">User:</span> {selectedBook.user.name || selectedBook.user.email}</div>
+                        <div><span className="text-gray-600">Created:</span> {new Date(selectedBook.createdAt).toLocaleString()}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* File Info and Processing Status */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="font-semibold mb-2">File Information</h3>
+                    {selectedBook.latestVersion ? (
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-start">
+                          <span className="text-gray-600 flex-shrink-0">File:</span>
+                          <span className="ml-1 truncate" title={selectedBook.latestVersion.fileName}>
+                            {selectedBook.latestVersion.fileName}
+                          </span>
+                        </div>
+                        <div><span className="text-gray-600">Size:</span> {formatFileSize(selectedBook.latestVersion.fileSize)}</div>
+                        <div><span className="text-gray-600">Uploaded:</span> {new Date(selectedBook.latestVersion.uploadedAt).toLocaleString()}</div>
+                        <div className="mt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => window.location.href = `/api/admin/books/${selectedBook.id}/download`}
+                          >
+                            <Download className="w-3 h-3 mr-1" />
+                            Download Book
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">No file uploaded</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-2">Processing Status</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-gray-600">Digest:</span>
+                        {getDigestStatusIcon(selectedBook.digestJob?.status)}
+                        <span>{getDigestStatusText(selectedBook.digestJob?.status)}</span>
+                      </div>
+                      {selectedBook.digestJob?.author && (
+                        <div><span className="text-gray-600">Author:</span> {selectedBook.digestJob.author}</div>
+                      )}
+                      {selectedBook.digestJob?.pages && (
+                        <div><span className="text-gray-600">Pages:</span> {selectedBook.digestJob.pages}</div>
+                      )}
+                      {selectedBook.digestJob?.words && (
+                        <div className="flex items-center space-x-1">
+                          <span className="text-gray-600">Words:</span>
+                          <span>{selectedBook.digestJob.words.toLocaleString()}</span>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <HelpCircle className="w-3 h-3 text-gray-400" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs text-xs">Word count may not be accurate for books that don't fit within OpenAI's context window</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      )}
+                      {selectedBook.digestJob?.language && (
+                        <div><span className="text-gray-600">Language:</span> {selectedBook.digestJob.language}</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Summary Section */}
+                {(selectedBook.digestJob?.brief || selectedBook.digestJob?.summary) && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Summary</h3>
+                    <div className="space-y-3">
+                      {selectedBook.digestJob?.brief && (
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-1">Brief</h4>
+                          <p className="text-sm text-gray-600">{selectedBook.digestJob.brief}</p>
+                        </div>
+                      )}
+                      {selectedBook.digestJob?.summary && (
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-1">Full Summary</h4>
+                          <p className="text-sm text-gray-600 whitespace-pre-wrap">{selectedBook.digestJob.summary}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Report Management */}
+                <div>
+                  <h3 className="font-semibold mb-2">Report Management</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-600">Status:</span>
+                        {getReportStatusIcon(selectedBook.latestReport?.status)}
+                        <span className="text-sm font-medium">{getReportStatusText(selectedBook.latestReport?.status)}</span>
+                      </div>
+
+                      <select
+                        className="text-sm border rounded px-2 py-1"
+                        value={selectedBook.latestReport?.status || "not_requested"}
+                        onChange={(e) => handleReportStatusChange(selectedBook.id, e.target.value)}
+                      >
+                        <option value="not_requested">Not Requested</option>
+                        <option value="requested">Requested</option>
+                        <option value="analyzing">Analyzing</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                    </div>
+
+                    {selectedBook.latestReport?.requestedAt && (
+                      <div className="text-sm">
+                        <span className="text-gray-600">Requested:</span> {new Date(selectedBook.latestReport.requestedAt).toLocaleString()}
+                      </div>
+                    )}
+
+                    {selectedBook.latestReport?.completedAt && (
+                      <div className="text-sm">
+                        <span className="text-gray-600">Completed:</span> {new Date(selectedBook.latestReport.completedAt).toLocaleString()}
+                      </div>
+                    )}
+
+                    <div className="flex items-center space-x-4">
+                      <label className="inline-flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer">
+                        <FileUp className="w-4 h-4 mr-2" />
+                        {uploadingReport ? "Uploading..." : "Upload Report"}
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept=".pdf,.html"
+                          disabled={uploadingReport}
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              handleReportUpload(selectedBook.id, e.target.files[0]);
+                            }
+                          }}
+                        />
+                      </label>
+
+                      {selectedBook.latestReport?.fileName && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.location.href = `/api/admin/books/${selectedBook.id}/report/download`}
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          Download Report
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
       </main>
     </div>
   );
