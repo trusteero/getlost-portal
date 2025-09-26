@@ -33,7 +33,7 @@ try {
       fs.mkdirSync(dbDir, { recursive: true });
       console.log(`✅ Created directory: ${dbDir}`);
     } catch (mkdirError) {
-      console.log(`⚠️ Could not create ${dbDir}: ${mkdirError.message}`);
+      console.log(`⚠️ Could not create ${dbDir}: ${mkdirError instanceof Error ? mkdirError.message : 'Unknown error'}`);
       console.log(`📍 Using current directory instead`);
       dbPath = 'db.sqlite';
     }
