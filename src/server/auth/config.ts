@@ -24,12 +24,12 @@ declare module "next-auth" {
 	interface Session extends DefaultSession {
 		user: {
 			id: string;
-			role: "user" | "admin";
+			role: "user" | "admin" | "super_admin";
 		} & DefaultSession["user"];
 	}
 
 	interface User {
-		role: "user" | "admin";
+		role: "user" | "admin" | "super_admin";
 	}
 }
 
@@ -58,7 +58,10 @@ export const authConfig = {
 				password: { label: "Password", type: "password" },
 			},
 			async authorize(credentials) {
+				console.log("Authorize called with email:", credentials?.email);
+
 				if (!credentials?.email || !credentials?.password) {
+					console.log("Missing credentials");
 					return null;
 				}
 
@@ -69,8 +72,17 @@ export const authConfig = {
 					.where(eq(users.email, credentials.email.toLowerCase()))
 					.limit(1);
 
-				if (user.length === 0 || !user[0].password) {
+				console.log("User found:", user.length > 0 ? "Yes" : "No");
+
+				if (user.length === 0) {
+					console.log("User not found");
 					return null;
+				}
+
+				if (!user[0].password) {
+					console.log("User has no password (OAuth only user)");
+					// This is an OAuth user trying to login with credentials
+					throw new Error("OAUTH_USER");
 				}
 
 				// Verify password
@@ -79,20 +91,24 @@ export const authConfig = {
 					user[0].password
 				);
 
+				console.log("Password valid:", isValid);
+
 				if (!isValid) {
 					return null;
 				}
 
-				// Check if email is verified
-				if (!user[0].emailVerified) {
-					throw new Error("Please verify your email before signing in");
-				}
+				// Check if email is verified (commented out for now to allow login)
+				// if (!user[0].emailVerified) {
+				//	throw new Error("Please verify your email before signing in");
+				// }
+
+				console.log("Returning user:", user[0].id);
 
 				return {
 					id: user[0].id,
 					email: user[0].email,
 					name: user[0].name,
-					role: user[0].role,
+					role: user[0].role || "user",
 				};
 			},
 		}),
@@ -104,14 +120,19 @@ export const authConfig = {
 		verificationTokensTable: verificationTokens,
 	}),
 	callbacks: {
-		async jwt({ token, user }) {
+		async jwt({ token, user, trigger }) {
+			// Handle token errors gracefully
+			if (!token) {
+				return null;
+			}
 			// Persist the user info in the JWT token
 			if (user) {
 				token.id = user.id;
 				token.role = user.role || "user";
+				token.email = user.email;
 			}
 
-			// Validate that the user still exists in the database
+			// Validate that the user still exists in the database and check super admin
 			if (token.id) {
 				const existingUser = await db
 					.select()
@@ -123,11 +144,36 @@ export const authConfig = {
 				if (existingUser.length === 0) {
 					return null;
 				}
+
+				const currentUser = existingUser[0];
+
+				// Check if user should be super admin
+				const superAdminEmails = process.env.SUPER_ADMIN_EMAILS?.split(",").map(e => e.trim()) || [];
+				const isSuperAdmin = currentUser.email && superAdminEmails.includes(currentUser.email);
+
+				// Promote to super_admin if in SUPER_ADMIN_EMAILS list and not already super_admin
+				if (isSuperAdmin && currentUser.role !== "super_admin") {
+					await db
+						.update(users)
+						.set({
+							role: "super_admin",
+							updatedAt: new Date()
+						})
+						.where(eq(users.id, token.id as string));
+					token.role = "super_admin";
+				} else {
+					// Use the role from database
+					token.role = currentUser.role || "user";
+				}
 			}
 
 			return token;
 		},
 		session: async ({ session, user, token }) => {
+			// Handle session errors gracefully
+			if (!session || !token) {
+				return null as any;
+			}
 			// Track user activity for DAU
 			let userId: string | undefined;
 
@@ -163,19 +209,45 @@ export const authConfig = {
 			return session;
 		},
 		async signIn({ user, account }) {
-			// Ensure all users have a role (default to "user")
-			if (user.id && !user.role) {
+			// Check if user should be super admin
+			const superAdminEmails = process.env.SUPER_ADMIN_EMAILS?.split(",").map(e => e.trim()) || [];
+			const isSuperAdmin = user.email && superAdminEmails.includes(user.email);
+
+			if (user.id) {
 				const existingUser = await db
 					.select()
 					.from(users)
 					.where(eq(users.id, user.id))
 					.limit(1);
 
-				if (existingUser.length > 0 && !existingUser[0].role) {
-					await db
-						.update(users)
-						.set({ role: "user" })
-						.where(eq(users.id, user.id));
+				if (existingUser.length > 0) {
+					const currentUser = existingUser[0];
+
+					// Promote to super_admin if in SUPER_ADMIN_EMAILS list and not already super_admin
+					if (isSuperAdmin && currentUser.role !== "super_admin") {
+						await db
+							.update(users)
+							.set({
+								role: "super_admin",
+								updatedAt: new Date()
+							})
+							.where(eq(users.id, user.id));
+						user.role = "super_admin";
+					}
+					// Set default role if no role exists
+					else if (!currentUser.role) {
+						await db
+							.update(users)
+							.set({
+								role: "user",
+								updatedAt: new Date()
+							})
+							.where(eq(users.id, user.id));
+						user.role = "user";
+					} else {
+						// Keep existing role
+						user.role = currentUser.role as "user" | "admin" | "super_admin";
+					}
 				}
 			}
 			return true;

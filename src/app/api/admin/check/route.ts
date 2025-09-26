@@ -8,9 +8,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ isAdmin: false });
   }
 
-  // Check if user is admin
-  const adminEmails = process.env.ADMIN_EMAILS?.split(",").map(e => e.trim()) || [];
-  const isAdmin = session.user.role === "admin" || adminEmails.includes(session.user.email || "");
+  // Check if user is admin or super_admin
+  const isAdmin = session.user.role === "admin" || session.user.role === "super_admin";
 
   return NextResponse.json({ isAdmin });
 }

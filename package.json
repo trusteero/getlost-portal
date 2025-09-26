@@ -17,12 +17,14 @@
 		"preview": "next build && next start",
 		"start": "next start",
 		"typecheck": "tsc --noEmit",
-		"make-admin": "tsx src/scripts/make-admin.ts"
+		"make-admin": "tsx src/scripts/make-admin.ts",
+		"db:reset": "./scripts/reset-db.sh"
 	},
 	"dependencies": {
 		"@auth/drizzle-adapter": "^1.7.2",
 		"@libsql/client": "^0.14.0",
 		"@radix-ui/react-dialog": "^1.1.15",
+		"@radix-ui/react-dropdown-menu": "^2.1.16",
 		"@radix-ui/react-label": "^2.1.7",
 		"@radix-ui/react-slot": "^1.2.3",
 		"@radix-ui/react-tooltip": "^1.2.8",

@@ -71,6 +71,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check if user has a password (OAuth user check)
+    if (!user[0].password) {
+      // Delete the token since we're not using it
+      await db
+        .delete(verificationTokens)
+        .where(eq(verificationTokens.token, token));
+
+      return NextResponse.json(
+        { error: "OAUTH_USER", message: "This account uses Google sign-in" },
+        { status: 400 }
+      );
+    }
+
     // Delete the used token
     await db
       .delete(verificationTokens)

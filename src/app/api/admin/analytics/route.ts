@@ -12,9 +12,8 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Check if user is admin
-  const adminEmails = process.env.ADMIN_EMAILS?.split(",").map(e => e.trim()) || [];
-  const isAdmin = session.user.role === "admin" || adminEmails.includes(session.user.email || "");
+  // Check if user is admin or super_admin
+  const isAdmin = session.user.role === "admin" || session.user.role === "super_admin";
 
   if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -36,34 +35,30 @@ export async function GET() {
     const tomorrowTimestamp = Math.floor(tomorrow.getTime() / 1000);
     const yesterdayTimestamp = Math.floor(yesterday.getTime() / 1000);
 
-    const newUsersToday = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(users)
-      .where(
-        sql`${users.createdAt} >= ${todayTimestamp} AND ${users.createdAt} < ${tomorrowTimestamp}`
-      );
+    // Get all users and filter in memory (simpler for SQLite)
+    const allUsers = await db.select().from(users);
 
-    // Get new users yesterday
-    const newUsersYesterday = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(users)
-      .where(
-        sql`${users.createdAt} >= ${yesterdayTimestamp} AND ${users.createdAt} < ${todayTimestamp}`
-      );
+    const newUsersToday = allUsers.filter(u => {
+      const createdAt = u.createdAt || 0;
+      return createdAt >= todayTimestamp && createdAt < tomorrowTimestamp;
+    }).length;
+
+    const newUsersYesterday = allUsers.filter(u => {
+      const createdAt = u.createdAt || 0;
+      return createdAt >= yesterdayTimestamp && createdAt < todayTimestamp;
+    }).length;
 
     // Get DAU from activity tracking
     const analytics = await getAnalytics();
 
-    // Get total users
-    const totalUsers = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(users);
+    // Total users is already calculated from allUsers
+    const totalUsersCount = allUsers.length;
 
     return NextResponse.json({
-      newUsersToday: newUsersToday[0]?.count || 0,
-      newUsersYesterday: newUsersYesterday[0]?.count || 0,
+      newUsersToday,
+      newUsersYesterday,
       dailyActiveUsers: analytics.dailyActiveUsers,
-      totalUsers: totalUsers[0]?.count || 0,
+      totalUsers: totalUsersCount,
     });
   } catch (error) {
     console.error("Failed to fetch analytics:", error);

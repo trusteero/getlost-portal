@@ -101,58 +101,47 @@ export default async function Home() {
 					<div className="container mx-auto px-4">
 						<div className="text-center mb-10">
 							<h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-								Everything Authors Need to Succeed
+								What You Get
 							</h2>
 							<p className="text-gray-600 max-w-2xl mx-auto">
-								Our AI-enhanced reports examine every aspect of your book with both technological precision and human expertise
+								Our reports give you everything you need to understand and position your book
 							</p>
 						</div>
 
-						<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+						<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
 							<Card className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
 								<CardContent className="p-6">
 									<div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center mb-4">
-										<FileText className="h-6 w-6 text-orange-600" />
+										<Users className="h-6 w-6 text-orange-600" />
 									</div>
-									<h3 className="text-lg font-semibold text-gray-900 mb-2">Detailed Structure Analysis</h3>
+									<h3 className="text-lg font-semibold text-gray-900 mb-2">Know Your Readers</h3>
 									<p className="text-gray-600">
-										Get insights on pacing, plot development, and narrative structure to keep readers engaged.
+										No more guessing: know exactly who your readers are and what they're looking for.
 									</p>
 								</CardContent>
 							</Card>
 
-							<Card className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-								<CardContent className="p-6">
-									<div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center mb-4">
-										<BarChart3 className="h-6 w-6 text-blue-600" />
-									</div>
-									<h3 className="text-lg font-semibold text-gray-900 mb-2">Market Positioning</h3>
-									<p className="text-gray-600">
-										Understand your book's market fit and competitive landscape to maximize success.
-									</p>
-								</CardContent>
-							</Card>
 
 							<Card className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
 								<CardContent className="p-6">
 									<div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center mb-4">
-										<Users className="h-6 w-6 text-green-600" />
+										<BarChart3 className="h-6 w-6 text-green-600" />
 									</div>
-									<h3 className="text-lg font-semibold text-gray-900 mb-2">Human + AI Insights</h3>
+									<h3 className="text-lg font-semibold text-gray-900 mb-2">Market Positioning</h3>
 									<p className="text-gray-600">
-										Combining AI analysis with human expertise for nuanced, actionable feedback.
+										Positioning that sets you apart in a crowded market and helps you stand out.
 									</p>
 								</CardContent>
 							</Card>
 
 							<Card className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
 								<CardContent className="p-6">
-									<div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center mb-4">
-										<Sparkles className="h-6 w-6 text-orange-600" />
+									<div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center mb-4">
+										<Award className="h-6 w-6 text-purple-600" />
 									</div>
-									<h3 className="text-lg font-semibold text-gray-900 mb-2">Character Development</h3>
+									<h3 className="text-lg font-semibold text-gray-900 mb-2">Pitch Confidence</h3>
 									<p className="text-gray-600">
-										Deep analysis of character arcs, dialogue, and relationships for compelling storytelling.
+										Confidence when pitching to agents, publishers, and readers with data-backed insights.
 									</p>
 								</CardContent>
 							</Card>
@@ -160,11 +149,11 @@ export default async function Home() {
 							<Card className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
 								<CardContent className="p-6">
 									<div className="h-12 w-12 rounded-lg bg-pink-100 flex items-center justify-center mb-4">
-										<BookOpen className="h-6 w-6 text-pink-600" />
+										<Zap className="h-6 w-6 text-pink-600" />
 									</div>
-									<h3 className="text-lg font-semibold text-gray-900 mb-2">Genre Optimization</h3>
+									<h3 className="text-lg font-semibold text-gray-900 mb-2">Marketing Strategy</h3>
 									<p className="text-gray-600">
-										Ensure your book meets and exceeds genre expectations for your target readers.
+										Tailored guidance you can use in campaigns and promotions to reach your ideal readers.
 									</p>
 								</CardContent>
 							</Card>
@@ -172,11 +161,23 @@ export default async function Home() {
 							<Card className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
 								<CardContent className="p-6">
 									<div className="h-12 w-12 rounded-lg bg-indigo-100 flex items-center justify-center mb-4">
-										<Shield className="h-6 w-6 text-indigo-600" />
+										<BookOpen className="h-6 w-6 text-indigo-600" />
 									</div>
-									<h3 className="text-lg font-semibold text-gray-900 mb-2">Confidential & Secure</h3>
+									<h3 className="text-lg font-semibold text-gray-900 mb-2">Built for Authors</h3>
 									<p className="text-gray-600">
-										Your manuscript remains private and is deleted after report completion. Only you have access.
+										Built with authors, for authors. We're partnering across genres to shape the future of discovery.
+									</p>
+								</CardContent>
+							</Card>
+
+							<Card className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+								<CardContent className="p-6">
+									<div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center mb-4">
+										<Shield className="h-6 w-6 text-blue-600" />
+									</div>
+									<h3 className="text-lg font-semibold text-gray-900 mb-2">Secure & Confidential</h3>
+									<p className="text-gray-600">
+										Your manuscript is stored securely and treated with utmost confidentiality. We prioritize your privacy.
 									</p>
 								</CardContent>
 							</Card>
@@ -184,8 +185,9 @@ export default async function Home() {
 					</div>
 				</section>
 
+
 				{/* Pricing Section */}
-				<section id="pricing" className="bg-gray-50 py-12">
+				<section id="pricing" className="py-12">
 					<div className="container mx-auto px-4">
 						<div className="text-center mb-12">
 							<h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">

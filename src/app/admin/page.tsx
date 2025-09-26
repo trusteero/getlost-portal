@@ -10,7 +10,7 @@ import {
   FileText, Clock, CheckCircle, Upload, Bell, Eye, User, Calendar,
   Loader2, AlertCircle, Home, LogOut, ChevronDown, ChevronRight, Settings,
   RefreshCw, Users, TrendingUp, BookOpen, Image, Download, ExternalLink,
-  FileUp, XCircle, HelpCircle
+  FileUp, XCircle, HelpCircle, Mail, MoreHorizontal, Shield, UserCheck, UserX
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import {
@@ -27,6 +27,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DigestJob {
   id: string;
@@ -90,9 +96,9 @@ export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [books, setBooks] = useState<Book[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expandedBooks, setExpandedBooks] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [sortField, setSortField] = useState<SortField>("createdAt");
@@ -102,6 +108,13 @@ export default function AdminDashboard() {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [uploadingReport, setUploadingReport] = useState(false);
+  const [activeView, setActiveView] = useState<"books" | "users">("books");
+
+  // Debug users data
+  useEffect(() => {
+    console.log("Users state updated:", users.length, "users");
+    console.log("Active view:", activeView);
+  }, [users, activeView]);
 
   // Check if user is admin
   useEffect(() => {
@@ -137,15 +150,24 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      // Fetch books and analytics in parallel
-      const [booksRes, analyticsRes] = await Promise.all([
+      // Fetch books, users and analytics in parallel
+      const [booksRes, usersRes, analyticsRes] = await Promise.all([
         fetch("/api/admin/books"),
+        fetch("/api/admin/users"),
         fetch("/api/admin/analytics")
       ]);
 
       if (booksRes.ok) {
         const booksData = await booksRes.json();
         setBooks(booksData);
+      }
+
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        console.log("Users data fetched:", usersData);
+        setUsers(usersData);
+      } else {
+        console.error("Failed to fetch users:", usersRes.status, await usersRes.text());
       }
 
       if (analyticsRes.ok) {
@@ -168,15 +190,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const toggleBookExpansion = (bookId: string) => {
-    const newExpanded = new Set(expandedBooks);
-    if (newExpanded.has(bookId)) {
-      newExpanded.delete(bookId);
-    } else {
-      newExpanded.add(bookId);
-    }
-    setExpandedBooks(newExpanded);
-  };
 
   const getDigestStatusIcon = (status?: string) => {
     if (!status) return <Clock className="w-4 h-4 text-gray-400" />;
@@ -265,6 +278,27 @@ export default function AdminDashboard() {
       alert("Failed to upload report");
     } finally {
       setUploadingReport(false);
+    }
+  };
+
+  const handleUserRoleChange = async (userId: string, newRole: "user" | "admin") => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/role`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole }),
+      });
+
+      if (response.ok) {
+        await fetchData();
+        alert(`User role updated to ${newRole}`);
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to update user role");
+      }
+    } catch (error) {
+      console.error("Failed to update user role:", error);
+      alert("Failed to update user role");
     }
   };
 
@@ -528,13 +562,43 @@ export default function AdminDashboard() {
         </div>
 
 
-        {/* Books Table */}
+        {/* View Switcher */}
+        <div className="mb-6 flex space-x-2">
+          <Button
+            variant={activeView === "books" ? "default" : "outline"}
+            onClick={() => {
+              setActiveView("books");
+              setCurrentPage(1);
+            }}
+            className={activeView === "books" ? "bg-orange-600 hover:bg-orange-700" : ""}
+          >
+            <BookOpen className="w-4 h-4 mr-2" />
+            Books
+          </Button>
+          <Button
+            variant={activeView === "users" ? "default" : "outline"}
+            onClick={() => {
+              setActiveView("users");
+              setCurrentPage(1);
+            }}
+            className={activeView === "users" ? "bg-orange-600 hover:bg-orange-700" : ""}
+          >
+            <Users className="w-4 h-4 mr-2" />
+            Users
+          </Button>
+        </div>
+
+        {/* Books/Users Table */}
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
-                <CardTitle>All Books ({books.length})</CardTitle>
-                <CardDescription>Manage all uploaded books and their processing status</CardDescription>
+                <CardTitle>
+                  {activeView === "books" ? `All Books (${books.length})` : `All Users (${users.length})`}
+                </CardTitle>
+                <CardDescription>
+                  {activeView === "books" ? "Manage all uploaded books and their processing status" : "View and manage user accounts"}
+                </CardDescription>
               </div>
               <div className="flex items-center space-x-2">
                 <select
@@ -566,17 +630,18 @@ export default function AdminDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            {books.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                No books found
-              </div>
-            ) : (
-              <>
+            {activeView === "books" ? (
+              // Books View
+              books.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No books found
+                </div>
+              ) : (
+                <>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left py-2 px-2 w-8"></th>
                         <th className="text-left py-2 px-2 w-12">Cover</th>
                         <th
                           className="text-left py-2 px-2 cursor-pointer hover:bg-gray-50"
@@ -631,20 +696,7 @@ export default function AdminDashboard() {
                     </thead>
                     <tbody>
                       {paginatedBooks.map((book) => (
-                        <React.Fragment key={book.id}>
-                          <tr className="border-b hover:bg-gray-50">
-                            <td className="py-2 px-2">
-                              <button
-                                onClick={() => toggleBookExpansion(book.id)}
-                                className="p-1 hover:bg-gray-200 rounded"
-                              >
-                                {expandedBooks.has(book.id) ? (
-                                  <ChevronDown className="w-4 h-4 text-gray-500" />
-                                ) : (
-                                  <ChevronRight className="w-4 h-4 text-gray-500" />
-                                )}
-                              </button>
-                            </td>
+                        <tr key={book.id} className="border-b hover:bg-gray-50">
                             <td className="py-2 px-2">
                               {book.coverImageUrl ? (
                                 <img
@@ -706,121 +758,6 @@ export default function AdminDashboard() {
                               </Button>
                             </td>
                           </tr>
-                          {expandedBooks.has(book.id) && (
-                            <tr>
-                              <td colSpan={9} className="bg-gray-50 px-8 py-4">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                  {/* Book details */}
-                                  <div>
-                                    <h4 className="font-medium text-sm mb-2">Book Details</h4>
-                                    <div className="space-y-1 text-xs">
-                                      {book.digestJob?.author && (
-                                        <div>
-                                          <span className="text-gray-600">Author:</span> {book.digestJob.author}
-                                        </div>
-                                      )}
-                                      {book.digestJob?.pages && (
-                                        <div>
-                                          <span className="text-gray-600">Pages:</span> {book.digestJob.pages}
-                                        </div>
-                                      )}
-                                      {book.digestJob?.words && (
-                                        <div className="flex items-center space-x-1">
-                                          <span className="text-gray-600">Words:</span>
-                                          <span>{book.digestJob.words.toLocaleString()}</span>
-                                          <TooltipProvider>
-                                            <Tooltip>
-                                              <TooltipTrigger>
-                                                <HelpCircle className="w-3 h-3 text-gray-400" />
-                                              </TooltipTrigger>
-                                              <TooltipContent>
-                                                <p className="max-w-xs text-xs">Word count may not be accurate for books that don't fit within OpenAI's context window</p>
-                                              </TooltipContent>
-                                            </Tooltip>
-                                          </TooltipProvider>
-                                        </div>
-                                      )}
-                                      {book.digestJob?.language && (
-                                        <div>
-                                          <span className="text-gray-600">Language:</span> {book.digestJob.language}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* File info */}
-                                  {book.latestVersion && (
-                                    <div>
-                                      <h4 className="font-medium text-sm mb-2">File Information</h4>
-                                      <div className="space-y-1 text-xs">
-                                        <div>
-                                          <span className="text-gray-600">File:</span>
-                                          <span className="ml-1 inline-block max-w-[200px] truncate align-bottom" title={book.latestVersion.fileName}>
-                                            {book.latestVersion.fileName}
-                                          </span>
-                                        </div>
-                                        <div>
-                                          <span className="text-gray-600">Size:</span> {formatFileSize(book.latestVersion.fileSize)}
-                                        </div>
-                                        <div>
-                                          <span className="text-gray-600">Uploaded:</span> {new Date(book.latestVersion.uploadedAt).toLocaleString()}
-                                        </div>
-                                        <div className="mt-2">
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="h-7 text-xs"
-                                            onClick={() => window.location.href = `/api/admin/books/${book.id}/download`}
-                                          >
-                                            <Download className="w-3 h-3 mr-1" />
-                                            Download
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Processing details */}
-                                  <div>
-                                    <h4 className="font-medium text-sm mb-2">Processing</h4>
-                                    <div className="space-y-1 text-xs">
-                                      {book.digestJob?.attempts && book.digestJob.attempts > 0 && (
-                                        <div>
-                                          <span className="text-gray-600">Attempts:</span> {book.digestJob.attempts}
-                                        </div>
-                                      )}
-                                      {book.digestJob?.startedAt && (
-                                        <div>
-                                          <span className="text-gray-600">Started:</span> {new Date(book.digestJob.startedAt).toLocaleString()}
-                                        </div>
-                                      )}
-                                      {book.digestJob?.completedAt && (
-                                        <div>
-                                          <span className="text-gray-600">Completed:</span> {new Date(book.digestJob.completedAt).toLocaleString()}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Brief */}
-                                {book.digestJob?.brief && (
-                                  <div className="mt-4">
-                                    <h4 className="font-medium text-sm mb-1">Brief</h4>
-                                    <p className="text-xs text-gray-600">{book.digestJob.brief}</p>
-                                  </div>
-                                )}
-
-                                {/* Error */}
-                                {book.digestJob?.error && (
-                                  <div className="mt-4 p-2 bg-red-50 rounded">
-                                    <span className="text-red-600 text-xs">Error: {book.digestJob.error}</span>
-                                  </div>
-                                )}
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
                       ))}
                     </tbody>
                   </table>
@@ -878,6 +815,234 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </>
+              )
+            ) : (
+              // Users View
+              users.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No users found
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2 px-4">User</th>
+                          <th className="text-left py-2 px-4">Email</th>
+                          <th className="text-left py-2 px-4">Role</th>
+                          <th className="text-left py-2 px-4">Books</th>
+                          <th className="text-left py-2 px-4">Auth</th>
+                          <th className="text-left py-2 px-4">Verified</th>
+                          <th className="text-left py-2 px-4">Created</th>
+                          <th className="text-left py-2 px-4">Last Active</th>
+                          <th className="text-left py-2 px-4">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {users
+                          .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                          .map((user) => (
+                            <tr key={user.id} className="border-b hover:bg-gray-50">
+                              <td className="py-2 px-4">
+                                <div className="flex items-center space-x-2">
+                                  {user.image ? (
+                                    <img
+                                      src={user.image}
+                                      alt={user.name || user.email}
+                                      className="w-8 h-8 rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                      <User className="w-4 h-4 text-gray-500" />
+                                    </div>
+                                  )}
+                                  <span>{user.name || "-"}</span>
+                                </div>
+                              </td>
+                              <td className="py-2 px-4">{user.email}</td>
+                              <td className="py-2 px-4">
+                                <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                  user.role === "super_admin"
+                                    ? "bg-red-100 text-red-800"
+                                    : user.role === "admin"
+                                    ? "bg-purple-100 text-purple-800"
+                                    : "bg-gray-100 text-gray-800"
+                                }`}>
+                                  {user.role === "super_admin" ? "Super Admin" : user.role || "user"}
+                                </span>
+                              </td>
+                              <td className="py-2 px-4">{user.bookCount || 0}</td>
+                              <td className="py-2 px-4">
+                                <div className="flex items-center space-x-1">
+                                  {user.hasGoogleAuth && (
+                                    <div className="w-5 h-5 flex items-center justify-center" title="Google">
+                                      <svg viewBox="0 0 24 24" className="w-4 h-4">
+                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                      </svg>
+                                    </div>
+                                  )}
+                                  {!user.hasGoogleAuth && user.password && (
+                                    <Mail className="w-4 h-4 text-gray-500" title="Email/Password" />
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-2 px-4">
+                                {user.emailVerified ? (
+                                  <CheckCircle className="w-4 h-4 text-green-600" />
+                                ) : (
+                                  <XCircle className="w-4 h-4 text-gray-400" />
+                                )}
+                              </td>
+                              <td className="py-2 px-4 text-xs">
+                                {(() => {
+                                  if (!user.createdAt) return "-";
+                                  try {
+                                    // Handle both Date objects and timestamps
+                                    const timestamp = user.createdAt instanceof Date
+                                      ? user.createdAt.getTime()
+                                      : typeof user.createdAt === 'number'
+                                        ? user.createdAt * (user.createdAt < 10000000000 ? 1000 : 1)
+                                        : Date.parse(user.createdAt);
+
+                                    if (isNaN(timestamp)) return "-";
+
+                                    return new Date(timestamp).toLocaleString('en-US', {
+                                      year: 'numeric',
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      hour12: false
+                                    });
+                                  } catch {
+                                    return "-";
+                                  }
+                                })()}
+                              </td>
+                              <td className="py-2 px-4 text-xs">
+                                {user.lastActivity
+                                  ? new Date(user.lastActivity).toLocaleString('en-US', {
+                                      year: 'numeric',
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      hour12: false
+                                    })
+                                  : "-"}
+                              </td>
+                              <td className="py-2 px-4">
+                                {session?.user?.role === "super_admin" && user.role !== "super_admin" ? (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        <MoreHorizontal className="w-4 h-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      {user.role === "admin" ? (
+                                        <DropdownMenuItem
+                                          onClick={() => handleUserRoleChange(user.id, "user")}
+                                          className="text-orange-600"
+                                        >
+                                          <UserX className="w-4 h-4 mr-2" />
+                                          Demote to User
+                                        </DropdownMenuItem>
+                                      ) : (
+                                        <DropdownMenuItem
+                                          onClick={() => handleUserRoleChange(user.id, "admin")}
+                                          className="text-blue-600"
+                                        >
+                                          <Shield className="w-4 h-4 mr-2" />
+                                          Promote to Admin
+                                        </DropdownMenuItem>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                ) : session?.user?.role === "admin" && user.role === "user" ? (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        <MoreHorizontal className="w-4 h-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem
+                                        onClick={() => handleUserRoleChange(user.id, "admin")}
+                                        className="text-blue-600"
+                                      >
+                                        <Shield className="w-4 h-4 mr-2" />
+                                        Promote to Admin
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                ) : (
+                                  <span className="text-xs text-gray-400">-</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Users Pagination */}
+                  {Math.ceil(users.length / itemsPerPage) > 1 && (
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="text-sm text-gray-600">
+                        Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, users.length)} of {users.length} users
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </Button>
+                        <div className="flex items-center space-x-1">
+                          {Array.from({ length: Math.min(5, Math.ceil(users.length / itemsPerPage)) }, (_, i) => {
+                            const totalUserPages = Math.ceil(users.length / itemsPerPage);
+                            let pageNum;
+                            if (totalUserPages <= 5) {
+                              pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (currentPage >= totalUserPages - 2) {
+                              pageNum = totalUserPages - 4 + i;
+                            } else {
+                              pageNum = currentPage - 2 + i;
+                            }
+                            return (
+                              <Button
+                                key={pageNum}
+                                size="sm"
+                                variant={currentPage === pageNum ? "default" : "outline"}
+                                onClick={() => setCurrentPage(pageNum)}
+                                className={currentPage === pageNum ? "bg-orange-600 hover:bg-orange-700" : ""}
+                              >
+                                {pageNum}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage(Math.min(Math.ceil(users.length / itemsPerPage), currentPage + 1))}
+                          disabled={currentPage === Math.ceil(users.length / itemsPerPage)}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )
             )}
           </CardContent>
         </Card>

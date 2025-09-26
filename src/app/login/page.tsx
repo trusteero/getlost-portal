@@ -13,7 +13,9 @@ import { ArrowLeft, Mail, Lock, Send, Loader2, BookOpen } from "lucide-react";
 export default function LoginPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const [activeTab, setActiveTab] = useState<"email" | "magic">("email");
+	// Magic link disabled for now
+	// const [activeTab, setActiveTab] = useState<"email" | "magic">("email");
+	const [activeTab, setActiveTab] = useState<"email">("email");
 	const [emailLogin, setEmailLogin] = useState({ email: "", password: "" });
 	const [magicEmail, setMagicEmail] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,6 +48,8 @@ export default function LoginPage() {
 				// Check various error types
 				if (result.error.includes("verify your email")) {
 					throw new Error("Please verify your email before signing in. Check your inbox for the verification link.");
+				} else if (result.error.includes("OAUTH_USER")) {
+					throw new Error("This account uses Google sign-in. Please use the 'Sign in with Google' button below.");
 				} else if (result.error === "CredentialsSignin") {
 					throw new Error("Invalid email or password. Please try again.");
 				} else if (result.error === "Configuration" || result.error === "CallbackRouteError") {
@@ -135,8 +139,8 @@ export default function LoginPage() {
 					</CardHeader>
 					<CardContent>
 						<div className="space-y-4">
-							{/* Tab Selection */}
-							<div className="flex rounded-lg bg-gray-100 p-1">
+							{/* Tab Selection - Hidden for now */}
+							{/* <div className="flex rounded-lg bg-gray-100 p-1">
 								<button
 									onClick={() => setActiveTab("email")}
 									className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
@@ -157,7 +161,7 @@ export default function LoginPage() {
 								>
 									Magic Link
 								</button>
-							</div>
+							</div> */}
 
 							{successMessage && (
 								<div className="bg-green-50 border border-green-200 text-green-600 px-4 py-2 rounded-md text-sm">

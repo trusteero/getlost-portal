@@ -15,9 +15,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Check if user is admin
-  const adminEmails = process.env.ADMIN_EMAILS?.split(",").map(e => e.trim()) || [];
-  const isAdmin = session.user.role === "admin" || adminEmails.includes(session.user.email || "");
+  // Check if user is admin or super_admin
+  const isAdmin = session.user.role === "admin" || session.user.role === "super_admin";
 
   if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

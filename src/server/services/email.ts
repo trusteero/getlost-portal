@@ -370,7 +370,7 @@ export async function sendWelcomeEmail(email: string, name?: string) {
             <p>Your account is ready. Let's discover your book's unique fingerprint.</p>
 
             <div class="features">
-              <div class="feature">Upload manuscripts in DOCX, PDF, or EPUB format</div>
+              <div class="feature">Upload manuscripts in TXT, DOCX, PDF, or EPUB format</div>
               <div class="feature">Get your book's digital fingerprint</div>
               <div class="feature">Discover your target audience</div>
               <div class="feature">Receive marketing strategies and insights</div>

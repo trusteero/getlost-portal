@@ -22,8 +22,10 @@ export const users = createTable("user", (d) => ({
 	email: d.text({ length: 255 }).notNull(),
 	emailVerified: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`),
 	image: d.text({ length: 255 }),
-	role: d.text({ length: 50 }).default("user").notNull(), // "user" or "admin"
+	role: d.text({ length: 50 }).default("user").notNull(), // "user" or "admin" or "super_admin"
 	password: d.text({ length: 255 }), // For email/password auth
+	createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`),
+	updatedAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
