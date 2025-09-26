@@ -8,7 +8,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import SignOutButton from "@/components/signout-button";
 
 export default async function Home() {
-	const session = await auth();
+	let session = null;
+	try {
+		session = await auth();
+	} catch (error) {
+		console.error("Auth check failed on landing page:", error);
+		// If auth fails, treat as no session
+		session = null;
+	}
 
 	return (
 		<HydrateClient>
@@ -29,7 +36,7 @@ export default async function Home() {
 								</div>
 							</div>
 							<div className="flex items-center space-x-4">
-								{session ? (
+								{session?.user ? (
 									<>
 										<Link href="/dashboard">
 											<Button variant="ghost" className="text-gray-600 hover:text-gray-900">
