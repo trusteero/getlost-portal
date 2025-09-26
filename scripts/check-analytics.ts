@@ -14,7 +14,7 @@ async function checkAnalytics() {
 
   // Get today's date string
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = today.toISOString().split('T')[0]!;
   console.log("Today's date:", todayStr);
 
   // Check all user activity records
