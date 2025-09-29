@@ -39,12 +39,13 @@ declare module "next-auth" {
  * @see https://next-auth.js.org/configuration/options
  */
 export const authConfig = {
+	trustHost: true, // Trust the host header for production deployments
 	session: {
 		strategy: "jwt", // Use JWT for both OAuth and credentials
 	},
 	pages: {
 		signIn: "/login",
-		error: "/login",
+		error: "/auth/error",
 		verifyRequest: "/auth/verify-email",
 	},
 	providers: [

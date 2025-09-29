@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import SignOutButton from "@/components/signout-button";
 
+// Force dynamic rendering since we need auth check
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
 	let session = null;
 	try {
 		session = await auth();
 	} catch (error) {
-		console.error("Auth check failed on landing page:", error);
-		// If auth fails, treat as no session
+		// During build or if auth fails, treat as no session
 		session = null;
 	}
 
