@@ -1,0 +1,23 @@
+import { createAuthClient } from "better-auth/react";
+import type { Auth } from "./auth";
+
+export const authClient = createAuthClient<Auth>({
+  baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+});
+
+// Export hooks for convenience
+export const {
+  signIn,
+  signUp,
+  signOut,
+  useSession,
+  getSession,
+  updateUser,
+  deleteUser,
+  forgetPassword,
+  resetPassword,
+  verifyEmail,
+  sendVerificationEmail,
+  linkSocial,
+  unlinkAccount,
+} = authClient;
