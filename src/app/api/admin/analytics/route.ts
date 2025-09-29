@@ -38,7 +38,7 @@ export async function GET() {
     // Get all users and filter in memory (simpler for SQLite)
     const allUsers = await db.select().from(users);
 
-    const newUsersToday = allUsers.filter(u => {
+    const newUsersToday = allUsers.filter((u: any) => {
       if (!u.createdAt) return false;
       const createdAtTimestamp = typeof u.createdAt === 'number'
         ? u.createdAt
@@ -46,7 +46,7 @@ export async function GET() {
       return createdAtTimestamp >= todayTimestamp && createdAtTimestamp < tomorrowTimestamp;
     }).length;
 
-    const newUsersYesterday = allUsers.filter(u => {
+    const newUsersYesterday = allUsers.filter((u: any) => {
       if (!u.createdAt) return false;
       const createdAtTimestamp = typeof u.createdAt === 'number'
         ? u.createdAt

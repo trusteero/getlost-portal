@@ -23,7 +23,7 @@ async function checkAnalytics() {
 
   if (allActivity.length > 0) {
     console.log("\nActivity records:");
-    allActivity.forEach(activity => {
+    allActivity.forEach((activity: any) => {
       console.log(`- User: ${activity.userId}, Date: ${activity.date}, Count: ${activity.activityCount}`);
     });
   }

@@ -53,20 +53,20 @@ export async function GET() {
       .groupBy(userActivity.userId);
 
     // Create maps for quick lookup
-    const bookCountMap = userBooks.reduce((acc, ub) => {
+    const bookCountMap = userBooks.reduce((acc: any, ub: any) => {
       acc[ub.userId] = ub.count;
       return acc;
     }, {} as Record<string, number>);
 
-    const googleUsersSet = new Set(googleAccounts.map(ga => ga.userId));
+    const googleUsersSet = new Set(googleAccounts.map((ga: any) => ga.userId));
 
-    const lastActivityMap = lastActivities.reduce((acc, la) => {
+    const lastActivityMap = lastActivities.reduce((acc: any, la: any) => {
       acc[la.userId] = la.lastActivityTime || la.lastActivityDate;
       return acc;
     }, {} as Record<string, string>);
 
     // Combine all data
-    const usersWithFullData = allUsers.map(user => ({
+    const usersWithFullData = allUsers.map((user: any) => ({
       ...user,
       bookCount: bookCountMap[user.id] || 0,
       hasGoogleAuth: googleUsersSet.has(user.id),

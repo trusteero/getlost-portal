@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       .limit(50);
 
     // Count unread
-    const unreadCount = userNotifications.filter(n => !n.read).length;
+    const unreadCount = userNotifications.filter((n: any) => !n.read).length;
 
     return NextResponse.json({
       notifications: userNotifications,

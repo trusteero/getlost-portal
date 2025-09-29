@@ -43,7 +43,7 @@ export async function GET(
 
     // Get reports for each version
     const versionsWithReports = await Promise.all(
-      versions.map(async (version) => {
+      versions.map(async (version: any) => {
         const versionReports = await db
           .select({
             id: reports.id,
@@ -160,7 +160,7 @@ export async function PATCH(
 
     // Get reports for each version
     const versionsWithReports = await Promise.all(
-      versions.map(async (version) => {
+      versions.map(async (version: any) => {
         const versionReports = await db
           .select({
             id: reports.id,
