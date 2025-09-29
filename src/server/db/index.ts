@@ -30,20 +30,44 @@ if (dbPath.startsWith('file://')) {
 console.log('[DB] Database URL from env:', env.DATABASE_URL);
 console.log('[DB] Resolved database path:', dbPath);
 
-// During build, skip database connection
-const isBuildPhase = process.argv.includes('build');
+// Check if we're in a build phase or if the production disk is unavailable
+const isBuildPhase = process.argv.includes('build') ||
+	process.env.NEXT_PHASE === 'phase-production-build' ||
+	process.env.VERCEL_ENV === 'production' ||
+	process.env.RENDER === 'true';
 
 let sqlite: Database.Database | null = null;
+let dbFallbackPath = dbPath;
+
+// For production paths that don't exist, use a temporary build database
+if (dbPath.startsWith('/var/') || dbPath.startsWith('/mnt/')) {
+	const dbDir = dirname(dbPath);
+	const dirExists = existsSync(dbDir);
+
+	if (!dirExists) {
+		console.log(`[DB] Production directory ${dbDir} not available (expected during build on Render)`);
+		console.log('[DB] Using temporary build database at ./build-db.sqlite');
+		dbFallbackPath = './build-db.sqlite';
+	}
+}
 
 if (globalForDb.sqlite) {
 	console.log('[DB] Using cached database connection');
 	sqlite = globalForDb.sqlite;
-} else if (isBuildPhase) {
-	// During build phase, skip database connection
-	console.log('[DB] Build phase detected - skipping database connection');
-	sqlite = null;
+} else if (isBuildPhase && dbFallbackPath !== dbPath) {
+	// During build phase with missing production directory, use fallback
+	console.log('[DB] Build phase detected with missing production directory');
+	console.log('[DB] Creating temporary build database for Next.js compilation');
+	try {
+		sqlite = new Database(dbFallbackPath);
+		console.log('[DB] Temporary build database created successfully');
+	} catch (error) {
+		console.error('[DB] Failed to create build database:', error);
+		// Don't throw - let the build continue without a database
+		sqlite = null;
+	}
 } else {
-	// Runtime - check if database exists and is accessible
+	// Runtime - use the actual database path
 	const dbDir = dirname(dbPath);
 	const dbExists = existsSync(dbPath);
 	const dirExists = dbDir === '.' || dbDir === './' || existsSync(dbDir);
@@ -57,6 +81,7 @@ if (globalForDb.sqlite) {
 	if (!dirExists) {
 		console.error(`[DB] ERROR: Database directory does not exist: ${dbDir}`);
 		console.error('[DB] Make sure the disk is mounted at /var/data on Render');
+		console.error('[DB] This error at runtime indicates the disk is not properly mounted');
 		throw new Error(`Database directory does not exist: ${dbDir}`);
 	}
 
@@ -79,4 +104,4 @@ if (globalForDb.sqlite) {
 }
 
 export { sqlite };
-export const db = sqlite ? drizzle(sqlite, { schema }) : null as any;
+export const db = sqlite ? drizzle(sqlite, { schema }) : drizzle({} as any, { schema });
