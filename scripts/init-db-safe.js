@@ -16,7 +16,17 @@ try {
 
   if (process.env.DATABASE_URL) {
     // DATABASE_URL might be like "file:./db.sqlite" or "file:/var/data/db.sqlite"
-    dbPath = process.env.DATABASE_URL.replace('file:', '');
+    dbPath = process.env.DATABASE_URL;
+
+    // Remove file:// or file: prefix if present, but keep the leading slash for absolute paths
+    if (dbPath.startsWith('file://')) {
+      // file:///path -> /path (absolute)
+      // file://path -> path (relative)
+      dbPath = dbPath.replace(/^file:\/\//, '');
+    } else if (dbPath.startsWith('file:')) {
+      // file:/path -> /path or file:./path -> ./path
+      dbPath = dbPath.replace(/^file:/, '');
+    }
   }
 
   // Check the database directory

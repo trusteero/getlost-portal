@@ -14,8 +14,18 @@ const globalForDb = globalThis as unknown as {
 	sqlite: Database.Database | undefined;
 };
 
-// Remove the file:// prefix if present
-const dbPath = env.DATABASE_URL.replace(/^file:\/+/, '');
+// Parse the database path - handle both file:// and absolute/relative paths
+let dbPath = env.DATABASE_URL;
+
+// Remove file:// or file: prefix if present, but keep the leading slash for absolute paths
+if (dbPath.startsWith('file://')) {
+	// file:///path -> /path (absolute)
+	// file://path -> path (relative)
+	dbPath = dbPath.replace(/^file:\/\//, '');
+} else if (dbPath.startsWith('file:')) {
+	// file:/path -> /path or file:./path -> ./path
+	dbPath = dbPath.replace(/^file:/, '');
+}
 
 console.log('[DB] Database URL from env:', env.DATABASE_URL);
 console.log('[DB] Resolved database path:', dbPath);
