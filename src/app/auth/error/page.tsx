@@ -54,7 +54,7 @@ function ErrorContent() {
     }
   };
 
-  const errorInfo = errorMessages[error || ""] || errorMessages.Default;
+  const errorInfo = errorMessages[error as keyof typeof errorMessages] || errorMessages.Default;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-cyan-50 flex items-center justify-center p-4">
@@ -62,9 +62,9 @@ function ErrorContent() {
         <CardHeader>
           <div className="flex items-center space-x-2">
             <AlertCircle className="w-6 h-6 text-red-600" />
-            <CardTitle className="text-red-900">{errorInfo.title}</CardTitle>
+            <CardTitle className="text-red-900">{errorInfo?.title || "Authentication Error"}</CardTitle>
           </div>
-          <CardDescription>{errorInfo.description}</CardDescription>
+          <CardDescription>{errorInfo?.description || "An error occurred during authentication. Please try again."}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (

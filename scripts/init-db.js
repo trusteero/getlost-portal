@@ -19,18 +19,24 @@ try {
     dbPath = process.env.DATABASE_URL.replace('file:', '');
   }
 
-  // Ensure the database directory exists
+  // Check the database directory
   const dbDir = path.dirname(dbPath);
 
-  // Create directory if it doesn't exist and it's not the current directory
-  if (dbDir !== '.' && dbDir !== '/' && !fs.existsSync(dbDir)) {
-    console.log(`📁 Attempting to create database directory: ${dbDir}`);
+  console.log(`📁 Database path: ${dbPath}`);
+  console.log(`📁 Database directory: ${dbDir}`);
+
+  // For production paths like /var/data, we don't create them - they should be mounted
+  if (dbDir.startsWith('/var/') || dbDir.startsWith('/mnt/') || dbDir.startsWith('/opt/')) {
+    console.log(`📁 Production path detected - assuming mounted disk at ${dbDir}`);
+    // Don't try to create production directories
+  } else if (!fs.existsSync(dbDir) && dbDir !== '.' && dbDir !== '/') {
+    // Only try to create local directories
+    console.log(`📁 Creating local directory: ${dbDir}`);
     try {
       fs.mkdirSync(dbDir, { recursive: true });
       console.log(`✅ Created directory: ${dbDir}`);
     } catch (mkdirError) {
       console.log(`⚠️ Could not create ${dbDir}: ${mkdirError instanceof Error ? mkdirError.message : 'Unknown error'}`);
-      console.log(`📍 Using current directory instead`);
       dbPath = 'db.sqlite';
     }
   }

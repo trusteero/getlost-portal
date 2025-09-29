@@ -35,8 +35,8 @@ export const adminRouter = createTRPCRouter({
 	// Get user stats (admin only)
 	getUserStats: adminProcedure.query(async ({ ctx }) => {
 		const allUsers = await ctx.db.select().from(users);
-		const adminCount = allUsers.filter((u) => u.role === "admin").length;
-		const userCount = allUsers.filter((u) => u.role === "user").length;
+		const adminCount = allUsers.filter((u: any) => u.role === "admin").length;
+		const userCount = allUsers.filter((u: any) => u.role === "user").length;
 
 		return {
 			total: allUsers.length,

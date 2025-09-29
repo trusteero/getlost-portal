@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(reports.requestedAt));
 
     // Transform flat data to nested structure
-    const allReports = allReportsFlat.map(report => ({
+    const allReports = allReportsFlat.map((report: any) => ({
       id: report.id,
       status: report.status,
       requestedAt: report.requestedAt,
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Check if notifications were sent (simplified for now)
-    const reportsWithNotificationStatus = allReports.map(report => ({
+    const reportsWithNotificationStatus = allReports.map((report: any) => ({
       ...report,
       notificationSent: report.status === "completed" && report.completedAt !== null,
     }));

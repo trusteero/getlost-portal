@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     // Get latest version, report, and digest status for each book
     const booksWithDetails = await Promise.all(
-      userBooks.map(async (book) => {
+      userBooks.map(async (book: any) => {
         const latestVersion = await db
           .select()
           .from(bookVersions)

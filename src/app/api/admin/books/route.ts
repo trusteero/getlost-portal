@@ -40,7 +40,7 @@ export async function GET() {
 
     // Get digest status for each book
     const booksWithDigest = await Promise.all(
-      allBooks.map(async (book) => {
+      allBooks.map(async (book: any) => {
         // Get latest digest job
         const [latestDigest] = await db
           .select({
