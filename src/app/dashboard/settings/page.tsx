@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, User, Mail, Shield, Save, Loader2 } from "lucide-react";
 
 export default function Settings() {
-  const { data: session, status, update } = useSession();
+  const { data: session, isPending } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -25,16 +25,16 @@ export default function Settings() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!isPending && !session) {
       router.push("/login");
-    } else if (status === "authenticated" && session?.user) {
+    } else if (session?.user) {
       setFormData(prev => ({
         ...prev,
         name: session.user.name || "",
         email: session.user.email || "",
       }));
     }
-  }, [status, session]);
+  }, [session, isPending]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

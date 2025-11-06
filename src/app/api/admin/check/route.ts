@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/server/auth";
+import { getSessionFromRequest } from "@/server/auth";
 
 export async function GET(request: NextRequest) {
-  const session = await auth();
+  const session = await getSessionFromRequest(request);
 
   if (!session?.user) {
     return NextResponse.json({ isAdmin: false });

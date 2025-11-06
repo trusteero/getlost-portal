@@ -1,14 +1,6 @@
 "use client";
 
-import { SessionProvider } from "next-auth/react";
-
+// Better Auth doesn't need a provider - hooks work directly
 export function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <SessionProvider
-      refetchOnWindowFocus={false}
-      refetchInterval={5 * 60} // Refetch session every 5 minutes
-    >
-      {children}
-    </SessionProvider>
-  );
+  return <>{children}</>;
 }
