@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/server/db";
 import Database from "better-sqlite3";
 import { trackUserActivity } from "@/server/services/analytics";
+import * as betterAuthSchema from "@/server/db/better-auth-schema";
 
 // Get database URL from environment
 const dbUrl = process.env.DATABASE_URL || "./db.sqlite";
@@ -10,18 +11,19 @@ const dbUrl = process.env.DATABASE_URL || "./db.sqlite";
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "sqlite",
+    schema: betterAuthSchema,
   }),
 
   // Trust the host in production
   trustedOrigins: process.env.NODE_ENV === "production" ? [process.env.BETTER_AUTH_URL!] : undefined,
 
   // Base URL for auth (will be set via env)
-  baseURL: process.env.BETTER_AUTH_URL,
+  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
 
   // Email and password authentication
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
+    requireEmailVerification: process.env.NODE_ENV === "production", // Only require verification in production
 
     // Send verification email
     sendVerificationEmail: async ({ user, url, token }) => {
@@ -118,44 +120,9 @@ export const auth = betterAuth({
   // Advanced configuration
   advanced: {
     cookiePrefix: "better-auth",
-    generateId: false, // Use default ID generation
-  },
-
-  // Hooks for tracking and role management
-  hooks: {
-    after: [
-      {
-        matcher(context) {
-          // Track activity on any authenticated action
-          return context.method === "getSession" && context.session?.user;
-        },
-        handler: async (context) => {
-          if (context.session?.user?.id) {
-            // Track user activity (fire and forget)
-            trackUserActivity(context.session.user.id).catch(console.error);
-          }
-        },
-      },
-      {
-        matcher(context) {
-          // Check super admin status on sign in
-          return context.method === "signInEmail" || context.method === "signInSocial";
-        },
-        handler: async (context) => {
-          if (!context.user) return;
-
-          const superAdminEmails = process.env.SUPER_ADMIN_EMAILS?.split(",").map(e => e.trim()) || [];
-          const isSuperAdmin = context.user.email && superAdminEmails.includes(context.user.email);
-
-          if (isSuperAdmin && context.user.role !== "super_admin") {
-            // Update user to super admin
-            await context.context.adapter.updateUser(context.user.id, {
-              role: "super_admin",
-            });
-          }
-        },
-      },
-    ],
+    database: {
+      generateId: () => crypto.randomUUID(), // Provide custom ID generation function
+    },
   },
 });
 

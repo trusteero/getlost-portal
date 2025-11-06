@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { headers as getHeaders } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import type { NextRequest } from "next/server";
 
 /**
  * Get the current session using Better Auth
@@ -13,6 +14,21 @@ export const getSession = cache(async () => {
     headers: headers,
   });
 });
+
+/**
+ * Get session from API route request
+ * Use this in API routes (app/api/.../route.ts)
+ */
+export async function getSessionFromRequest(request: NextRequest) {
+  const headers = new Headers();
+  request.headers.forEach((value, key) => {
+    headers.set(key, value);
+  });
+  
+  return auth.api.getSession({
+    headers: headers,
+  });
+}
 
 /**
  * Get the current user from the session

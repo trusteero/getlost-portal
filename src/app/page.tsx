@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, BookOpen, FileText, Sparkles, Zap, Shield, BarChart3, CheckCircle, Clock, Users, Award } from "lucide-react";
 
-import { auth } from "@/server/auth";
+import { getSession } from "@/server/auth";
 import { HydrateClient, api } from "@/trpc/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 export default async function Home() {
 	let session = null;
 	try {
-		session = await auth();
+		session = await getSession();
 	} catch (error) {
 		// During build or if auth fails, treat as no session
 		session = null;

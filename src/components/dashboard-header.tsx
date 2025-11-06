@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "@/lib/auth-client";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Bell, Settings, LogOut, ChevronDown, User } from "lucide-react";
-import { signOut } from "next-auth/react";
 
 export default function DashboardHeader() {
   const { data: session } = useSession();
@@ -193,7 +192,7 @@ export default function DashboardHeader() {
                       <button
                         onClick={async () => {
                           setDropdownOpen(false);
-                          await signOut({ redirect: false });
+                          await signOut();
                           window.location.href = "/";
                         }}
                         className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-client";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,7 +62,7 @@ interface DigestJob {
 export default function BookDetail() {
   const params = useParams();
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session, isPending } = useSession();
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
@@ -84,9 +84,9 @@ export default function BookDetail() {
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!isPending && !session) {
       router.push("/login");
-    } else if (status === "authenticated") {
+    } else if (session) {
       fetchBook();
       fetchDigestStatus();
     }
@@ -97,7 +97,7 @@ export default function BookDetail() {
         clearTimeout(pollingRef.current);
       }
     };
-  }, [status, params.id]);
+  }, [session, isPending, params.id]);
 
   const fetchBook = async () => {
     try {

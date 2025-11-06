@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { signOut } from "next-auth/react";
+import { signOut } from "@/lib/auth-client";
 
 export default function SignOutButton() {
   return (
@@ -9,7 +9,7 @@ export default function SignOutButton() {
       variant="outline"
       className="border-gray-300"
       onClick={async () => {
-        await signOut({ redirect: false });
+        await signOut();
         window.location.href = "/";
       }}
     >

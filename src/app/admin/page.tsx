@@ -1,18 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  FileText, Clock, CheckCircle, Upload, Bell, Eye, User, Calendar,
-  Loader2, AlertCircle, Home, LogOut, ChevronDown, ChevronRight, Settings,
-  RefreshCw, Users, TrendingUp, BookOpen, Image, Download, ExternalLink,
-  FileUp, XCircle, HelpCircle, Mail, MoreHorizontal, Shield, UserCheck, UserX
-} from "lucide-react";
-import { signOut } from "next-auth/react";
+import { useSession, signOut } from "@/lib/auth-client";
 import {
   Sheet,
   SheetContent,
@@ -93,7 +82,7 @@ type SortField = "title" | "user" | "status" | "createdAt" | "updatedAt";
 type SortDirection = "asc" | "desc";
 
 export default function AdminDashboard() {
-  const { data: session, status } = useSession();
+  const { data: session, isPending } = useSession();
   const router = useRouter();
   const [books, setBooks] = useState<Book[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -118,9 +107,9 @@ export default function AdminDashboard() {
 
   // Check if user is admin
   useEffect(() => {
-    if (status === "loading") return;
+    if (isPending) return;
 
-    if (status === "unauthenticated") {
+    if (!session) {
       router.push("/login");
       return;
     }
@@ -146,7 +135,7 @@ export default function AdminDashboard() {
     if (session) {
       checkAdmin();
     }
-  }, [status, session]);
+  }, [isPending, session]);
 
   const fetchData = async () => {
     try {
@@ -415,7 +404,7 @@ export default function AdminDashboard() {
     );
   };
 
-  if (loading || status === "loading") {
+  if (loading || isPending) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
@@ -491,7 +480,7 @@ export default function AdminDashboard() {
                         <button
                           onClick={async () => {
                             setDropdownOpen(false);
-                            await signOut({ redirect: false });
+                            await signOut();
                             window.location.href = "/";
                           }}
                           className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -31,19 +31,19 @@ interface Book {
 }
 
 export default function Dashboard() {
-  const { data: session, status } = useSession();
+  const { data: session, isPending } = useSession();
   const router = useRouter();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!isPending && !session) {
       router.push("/login");
-    } else if (status === "authenticated") {
+    } else if (session) {
       fetchBooks();
       checkProcessingJobs();
     }
-  }, [status]);
+  }, [session, isPending]);
 
   useEffect(() => {
     // Check for processing jobs periodically
@@ -92,7 +92,7 @@ export default function Dashboard() {
   };
 
 
-  if (status === "loading" || loading) {
+  if (isPending || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>

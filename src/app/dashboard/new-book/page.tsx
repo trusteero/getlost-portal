@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-client";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Upload, FileText, X, Loader2 } from "lucide-react";
 
 export default function NewBook() {
-  const { data: session, status } = useSession();
+  const { data: session, isPending } = useSession();
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -111,7 +111,7 @@ export default function NewBook() {
     }
   };
 
-  if (status === "loading") {
+  if (isPending) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
@@ -119,7 +119,7 @@ export default function NewBook() {
     );
   }
 
-  if (status === "unauthenticated") {
+  if (!session) {
     router.push("/login");
     return null;
   }
