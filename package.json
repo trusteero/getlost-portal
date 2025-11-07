@@ -5,6 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"build": "next build",
+		"build:check": "npm run typecheck && npm run build",
 		"check": "biome check .",
 		"check:unsafe": "biome check --write --unsafe .",
 		"check:write": "biome check --write .",

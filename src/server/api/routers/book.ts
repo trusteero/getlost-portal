@@ -11,7 +11,7 @@ export const bookRouter = createTRPCRouter({
 	// Get all books for the logged-in user
 	getAll: protectedProcedure.query(async ({ ctx }) => {
 		const allBooks = await ctx.db.query.books.findMany({
-			where: eq(books.uploadedById, ctx.session.user.id),
+			where: eq(books.userId, ctx.session.user.id),
 			orderBy: [desc(books.createdAt)],
 		});
 		return allBooks;
@@ -19,14 +19,14 @@ export const bookRouter = createTRPCRouter({
 
 	// Get a single book by ID
 	getById: protectedProcedure
-		.input(z.object({ id: z.number() }))
+		.input(z.object({ id: z.string() }))
 		.query(async ({ ctx, input }) => {
 			const book = await ctx.db.query.books.findFirst({
 				where: eq(books.id, input.id),
 			});
 
 			// Ensure user owns the book
-			if (book && book.uploadedById !== ctx.session.user.id) {
+			if (book && book.userId !== ctx.session.user.id) {
 				throw new Error("Unauthorized");
 			}
 
@@ -52,7 +52,7 @@ export const bookRouter = createTRPCRouter({
 				.insert(books)
 				.values({
 					...input,
-					uploadedById: ctx.session.user.id,
+					userId: ctx.session.user.id,
 				})
 				.returning();
 
@@ -63,7 +63,7 @@ export const bookRouter = createTRPCRouter({
 	update: protectedProcedure
 		.input(
 			z.object({
-				id: z.number(),
+				id: z.string(),
 				title: z.string().min(1).max(512).optional(),
 				author: z.string().max(256).optional(),
 				isbn: z.string().max(20).optional(),
@@ -78,7 +78,7 @@ export const bookRouter = createTRPCRouter({
 				where: eq(books.id, id),
 			});
 
-			if (!existingBook || existingBook.uploadedById !== ctx.session.user.id) {
+			if (!existingBook || existingBook.userId !== ctx.session.user.id) {
 				throw new Error("Unauthorized");
 			}
 
@@ -93,14 +93,14 @@ export const bookRouter = createTRPCRouter({
 
 	// Delete a book
 	delete: protectedProcedure
-		.input(z.object({ id: z.number() }))
+		.input(z.object({ id: z.string() }))
 		.mutation(async ({ ctx, input }) => {
 			// Verify ownership
 			const existingBook = await ctx.db.query.books.findFirst({
 				where: eq(books.id, input.id),
 			});
 
-			if (!existingBook || existingBook.uploadedById !== ctx.session.user.id) {
+			if (!existingBook || existingBook.userId !== ctx.session.user.id) {
 				throw new Error("Unauthorized");
 			}
 
