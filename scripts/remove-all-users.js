@@ -38,7 +38,9 @@ try {
 
   // Count users before deletion
   const userCount = db.prepare("SELECT COUNT(*) as count FROM getlostportal_user").get();
-  const count = userCount ? userCount.count : 0;
+  const count = userCount && typeof userCount === 'object' && 'count' in userCount 
+    ? Number(userCount.count) 
+    : 0;
   console.log(`Found ${count} users to delete`);
 
   if (count === 0) {
