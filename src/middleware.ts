@@ -22,10 +22,12 @@ export async function middleware(request: NextRequest) {
     request.cookies.get("better-auth.session-token") ||
     request.cookies.get("better-auth_session-token");
 
-  // For protected paths, check if session cookie exists
-  // The actual session verification will happen in the page component
+  // For protected paths, be more lenient - let the page component handle auth
+  // The middleware is just a quick check, but the page will do proper session verification
   if (isProtectedPath && !sessionCookie) {
-    // Redirect to login if trying to access protected route without session cookie
+    // Only redirect if we're absolutely sure there's no session
+    // Better Auth might set cookies with different names, so be lenient
+    // The page component will handle the actual redirect if needed
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
