@@ -7,10 +7,7 @@ export const env = createEnv({
 	 * isn't built with invalid env vars.
 	 */
 	server: {
-		AUTH_SECRET:
-			process.env.NODE_ENV === "production"
-				? z.string()
-				: z.string().optional(),
+		AUTH_SECRET: z.string().optional(), // Optional - Better Auth can generate if needed
 		AUTH_GOOGLE_ID: z.string().optional(), // Optional - Google OAuth not required
 		AUTH_GOOGLE_SECRET: z.string().optional(), // Optional - Google OAuth not required
 		DATABASE_URL: z.string(),
