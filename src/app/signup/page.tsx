@@ -53,7 +53,7 @@ export default function SignupPage() {
 			if (result.error) {
 				console.error("Signup error:", result.error);
 				const errorCode = result.error.code || result.error.status;
-				const errorMessage = result.error.message || result.error.error || "Unable to create account";
+				const errorMessage = result.error.message || "Unable to create account";
 				
 				if (errorCode === "USER_ALREADY_EXISTS" || errorMessage.includes("already exists")) {
 					throw new Error("An account with this email already exists. Please sign in instead.");
