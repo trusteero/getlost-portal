@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -12,41 +11,27 @@ export async function middleware(request: NextRequest) {
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
   const isAuthPath = authPaths.some(path => pathname.startsWith(path));
 
-  // For protected paths, verify session via Better Auth
-  if (isProtectedPath) {
-    try {
-      const session = await auth.api.getSession({
-        headers: request.headers,
-      });
-      
-      if (!session) {
-        // Redirect to login if trying to access protected route without session
-        const loginUrl = new URL("/login", request.url);
-        loginUrl.searchParams.set("callbackUrl", pathname);
-        return NextResponse.redirect(loginUrl);
-      }
-    } catch (error) {
-      // If session check fails, redirect to login
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
+  // Better Auth cookie name format: {cookiePrefix}.session_token
+  // With cookiePrefix: "better-auth", it should be "better-auth.session_token"
+  // Check for session cookie - Better Auth sets this automatically
+  const sessionCookie = 
+    request.cookies.get("better-auth.session_token") ||
+    request.cookies.get("better-auth_session_token") ||
+    request.cookies.get("better-auth.session-token") ||
+    request.cookies.get("better-auth_session-token");
+
+  // For protected paths, check if session cookie exists
+  // The actual session verification will happen in the page component
+  if (isProtectedPath && !sessionCookie) {
+    // Redirect to login if trying to access protected route without session cookie
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // For auth paths, check if already logged in
-  if (isAuthPath) {
-    try {
-      const session = await auth.api.getSession({
-        headers: request.headers,
-      });
-      
-      if (session) {
-        // Redirect to dashboard if trying to access auth pages with session
-        return NextResponse.redirect(new URL("/dashboard", request.url));
-      }
-    } catch (error) {
-      // If session check fails, allow access to auth pages
-    }
+  // For auth paths, redirect to dashboard if session cookie exists
+  if (isAuthPath && sessionCookie) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();
