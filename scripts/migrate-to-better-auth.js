@@ -237,7 +237,8 @@ try {
   console.log('  3. The old NextAuth tables are still present but can be removed later');
 
 } catch (error) {
-  console.error('❌ Migration failed:', error.message);
+  const err = error instanceof Error ? error : new Error(String(error));
+  console.error('❌ Migration failed:', err.message);
   db.exec('ROLLBACK');
   process.exit(1);
 } finally {
