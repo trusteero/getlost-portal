@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { betterFetch } from "better-auth/client";
+import { auth } from "@/lib/auth";
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -12,17 +12,41 @@ export async function middleware(request: NextRequest) {
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
   const isAuthPath = authPaths.some(path => pathname.startsWith(path));
 
-  // Get session cookie
-  const sessionCookie = request.cookies.get("better-auth.session_token");
-
-  if (isProtectedPath && !sessionCookie) {
-    // Redirect to login if trying to access protected route without session
-    return NextResponse.redirect(new URL("/login", request.url));
+  // For protected paths, verify session via Better Auth
+  if (isProtectedPath) {
+    try {
+      const session = await auth.api.getSession({
+        headers: request.headers,
+      });
+      
+      if (!session) {
+        // Redirect to login if trying to access protected route without session
+        const loginUrl = new URL("/login", request.url);
+        loginUrl.searchParams.set("callbackUrl", pathname);
+        return NextResponse.redirect(loginUrl);
+      }
+    } catch (error) {
+      // If session check fails, redirect to login
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
-  if (isAuthPath && sessionCookie) {
-    // Redirect to dashboard if trying to access auth pages with session
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  // For auth paths, check if already logged in
+  if (isAuthPath) {
+    try {
+      const session = await auth.api.getSession({
+        headers: request.headers,
+      });
+      
+      if (session) {
+        // Redirect to dashboard if trying to access auth pages with session
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+    } catch (error) {
+      // If session check fails, allow access to auth pages
+    }
   }
 
   return NextResponse.next();
