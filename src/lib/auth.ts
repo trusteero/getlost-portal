@@ -7,6 +7,7 @@ import fs from "fs";
 import { trackUserActivity } from "@/server/services/analytics";
 import * as betterAuthSchema from "@/server/db/better-auth-schema";
 import { env } from "@/env";
+import { eq } from "drizzle-orm";
 
 // Run account table migration synchronously before Better Auth initializes
 // This ensures the schema is correct before Better Auth tries to use it
@@ -362,6 +363,29 @@ export const auth = betterAuth({
     },
     database: {
       generateId: () => crypto.randomUUID(), // Provide custom ID generation function
+    },
+  },
+
+  // Hooks for debugging
+  hooks: {
+    onBeforeSignInEmail: async ({ email, password }) => {
+      console.log("🔍 [Better Auth Hook] onBeforeSignInEmail called");
+      console.log("🔍 [Better Auth Hook] Email:", email);
+      
+      // Try to find the user manually to debug
+      try {
+        const { user: userSchema } = betterAuthSchema;
+        const users = await db.select().from(userSchema).where(eq(userSchema.email, email.toLowerCase())).limit(1);
+        console.log("🔍 [Better Auth Hook] User found in database:", users.length > 0 ? "Yes" : "No");
+        if (users.length > 0) {
+          console.log("🔍 [Better Auth Hook] User ID:", users[0]?.id);
+          console.log("🔍 [Better Auth Hook] User email:", users[0]?.email);
+        }
+      } catch (error: any) {
+        console.error("🔍 [Better Auth Hook] Error querying user:", error?.message);
+      }
+      
+      return { email, password };
     },
   },
 });
