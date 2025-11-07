@@ -32,11 +32,18 @@ export const auth = betterAuth({
 
     // Send verification email
     sendVerificationEmail: async ({ user, url, token }: { user: { email: string; name?: string | null }; url: string; token: string }) => {
+      // In development, just log the verification URL and don't send email
+      if (process.env.NODE_ENV === "development") {
+        console.log("📧 [DEV] Verification email would be sent to:", user.email);
+        console.log("🔗 [DEV] Verification URL:", url);
+        return; // Don't try to send email in development
+      }
+
       try {
         // Import email service here to avoid circular dependencies
         const { sendEmail } = await import("@/server/services/email");
 
-        await sendEmail({
+        const emailSent = await sendEmail({
           to: user.email,
           subject: "Verify your email",
           html: `
@@ -56,23 +63,31 @@ export const auth = betterAuth({
             </div>
           `,
         });
+
+        if (!emailSent) {
+          console.warn("Failed to send verification email, but continuing with signup");
+        }
       } catch (error) {
         // Log error but don't fail signup if email sending fails
         console.error("Failed to send verification email:", error);
-        // In development, log the verification URL
-        if (process.env.NODE_ENV === "development") {
-          console.log("Verification URL:", url);
-        }
+        // Don't throw - allow signup to continue
       }
     },
 
     // Send password reset email
     sendResetPassword: async ({ user, url, token }: { user: { email: string; name?: string | null }; url: string; token: string }) => {
+      // In development, just log the reset URL and don't send email
+      if (process.env.NODE_ENV === "development") {
+        console.log("📧 [DEV] Password reset email would be sent to:", user.email);
+        console.log("🔗 [DEV] Password reset URL:", url);
+        return; // Don't try to send email in development
+      }
+
       try {
         // Import email service here to avoid circular dependencies
         const { sendEmail } = await import("@/server/services/email");
 
-        await sendEmail({
+        const emailSent = await sendEmail({
           to: user.email,
           subject: "Reset your password",
           html: `
@@ -92,13 +107,14 @@ export const auth = betterAuth({
             </div>
           `,
         });
+
+        if (!emailSent) {
+          console.warn("Failed to send password reset email, but continuing");
+        }
       } catch (error) {
         // Log error but don't fail password reset if email sending fails
         console.error("Failed to send password reset email:", error);
-        // In development, log the reset URL
-        if (process.env.NODE_ENV === "development") {
-          console.log("Password reset URL:", url);
-        }
+        // Don't throw - allow password reset to continue
       }
     },
   },
