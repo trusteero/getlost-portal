@@ -291,24 +291,6 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false, // Disabled since email sending is disabled
-
-    // Send verification email
-    sendVerificationEmail: async ({ user, url, token }: { user: { email: string; name?: string | null }; url: string; token: string }) => {
-      // Email sending disabled for now - just log the verification URL
-      console.log("📧 [EMAIL DISABLED] Verification email would be sent to:", user.email);
-      console.log("🔗 [VERIFICATION URL]:", url);
-      console.log("🔑 [TOKEN]:", token);
-      return; // Don't send email
-    },
-
-    // Send password reset email
-    sendResetPassword: async ({ user, url, token }: { user: { email: string; name?: string | null }; url: string; token: string }) => {
-      // Email sending disabled for now - just log the reset URL
-      console.log("📧 [EMAIL DISABLED] Password reset email would be sent to:", user.email);
-      console.log("🔗 [RESET URL]:", url);
-      console.log("🔑 [TOKEN]:", token);
-      return; // Don't send email
-    },
   },
 
   // Social providers (only enable if credentials are provided)
@@ -355,37 +337,13 @@ export const auth = betterAuth({
   // Advanced configuration
   advanced: {
     cookiePrefix: "better-auth",
-    cookie: {
+    cookies: {
       // Cookie settings for production
       secure: process.env.NODE_ENV === "production", // HTTPS only in production
       sameSite: "lax", // Allow cookies to be sent with cross-site requests
-      domain: process.env.NODE_ENV === "production" ? undefined : undefined, // Let browser set domain
     },
     database: {
       generateId: () => crypto.randomUUID(), // Provide custom ID generation function
-    },
-  },
-
-  // Hooks for debugging
-  hooks: {
-    onBeforeSignInEmail: async ({ email, password }) => {
-      console.log("🔍 [Better Auth Hook] onBeforeSignInEmail called");
-      console.log("🔍 [Better Auth Hook] Email:", email);
-      
-      // Try to find the user manually to debug
-      try {
-        const { user: userSchema } = betterAuthSchema;
-        const users = await db.select().from(userSchema).where(eq(userSchema.email, email.toLowerCase())).limit(1);
-        console.log("🔍 [Better Auth Hook] User found in database:", users.length > 0 ? "Yes" : "No");
-        if (users.length > 0) {
-          console.log("🔍 [Better Auth Hook] User ID:", users[0]?.id);
-          console.log("🔍 [Better Auth Hook] User email:", users[0]?.email);
-        }
-      } catch (error: any) {
-        console.error("🔍 [Better Auth Hook] Error querying user:", error?.message);
-      }
-      
-      return { email, password };
     },
   },
 });
