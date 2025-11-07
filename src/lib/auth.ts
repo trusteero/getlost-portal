@@ -259,10 +259,22 @@ function ensureSessionTableMigration() {
 ensureAccountTableMigration();
 ensureSessionTableMigration();
 
-// Debug: Log table names from schema
-console.log("🔍 [Better Auth] Schema table names:");
+// Debug: Log database configuration
+console.log("🔍 [Better Auth] Database configuration:");
+console.log("  DATABASE_URL:", env.DATABASE_URL);
 try {
-  // Drizzle tables have a .name property
+  // Get the actual database path from the db instance
+  const dbPath = env.DATABASE_URL || "./dev.db";
+  let resolvedPath = dbPath;
+  if (resolvedPath.startsWith("file://")) {
+    resolvedPath = resolvedPath.replace(/^file:\/\//, "");
+  } else if (resolvedPath.startsWith("file:")) {
+    resolvedPath = resolvedPath.replace(/^file:/, "");
+  }
+  console.log("  Resolved database path:", resolvedPath);
+  console.log("  Database file exists:", fs.existsSync(resolvedPath));
+  
+  // Log table names from schema
   const userTableName = (betterAuthSchema.user as any)?.name || "unknown";
   const accountTableName = (betterAuthSchema.account as any)?.name || "unknown";
   const sessionTableName = (betterAuthSchema.session as any)?.name || "unknown";
@@ -270,7 +282,7 @@ try {
   console.log("  Account table:", accountTableName);
   console.log("  Session table:", sessionTableName);
 } catch (error) {
-  console.log("  Could not extract table names:", error);
+  console.log("  Could not extract database info:", error);
 }
 
 export const auth = betterAuth({
