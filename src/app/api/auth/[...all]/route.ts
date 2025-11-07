@@ -6,6 +6,23 @@ const handler = toNextJsHandler(auth);
 
 export const POST = async (request: Request) => {
   try {
+    // Log the request for debugging
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+    console.log("🔐 [Better Auth] POST request to:", pathname);
+    
+    // If it's a sign-in request, log the email being used
+    if (pathname.includes("/sign-in") || pathname.includes("/signin")) {
+      try {
+        const body = await request.clone().json();
+        if (body.email) {
+          console.log("🔐 [Better Auth] Sign-in attempt for email:", body.email);
+        }
+      } catch (e) {
+        // Ignore JSON parsing errors
+      }
+    }
+    
     return await handler.POST(request);
   } catch (error: any) {
     console.error("Better Auth API POST error:", error);
