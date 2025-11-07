@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "@/lib/auth-client";
-import { Clock, CheckCircle, AlertCircle, XCircle, Settings, LogOut, BookOpen, Users, RefreshCw, User, UserX, Download } from "lucide-react";
+import { Clock, CheckCircle, AlertCircle, XCircle, Settings, LogOut, BookOpen, Users, RefreshCw, User, UserX, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Sheet,
   SheetContent,
