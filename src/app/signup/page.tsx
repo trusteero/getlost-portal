@@ -49,6 +49,7 @@ export default function SignupPage() {
 			});
 
 			if (result.error) {
+				console.error("Signup error:", result.error);
 				if (result.error.code === "USER_ALREADY_EXISTS") {
 					throw new Error("An account with this email already exists. Please sign in instead.");
 				} else {
@@ -61,7 +62,9 @@ export default function SignupPage() {
 			// Don't redirect - let user stay on the page to see the verification message
 		} catch (error: any) {
 			console.error("Signup failed:", error);
-			setError(error.message || "Unable to create account");
+			// Provide more detailed error message
+			const errorMessage = error?.message || error?.toString() || "Unable to create account. Please check your connection and try again.";
+			setError(errorMessage);
 		} finally {
 			setIsLoading(false);
 		}
