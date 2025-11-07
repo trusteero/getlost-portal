@@ -80,12 +80,16 @@ export const auth = betterAuth({
     },
   },
 
-  // Social providers
+  // Social providers (only enable if credentials are provided)
   socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID || "placeholder",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "placeholder",
-    },
+    ...(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
+      ? {
+          google: {
+            clientId: process.env.AUTH_GOOGLE_ID,
+            clientSecret: process.env.AUTH_GOOGLE_SECRET,
+          },
+        }
+      : {}),
   },
 
   // Session configuration

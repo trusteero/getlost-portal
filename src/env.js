@@ -11,8 +11,8 @@ export const env = createEnv({
 			process.env.NODE_ENV === "production"
 				? z.string()
 				: z.string().optional(),
-		AUTH_GOOGLE_ID: z.string(),
-		AUTH_GOOGLE_SECRET: z.string(),
+		AUTH_GOOGLE_ID: z.string().optional(), // Optional - Google OAuth not required
+		AUTH_GOOGLE_SECRET: z.string().optional(), // Optional - Google OAuth not required
 		DATABASE_URL: z.string(),
 		SUPER_ADMIN_EMAILS: z.string().optional(),
 		NODE_ENV: z
