@@ -14,7 +14,8 @@ export const user = createTable("user", {
   emailVerified: integer("emailVerified", { mode: "boolean" }).default(false),
   image: text("image"),
   role: text("role").default("user").notNull(),
-  password: text("password"),
+  // Note: Better Auth stores passwords in the account table, not the user table
+  // password field removed to avoid confusion
   createdAt: integer("createdAt", { mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
   updatedAt: integer("updatedAt", { mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
 });
