@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function PATCH(
-  req: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSessionFromRequest(request);
@@ -15,13 +15,13 @@ export async function PATCH(
   }
 
   // Check if user is admin or super_admin
-  const currentUserRole = session.user.role;
+  const currentUserRole = (session.user as any)?.role;
   if (currentUserRole !== "admin" && currentUserRole !== "super_admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   try {
-    const { role } = await req.json();
+    const { role } = await request.json();
     const { id } = await params;
 
     // Validate role
