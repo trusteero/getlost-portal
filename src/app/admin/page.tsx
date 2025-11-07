@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "@/lib/auth-client";
+import { Clock, CheckCircle, AlertCircle } from "lucide-react";
 import {
   Sheet,
   SheetContent,
