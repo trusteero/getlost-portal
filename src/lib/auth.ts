@@ -138,8 +138,125 @@ function ensureAccountTableMigration() {
   }
 }
 
-// Run migration synchronously before Better Auth initializes
+// Run session table migration synchronously before Better Auth initializes
+function ensureSessionTableMigration() {
+  try {
+    // Get database path
+    let dbPath = env.DATABASE_URL || "./dev.db";
+    if (dbPath.startsWith("file://")) {
+      dbPath = dbPath.replace(/^file:\/\//, "");
+    } else if (dbPath.startsWith("file:")) {
+      dbPath = dbPath.replace(/^file:/, "");
+    }
+
+    if (!fs.existsSync(dbPath)) {
+      return; // Database doesn't exist yet, will be created with correct schema
+    }
+
+    const sqlite = new Database(dbPath);
+    
+    try {
+      // Check if session table exists
+      const tableInfo = sqlite.prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='getlostportal_session'
+      `).get();
+
+      if (!tableInfo) {
+        sqlite.close();
+        return; // Table doesn't exist yet
+      }
+
+      // Check table structure - if it has sessionToken, it's the old schema
+      const columns = sqlite.prepare("PRAGMA table_info(getlostportal_session)").all();
+      const hasSessionToken = columns.some((col: any) => col.name === "sessionToken");
+      const hasIdColumn = columns.some((col: any) => col.name === "id");
+      
+      // If already migrated (has id column), skip
+      if (hasIdColumn && !hasSessionToken) {
+        sqlite.close();
+        return; // Already migrated
+      }
+
+      // If it doesn't have sessionToken, it might be a different issue
+      if (!hasSessionToken && !hasIdColumn) {
+        console.log("⚠️  [Better Auth] Session table has unexpected schema");
+        sqlite.close();
+        return;
+      }
+
+      console.log("🔄 [Better Auth] Migrating session table synchronously...");
+
+      // Get all existing sessions from old schema
+      const oldSessions = sqlite.prepare(`
+        SELECT 
+          sessionToken,
+          userId,
+          expires
+        FROM getlostportal_session
+      `).all() as Array<{
+        sessionToken: string;
+        userId: string;
+        expires: number;
+      }>;
+
+      // Create new table with Better Auth schema
+      sqlite.exec(`
+        CREATE TABLE getlostportal_session_new (
+          id TEXT PRIMARY KEY,
+          expires_at INTEGER NOT NULL,
+          token TEXT NOT NULL UNIQUE,
+          created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+          updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+          ip_address TEXT,
+          user_agent TEXT,
+          user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
+        )
+      `);
+
+      // Migrate data
+      const insert = sqlite.prepare(`
+        INSERT INTO getlostportal_session_new (
+          id, expires_at, token, user_id,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `);
+
+      const insertMany = sqlite.transaction((sessions: typeof oldSessions) => {
+        for (const session of sessions) {
+          const id = crypto.randomUUID();
+          insert.run(
+            id,
+            session.expires,
+            session.sessionToken,
+            session.userId,
+            Math.floor(Date.now() / 1000),
+            Math.floor(Date.now() / 1000)
+          );
+        }
+      });
+
+      insertMany(oldSessions);
+
+      // Drop old table and rename new one
+      sqlite.exec(`
+        DROP TABLE getlostportal_session;
+        ALTER TABLE getlostportal_session_new RENAME TO getlostportal_session;
+      `);
+
+      console.log(`✅ [Better Auth] Successfully migrated ${oldSessions.length} sessions`);
+    } finally {
+      sqlite.close();
+    }
+  } catch (error: any) {
+    // Log but don't throw - allow Better Auth to initialize
+    console.error("⚠️  [Better Auth] Session migration failed:", error?.message || error);
+  }
+}
+
+// Run migrations synchronously before Better Auth initializes
 ensureAccountTableMigration();
+ensureSessionTableMigration();
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
