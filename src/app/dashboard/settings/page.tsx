@@ -10,6 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, User, Mail, Shield, Save, Loader2 } from "lucide-react";
 
+// Force dynamic rendering since we need auth check
+export const dynamic = 'force-dynamic';
+
 export default function Settings() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
@@ -97,7 +100,7 @@ export default function Settings() {
     }
   };
 
-  if (status === "loading") {
+  if (isPending) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
