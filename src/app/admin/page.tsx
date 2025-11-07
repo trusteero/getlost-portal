@@ -4,7 +4,9 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession, signOut } from "@/lib/auth-client";
-import { Clock, CheckCircle, AlertCircle, XCircle, Settings, LogOut, BookOpen, Users, RefreshCw, User, UserX, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { Clock, CheckCircle, AlertCircle, XCircle, Settings, LogOut, BookOpen, Users, RefreshCw, User, UserX, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Home, TrendingUp, Loader2, Image as ImageIcon, ExternalLink, Mail, MoreHorizontal, Shield, HelpCircle, FileUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Sheet,
   SheetContent,
@@ -81,6 +83,22 @@ interface Analytics {
   totalUsers: number;
 }
 
+interface User {
+  id: string;
+  email: string;
+  name?: string;
+  image?: string;
+  role?: string;
+  emailVerified?: boolean;
+  password?: string;
+  hasGoogleAuth?: boolean;
+  bookCount?: number;
+  createdAt?: string | Date | number;
+  updatedAt?: string | Date | number;
+  lastActiveAt?: string | Date | number;
+  lastActivity?: string | Date | number;
+}
+
 type SortField = "title" | "user" | "status" | "createdAt" | "updatedAt";
 type SortDirection = "asc" | "desc";
 
@@ -88,7 +106,7 @@ export default function AdminDashboard() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
   const [books, setBooks] = useState<Book[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -711,7 +729,7 @@ export default function AdminDashboard() {
                                 />
                               ) : (
                                 <div className="w-8 h-11 bg-gray-100 rounded flex items-center justify-center">
-                                  <Image className="w-3 h-3 text-gray-400" />
+                                  <ImageIcon className="w-3 h-3 text-gray-400" />
                                 </div>
                               )}
                             </td>
@@ -943,7 +961,7 @@ export default function AdminDashboard() {
                                   : "-"}
                               </td>
                               <td className="py-2 px-4">
-                                {session?.user?.role === "super_admin" && user.role !== "super_admin" ? (
+                                {(session?.user as any)?.role === "super_admin" && user.role !== "super_admin" ? (
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button variant="ghost" size="sm">
@@ -970,7 +988,7 @@ export default function AdminDashboard() {
                                       )}
                                     </DropdownMenuContent>
                                   </DropdownMenu>
-                                ) : session?.user?.role === "admin" && user.role === "user" ? (
+                                ) : (session?.user as any)?.role === "admin" && user.role === "user" ? (
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button variant="ghost" size="sm">
