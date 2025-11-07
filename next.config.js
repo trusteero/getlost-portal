@@ -6,12 +6,13 @@ import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
-  webpack: (config, { isServer }) => {
-    // Exclude better-auth from middleware bundle
-    if (!isServer) {
+  webpack: (config, { isServer, isEdgeRuntime }) => {
+    // Exclude better-auth from Edge Runtime bundles (middleware)
+    if (isEdgeRuntime) {
       config.resolve.alias = {
         ...config.resolve.alias,
         'better-auth': false,
+        '@/lib/auth': false,
       };
     }
     return config;
