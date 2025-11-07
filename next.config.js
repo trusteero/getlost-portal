@@ -5,6 +5,17 @@
 import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
-const config = {};
+const config = {
+  webpack: (config, { isServer }) => {
+    // Exclude better-auth from middleware bundle
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'better-auth': false,
+      };
+    }
+    return config;
+  },
+};
 
 export default config;
