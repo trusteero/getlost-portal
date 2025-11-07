@@ -6,14 +6,16 @@ import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
-  webpack: (config, { isServer, isEdgeRuntime }) => {
-    // Exclude better-auth from Edge Runtime bundles (middleware)
-    if (isEdgeRuntime) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        'better-auth': false,
-        '@/lib/auth': false,
-      };
+  experimental: {
+    serverComponentsExternalPackages: ['better-auth', 'better-sqlite3'],
+  },
+  webpack: (config) => {
+    // Prevent better-auth from being bundled in Edge Runtime
+    config.externals = config.externals || [];
+    if (Array.isArray(config.externals)) {
+      config.externals.push('better-auth');
+    } else if (typeof config.externals === 'object') {
+      config.externals['better-auth'] = 'commonjs better-auth';
     }
     return config;
   },
