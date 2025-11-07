@@ -220,8 +220,8 @@ try {
   console.log('✅ Migration completed successfully!');
 
   // Display summary
-  const userCount = db.prepare('SELECT COUNT(*) as count FROM user').get();
-  const accountCount = db.prepare('SELECT COUNT(*) as count FROM account').get();
+  const userCount = /** @type {{ count: number }} */ (db.prepare('SELECT COUNT(*) as count FROM user').get());
+  const accountCount = /** @type {{ count: number }} */ (db.prepare('SELECT COUNT(*) as count FROM account').get());
 
   console.log('\n📊 Migration Summary:');
   console.log(`  • Total users: ${userCount.count}`);
