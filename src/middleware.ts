@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Explicitly set Edge Runtime
-export const runtime = 'edge';
+// Explicitly set Edge Runtime (experimental)
+export const runtime = 'experimental-edge';
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
