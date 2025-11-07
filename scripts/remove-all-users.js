@@ -123,7 +123,10 @@ try {
   console.log(`   - Deleted ${activityCount.changes} activity records`);
 
 } catch (error) {
-  console.error("❌ Error removing users:", error?.message || error);
+  const errorMessage = error && typeof error === 'object' && 'message' in error
+    ? String(error.message)
+    : String(error);
+  console.error("❌ Error removing users:", errorMessage);
   db.exec("ROLLBACK");
   process.exit(1);
 } finally {
