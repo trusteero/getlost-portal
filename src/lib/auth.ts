@@ -32,56 +32,74 @@ export const auth = betterAuth({
 
     // Send verification email
     sendVerificationEmail: async ({ user, url, token }: { user: { email: string; name?: string | null }; url: string; token: string }) => {
-      // Import email service here to avoid circular dependencies
-      const { sendEmail } = await import("@/server/services/email");
+      try {
+        // Import email service here to avoid circular dependencies
+        const { sendEmail } = await import("@/server/services/email");
 
-      await sendEmail({
-        to: user.email,
-        subject: "Verify your email",
-        html: `
-          <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #ea580c;">Verify Your Email</h2>
-            <p>Hi ${user.name || "there"},</p>
-            <p>Please click the link below to verify your email address:</p>
-            <div style="margin: 30px 0;">
-              <a href="${url}" style="background-color: #ea580c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-                Verify Email
-              </a>
+        await sendEmail({
+          to: user.email,
+          subject: "Verify your email",
+          html: `
+            <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #ea580c;">Verify Your Email</h2>
+              <p>Hi ${user.name || "there"},</p>
+              <p>Please click the link below to verify your email address:</p>
+              <div style="margin: 30px 0;">
+                <a href="${url}" style="background-color: #ea580c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+                  Verify Email
+                </a>
+              </div>
+              <p style="color: #666; font-size: 14px;">Or copy and paste this link: ${url}</p>
+              <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                If you didn't create an account, you can safely ignore this email.
+              </p>
             </div>
-            <p style="color: #666; font-size: 14px;">Or copy and paste this link: ${url}</p>
-            <p style="color: #666; font-size: 14px; margin-top: 20px;">
-              If you didn't create an account, you can safely ignore this email.
-            </p>
-          </div>
-        `,
-      });
+          `,
+        });
+      } catch (error) {
+        // Log error but don't fail signup if email sending fails
+        console.error("Failed to send verification email:", error);
+        // In development, log the verification URL
+        if (process.env.NODE_ENV === "development") {
+          console.log("Verification URL:", url);
+        }
+      }
     },
 
     // Send password reset email
     sendResetPassword: async ({ user, url, token }: { user: { email: string; name?: string | null }; url: string; token: string }) => {
-      // Import email service here to avoid circular dependencies
-      const { sendEmail } = await import("@/server/services/email");
+      try {
+        // Import email service here to avoid circular dependencies
+        const { sendEmail } = await import("@/server/services/email");
 
-      await sendEmail({
-        to: user.email,
-        subject: "Reset your password",
-        html: `
-          <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #ea580c;">Reset Your Password</h2>
-            <p>Hi ${user.name || "there"},</p>
-            <p>You requested to reset your password. Click the link below to create a new password:</p>
-            <div style="margin: 30px 0;">
-              <a href="${url}" style="background-color: #ea580c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-                Reset Password
-              </a>
+        await sendEmail({
+          to: user.email,
+          subject: "Reset your password",
+          html: `
+            <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #ea580c;">Reset Your Password</h2>
+              <p>Hi ${user.name || "there"},</p>
+              <p>You requested to reset your password. Click the link below to create a new password:</p>
+              <div style="margin: 30px 0;">
+                <a href="${url}" style="background-color: #ea580c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+                  Reset Password
+                </a>
+              </div>
+              <p style="color: #666; font-size: 14px;">Or copy and paste this link: ${url}</p>
+              <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                This link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.
+              </p>
             </div>
-            <p style="color: #666; font-size: 14px;">Or copy and paste this link: ${url}</p>
-            <p style="color: #666; font-size: 14px; margin-top: 20px;">
-              This link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.
-            </p>
-          </div>
-        `,
-      });
+          `,
+        });
+      } catch (error) {
+        // Log error but don't fail password reset if email sending fails
+        console.error("Failed to send password reset email:", error);
+        // In development, log the reset URL
+        if (process.env.NODE_ENV === "development") {
+          console.log("Password reset URL:", url);
+        }
+      }
     },
   },
 
