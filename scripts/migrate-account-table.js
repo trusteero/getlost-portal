@@ -76,7 +76,13 @@ try {
 
   // Check if table already has id column (already migrated)
   const columns = db.prepare("PRAGMA table_info(getlostportal_account)").all();
-  const hasIdColumn = columns.some(col => col.name === "id");
+  // Type guard for TypeScript checking during build
+  const hasIdColumn = Array.isArray(columns) && columns.some((col) => {
+    if (col && typeof col === 'object' && 'name' in col) {
+      return col.name === "id";
+    }
+    return false;
+  });
   
   if (hasIdColumn) {
     console.log("✅ Account table already has 'id' column - migration not needed");
@@ -132,7 +138,7 @@ try {
 
   const insertMany = db.transaction((accounts) => {
     for (const account of accounts) {
-      const id = require("crypto").randomUUID();
+      const id = crypto.randomUUID();
       insert.run(
         id,
         account.providerAccountId,
