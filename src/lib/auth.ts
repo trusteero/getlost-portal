@@ -26,7 +26,7 @@ export const auth = betterAuth({
     requireEmailVerification: process.env.NODE_ENV === "production", // Only require verification in production
 
     // Send verification email
-    sendVerificationEmail: async ({ user, url, token }) => {
+    sendVerificationEmail: async ({ user, url, token }: { user: { email: string; name?: string | null }; url: string; token: string }) => {
       // Import email service here to avoid circular dependencies
       const { sendEmail } = await import("@/server/services/email");
 
@@ -53,7 +53,7 @@ export const auth = betterAuth({
     },
 
     // Send password reset email
-    sendResetPassword: async ({ user, url, token }) => {
+    sendResetPassword: async ({ user, url, token }: { user: { email: string; name?: string | null }; url: string; token: string }) => {
       // Import email service here to avoid circular dependencies
       const { sendEmail } = await import("@/server/services/email");
 

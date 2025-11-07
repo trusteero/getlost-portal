@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "@/lib/auth-client";
+import { useSession, updateUser } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -78,7 +78,7 @@ export default function Settings() {
       }
 
       // Update session with new name
-      await update({ name: formData.name });
+      await updateUser({ name: formData.name });
 
       // Clear password fields
       setFormData(prev => ({
@@ -166,14 +166,14 @@ export default function Settings() {
                   </div>
                 </div>
 
-                {session?.user?.role && (
+                {(session?.user as any)?.role && (
                   <div>
                     <Label>
                       <Shield className="w-4 h-4 inline mr-1" />
                       Account Role
                     </Label>
                     <div className="mt-1 px-3 py-2 bg-gray-50 rounded-md">
-                      <span className="text-sm font-medium capitalize">{session.user.role}</span>
+                      <span className="text-sm font-medium capitalize">{(session?.user as any)?.role}</span>
                     </div>
                   </div>
                 )}
