@@ -48,12 +48,17 @@ export default function SignupPage() {
 				password: formData.password,
 			});
 
+			console.log("Signup result:", result);
+
 			if (result.error) {
 				console.error("Signup error:", result.error);
-				if (result.error.code === "USER_ALREADY_EXISTS") {
+				const errorCode = result.error.code || result.error.status;
+				const errorMessage = result.error.message || result.error.error || "Unable to create account";
+				
+				if (errorCode === "USER_ALREADY_EXISTS" || errorMessage.includes("already exists")) {
 					throw new Error("An account with this email already exists. Please sign in instead.");
 				} else {
-					throw new Error(result.error.message || "Unable to create account");
+					throw new Error(errorMessage);
 				}
 			}
 
@@ -62,8 +67,27 @@ export default function SignupPage() {
 			// Don't redirect - let user stay on the page to see the verification message
 		} catch (error: any) {
 			console.error("Signup failed:", error);
-			// Provide more detailed error message
-			const errorMessage = error?.message || error?.toString() || "Unable to create account. Please check your connection and try again.";
+			console.error("Error details:", {
+				message: error?.message,
+				status: error?.status,
+				code: error?.code,
+				error: error?.error,
+				fullError: error
+			});
+			
+			// Extract error message from various possible formats
+			let errorMessage = "Unable to create account. Please try again.";
+			
+			if (error?.message) {
+				errorMessage = error.message;
+			} else if (error?.error) {
+				errorMessage = typeof error.error === "string" ? error.error : error.error.message || errorMessage;
+			} else if (error?.status === 500) {
+				errorMessage = "Server error occurred. Please check the server logs for details.";
+			} else if (error?.toString && error.toString() !== "[object Object]") {
+				errorMessage = error.toString();
+			}
+			
 			setError(errorMessage);
 		} finally {
 			setIsLoading(false);
