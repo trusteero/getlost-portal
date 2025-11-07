@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { users, userActivity } from "@/server/db/schema";
 import { sql, gte, and, eq } from "drizzle-orm";
 import { getAnalytics } from "@/server/services/analytics";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request);
 
   if (!session?.user?.id) {
