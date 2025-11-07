@@ -354,6 +354,12 @@ export const auth = betterAuth({
   // Advanced configuration
   advanced: {
     cookiePrefix: "better-auth",
+    cookie: {
+      // Cookie settings for production
+      secure: process.env.NODE_ENV === "production", // HTTPS only in production
+      sameSite: "lax", // Allow cookies to be sent with cross-site requests
+      domain: process.env.NODE_ENV === "production" ? undefined : undefined, // Let browser set domain
+    },
     database: {
       generateId: () => crypto.randomUUID(), // Provide custom ID generation function
     },
