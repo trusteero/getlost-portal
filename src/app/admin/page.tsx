@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-
-// Force dynamic rendering - this page requires authentication and cannot be statically generated
-export const dynamic = 'force-dynamic';
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession, signOut } from "@/lib/auth-client";
 import { Clock, CheckCircle, AlertCircle, XCircle, Settings, LogOut, BookOpen, Users, RefreshCw, User, UserX, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Home, TrendingUp, Loader2, Image as ImageIcon, ExternalLink, Mail, MoreHorizontal, Shield, HelpCircle, FileUp } from "lucide-react";
