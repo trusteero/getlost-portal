@@ -259,6 +259,12 @@ function ensureSessionTableMigration() {
 ensureAccountTableMigration();
 ensureSessionTableMigration();
 
+// Debug: Log table names from schema
+console.log("🔍 [Better Auth] Schema table names:");
+console.log("  User table:", betterAuthSchema.user[Symbol.for("drizzle:Name")] || betterAuthSchema.user);
+console.log("  Account table:", betterAuthSchema.account[Symbol.for("drizzle:Name")] || betterAuthSchema.account);
+console.log("  Session table:", betterAuthSchema.session[Symbol.for("drizzle:Name")] || betterAuthSchema.session);
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "sqlite",
