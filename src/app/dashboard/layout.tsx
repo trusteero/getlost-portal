@@ -1,16 +1,10 @@
-"use client";
-
-import DashboardHeader from "@/components/dashboard-header";
+// Force dynamic rendering - dashboard page requires authentication
+export const dynamic = 'force-dynamic';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <DashboardHeader />
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }
