@@ -267,10 +267,21 @@ export const auth = betterAuth({
   // Secret for signing tokens (use BETTER_AUTH_SECRET or AUTH_SECRET or generate)
   secret: process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET || undefined,
 
-  // Trust the host in production (only if BETTER_AUTH_URL is set)
-  trustedOrigins: process.env.NODE_ENV === "production" && process.env.BETTER_AUTH_URL
-    ? [process.env.BETTER_AUTH_URL]
-    : undefined,
+  // Trust the host in production
+  // Use BETTER_AUTH_URL if set, otherwise try to detect from environment
+  trustedOrigins: (() => {
+    if (process.env.NODE_ENV === "production") {
+      // In production, use BETTER_AUTH_URL or NEXT_PUBLIC_APP_URL
+      const productionUrl = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
+      if (productionUrl) {
+        return [productionUrl];
+      }
+      // If no URL is set, trust all origins (less secure but works)
+      return undefined;
+    }
+    // In development, don't restrict origins
+    return undefined;
+  })(),
 
   // Base URL for auth (will be set via env)
   baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
