@@ -58,8 +58,17 @@ function LoginContent() {
 				}
 			}
 
-			// Success - Better Auth handles the redirect
-			router.push("/dashboard");
+			// Success - wait a bit for cookie to be set, then redirect
+			// Better Auth should handle redirect via callbackURL, but if not, do it manually
+			if (result.data) {
+				// Small delay to ensure cookie is set
+				await new Promise(resolve => setTimeout(resolve, 100));
+				// Force a page reload to ensure session is picked up
+				window.location.href = "/dashboard";
+			} else {
+				router.push("/dashboard");
+				router.refresh();
+			}
 		} catch (error: any) {
 			console.error("Login failed:", error);
 			setError(error.message || "Invalid email or password");

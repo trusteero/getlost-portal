@@ -11,11 +11,13 @@ export async function middleware(request: NextRequest) {
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
   const isAuthPath = authPaths.some(path => pathname.startsWith(path));
 
-  // Better Auth cookie name format: {cookiePrefix}.session_token
-  // With cookiePrefix: "better-auth", it should be "better-auth.session_token"
-  // Check for session cookie - Better Auth sets this automatically
-  const sessionCookie = 
-    request.cookies.get("better-auth.session_token") ||
+  // Better Auth uses cookiePrefix.session_token format
+  // With cookiePrefix: "better-auth", the cookie is "better-auth.session_token"
+  // But Better Auth might also use different formats, so check multiple variations
+  const allCookies = request.cookies.getAll();
+  const sessionCookie = allCookies.find(cookie => 
+    cookie.name.includes('session') && cookie.name.includes('better-auth')
+  ) || request.cookies.get("better-auth.session_token") ||
     request.cookies.get("better-auth_session_token") ||
     request.cookies.get("better-auth.session-token") ||
     request.cookies.get("better-auth_session-token");
