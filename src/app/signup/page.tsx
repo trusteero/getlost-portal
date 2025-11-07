@@ -48,17 +48,24 @@ export default function SignupPage() {
 				password: formData.password,
 			});
 
-			console.log("Signup result:", result);
+			console.log("Signup result (full):", JSON.stringify(result, null, 2));
+			console.log("Signup result.error:", result.error);
+			console.log("Signup result.data:", result.data);
 
 			if (result.error) {
-				console.error("Signup error:", result.error);
+				console.error("Signup error object:", result.error);
+				console.error("Signup error keys:", Object.keys(result.error));
+				
 				const errorCode = result.error.code || result.error.status;
 				const errorMessage = result.error.message || "Unable to create account";
+				
+				console.error("Extracted error code:", errorCode);
+				console.error("Extracted error message:", errorMessage);
 				
 				if (errorCode === "USER_ALREADY_EXISTS" || errorMessage.includes("already exists")) {
 					throw new Error("An account with this email already exists. Please sign in instead.");
 				} else {
-					throw new Error(errorMessage);
+					throw new Error(errorMessage || "Unable to create account");
 				}
 			}
 
@@ -66,26 +73,38 @@ export default function SignupPage() {
 			setSignupSuccess(true);
 			// Don't redirect - let user stay on the page to see the verification message
 		} catch (error: any) {
-			console.error("Signup failed:", error);
-			console.error("Error details:", {
+			console.error("Signup failed (catch block):", error);
+			console.error("Error type:", typeof error);
+			console.error("Error constructor:", error?.constructor?.name);
+			console.error("Error details (full):", {
 				message: error?.message,
 				status: error?.status,
 				code: error?.code,
 				error: error?.error,
-				fullError: error
+				data: error?.data,
+				response: error?.response,
+				fullError: error,
+				keys: error ? Object.keys(error) : []
 			});
 			
 			// Extract error message from various possible formats
 			let errorMessage = "Unable to create account. Please try again.";
 			
+			// Try to get error from nested structures
 			if (error?.message) {
 				errorMessage = error.message;
-			} else if (error?.error) {
-				errorMessage = typeof error.error === "string" ? error.error : error.error.message || errorMessage;
-			} else if (error?.status === 500) {
-				errorMessage = "Server error occurred. Please check the server logs for details.";
-			} else if (error?.toString && error.toString() !== "[object Object]") {
-				errorMessage = error.toString();
+			} else if (error?.error?.message) {
+				errorMessage = error.error.message;
+			} else if (error?.response?.error) {
+				errorMessage = typeof error.response.error === "string" 
+					? error.response.error 
+					: error.response.error.message || errorMessage;
+			} else if (error?.data?.error) {
+				errorMessage = typeof error.data.error === "string"
+					? error.data.error
+					: error.data.error.message || errorMessage;
+			} else if (typeof error === "string") {
+				errorMessage = error;
 			}
 			
 			setError(errorMessage);
