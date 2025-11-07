@@ -52,14 +52,24 @@ if (dbPath.startsWith('/var/') || dbPath.startsWith('/mnt/')) {
 }
 
 if (globalForDb.sqlite) {
-	console.log('[DB] Using cached database connection');
-	sqlite = globalForDb.sqlite;
+	// Check if cached connection is still valid
+	try {
+		globalForDb.sqlite.prepare('SELECT 1').get();
+		console.log('[DB] Using cached database connection');
+		sqlite = globalForDb.sqlite;
+	} catch (error) {
+		// Cached connection is stale, create a new one
+		console.log('[DB] Cached connection is stale, creating new connection');
+		globalForDb.sqlite = undefined;
+		sqlite = null;
+	}
 } else if (isBuildPhase && dbFallbackPath !== dbPath) {
 	// During build phase with missing production directory, use fallback
 	console.log('[DB] Build phase detected with missing production directory');
 	console.log('[DB] Creating temporary build database for Next.js compilation');
 	try {
-		sqlite = new Database(dbFallbackPath);
+		sqlite = new Database(dbFallbackPath, { readonly: false });
+		sqlite.pragma('journal_mode = WAL');
 		console.log('[DB] Temporary build database created successfully');
 	} catch (error) {
 		console.error('[DB] Failed to create build database:', error);
@@ -91,7 +101,13 @@ if (globalForDb.sqlite) {
 
 	try {
 		console.log('[DB] Attempting to connect to database at:', dbPath);
-		sqlite = new Database(dbPath);
+		sqlite = new Database(dbPath, { 
+			readonly: false,
+			// Enable WAL mode for better concurrency
+			// This helps prevent locking issues
+		});
+		// Enable WAL mode for better concurrency
+		sqlite.pragma('journal_mode = WAL');
 		console.log('[DB] Successfully connected to database');
 	} catch (error) {
 		console.error('[DB] Failed to connect to database:', error);
