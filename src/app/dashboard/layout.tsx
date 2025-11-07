@@ -1,10 +1,12 @@
 // Force dynamic rendering - dashboard page requires authentication
 export const dynamic = 'force-dynamic';
 
-export default function DashboardLayout({
+import DashboardLayout from "@/components/dashboard-layout";
+
+export default function DashboardLayoutWrapper({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <DashboardLayout>{children}</DashboardLayout>;
 }
