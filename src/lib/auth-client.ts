@@ -1,8 +1,16 @@
 import { createAuthClient } from "better-auth/react";
 import type { Auth } from "./auth";
 
+// Get the base URL - in browser use current origin, otherwise use env var or default
+function getBaseURL(): string {
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+}
+
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  baseURL: getBaseURL(),
 });
 
 // Export hooks for convenience
