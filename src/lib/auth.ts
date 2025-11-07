@@ -261,9 +261,17 @@ ensureSessionTableMigration();
 
 // Debug: Log table names from schema
 console.log("🔍 [Better Auth] Schema table names:");
-console.log("  User table:", betterAuthSchema.user[Symbol.for("drizzle:Name")] || betterAuthSchema.user);
-console.log("  Account table:", betterAuthSchema.account[Symbol.for("drizzle:Name")] || betterAuthSchema.account);
-console.log("  Session table:", betterAuthSchema.session[Symbol.for("drizzle:Name")] || betterAuthSchema.session);
+try {
+  // Drizzle tables have a .name property
+  const userTableName = (betterAuthSchema.user as any)?.name || "unknown";
+  const accountTableName = (betterAuthSchema.account as any)?.name || "unknown";
+  const sessionTableName = (betterAuthSchema.session as any)?.name || "unknown";
+  console.log("  User table:", userTableName);
+  console.log("  Account table:", accountTableName);
+  console.log("  Session table:", sessionTableName);
+} catch (error) {
+  console.log("  Could not extract table names:", error);
+}
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
