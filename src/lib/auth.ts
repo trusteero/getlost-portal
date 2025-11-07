@@ -161,94 +161,24 @@ export const auth = betterAuth({
   // Email and password authentication
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: process.env.NODE_ENV === "production", // Only require verification in production
+    requireEmailVerification: false, // Disabled since email sending is disabled
 
     // Send verification email
     sendVerificationEmail: async ({ user, url, token }: { user: { email: string; name?: string | null }; url: string; token: string }) => {
-      // In development, just log the verification URL and don't send email
-      if (process.env.NODE_ENV === "development") {
-        console.log("📧 [DEV] Verification email would be sent to:", user.email);
-        console.log("🔗 [DEV] Verification URL:", url);
-        return; // Don't try to send email in development
-      }
-
-      try {
-        // Import email service here to avoid circular dependencies
-        const { sendEmail } = await import("@/server/services/email");
-
-        const emailSent = await sendEmail({
-          to: user.email,
-          subject: "Verify your email",
-          html: `
-            <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #ea580c;">Verify Your Email</h2>
-              <p>Hi ${user.name || "there"},</p>
-              <p>Please click the link below to verify your email address:</p>
-              <div style="margin: 30px 0;">
-                <a href="${url}" style="background-color: #ea580c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-                  Verify Email
-                </a>
-              </div>
-              <p style="color: #666; font-size: 14px;">Or copy and paste this link: ${url}</p>
-              <p style="color: #666; font-size: 14px; margin-top: 20px;">
-                If you didn't create an account, you can safely ignore this email.
-              </p>
-            </div>
-          `,
-        });
-
-        if (!emailSent) {
-          console.warn("Failed to send verification email, but continuing with signup");
-        }
-      } catch (error) {
-        // Log error but don't fail signup if email sending fails
-        console.error("Failed to send verification email:", error);
-        // Don't throw - allow signup to continue
-      }
+      // Email sending disabled for now - just log the verification URL
+      console.log("📧 [EMAIL DISABLED] Verification email would be sent to:", user.email);
+      console.log("🔗 [VERIFICATION URL]:", url);
+      console.log("🔑 [TOKEN]:", token);
+      return; // Don't send email
     },
 
     // Send password reset email
     sendResetPassword: async ({ user, url, token }: { user: { email: string; name?: string | null }; url: string; token: string }) => {
-      // In development, just log the reset URL and don't send email
-      if (process.env.NODE_ENV === "development") {
-        console.log("📧 [DEV] Password reset email would be sent to:", user.email);
-        console.log("🔗 [DEV] Password reset URL:", url);
-        return; // Don't try to send email in development
-      }
-
-      try {
-        // Import email service here to avoid circular dependencies
-        const { sendEmail } = await import("@/server/services/email");
-
-        const emailSent = await sendEmail({
-          to: user.email,
-          subject: "Reset your password",
-          html: `
-            <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #ea580c;">Reset Your Password</h2>
-              <p>Hi ${user.name || "there"},</p>
-              <p>You requested to reset your password. Click the link below to create a new password:</p>
-              <div style="margin: 30px 0;">
-                <a href="${url}" style="background-color: #ea580c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-                  Reset Password
-                </a>
-              </div>
-              <p style="color: #666; font-size: 14px;">Or copy and paste this link: ${url}</p>
-              <p style="color: #666; font-size: 14px; margin-top: 20px;">
-                This link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.
-              </p>
-            </div>
-          `,
-        });
-
-        if (!emailSent) {
-          console.warn("Failed to send password reset email, but continuing");
-        }
-      } catch (error) {
-        // Log error but don't fail password reset if email sending fails
-        console.error("Failed to send password reset email:", error);
-        // Don't throw - allow password reset to continue
-      }
+      // Email sending disabled for now - just log the reset URL
+      console.log("📧 [EMAIL DISABLED] Password reset email would be sent to:", user.email);
+      console.log("🔗 [RESET URL]:", url);
+      console.log("🔑 [TOKEN]:", token);
+      return; // Don't send email
     },
   },
 
