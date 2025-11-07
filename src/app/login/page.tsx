@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "@/lib/auth-client";
+import { signIn, getSession } from "@/lib/auth-client";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,16 +58,20 @@ function LoginContent() {
 				}
 			}
 
-			// Success - wait a bit for cookie to be set, then redirect
-			// Better Auth should handle redirect via callbackURL, but if not, do it manually
-			if (result.data) {
-				// Small delay to ensure cookie is set
-				await new Promise(resolve => setTimeout(resolve, 100));
-				// Force a page reload to ensure session is picked up
+			// Success - verify session is set before redirecting
+			// Wait a bit longer in production to ensure cookie is set
+			const waitTime = process.env.NODE_ENV === "production" ? 500 : 100;
+			await new Promise(resolve => setTimeout(resolve, waitTime));
+			
+			// Verify session exists before redirecting
+			const session = await getSession();
+			if (session?.data) {
+				// Session is set, redirect with full page reload
 				window.location.href = "/dashboard";
 			} else {
-				router.push("/dashboard");
-				router.refresh();
+				// Session not set yet, try redirect anyway (might be a timing issue)
+				console.warn("Session not immediately available, redirecting anyway");
+				window.location.href = "/dashboard";
 			}
 		} catch (error: any) {
 			console.error("Login failed:", error);
