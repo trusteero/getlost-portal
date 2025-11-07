@@ -10,7 +10,7 @@ export const env = createEnv({
 		AUTH_SECRET: z.string().optional(), // Optional - Better Auth can generate if needed
 		AUTH_GOOGLE_ID: z.string().optional(), // Optional - Google OAuth not required
 		AUTH_GOOGLE_SECRET: z.string().optional(), // Optional - Google OAuth not required
-		DATABASE_URL: z.string(),
+		DATABASE_URL: z.string().default("file:./build-db.sqlite"), // Default for build phase
 		SUPER_ADMIN_EMAILS: z.string().optional(),
 		NODE_ENV: z
 			.enum(["development", "test", "production"])
