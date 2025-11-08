@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionFromRequest } from "@/server/auth";
+import { getSessionFromRequest, isAdminFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookVersions, reports } from "@/server/db/schema";
 import { eq, desc, and } from "drizzle-orm";
@@ -31,8 +31,9 @@ export async function GET(
 
     const bookData = book[0]!;
 
-    // Check if user owns the book
-    if (bookData.userId !== session.user.id && session.user.role !== "admin") {
+    // Check if user owns the book or is admin
+    const isAdmin = await isAdminFromRequest(request);
+    if (bookData.userId !== session.user.id && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

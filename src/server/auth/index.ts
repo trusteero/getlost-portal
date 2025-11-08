@@ -77,11 +77,29 @@ export async function isAdminFromRequest(request: NextRequest): Promise<boolean>
 }
 
 /**
- * Check if user is an admin
+ * Check if user is an admin (fetches role from database)
  */
 export async function isAdmin() {
   const user = await getCurrentUser();
-  return user?.role === "admin" || user?.role === "super_admin";
+  if (!user?.id) {
+    return false;
+  }
+
+  const { db } = await import("@/server/db");
+  const { users } = await import("@/server/db/schema");
+  const { eq } = await import("drizzle-orm");
+
+  const userData = await db
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, user.id))
+    .limit(1);
+
+  if (userData.length === 0) {
+    return false;
+  }
+
+  return userData[0]!.role === "admin" || userData[0]!.role === "super_admin";
 }
 
 /**
@@ -89,7 +107,9 @@ export async function isAdmin() {
  */
 export async function requireAdmin() {
   const session = await requireAuth();
-  if (session.user.role !== "admin" && session.user.role !== "super_admin") {
+  const isAdminUser = await isAdmin();
+  
+  if (!isAdminUser) {
     redirect("/dashboard");
   }
   return session;
