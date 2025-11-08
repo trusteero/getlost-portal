@@ -3,6 +3,8 @@ import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookVersions, reports } from "@/server/db/schema";
 import { eq, desc, and } from "drizzle-orm";
+import { promises as fs } from "fs";
+import path from "path";
 
 export async function GET(
   request: NextRequest,
@@ -99,12 +101,25 @@ export async function PATCH(
 
       const coverImage = formData.get("coverImage") as File | null;
       if (coverImage) {
-        // Convert to base64 data URL for simplicity (in production, upload to S3 or similar)
+        // Save cover image to file system (same as POST endpoint)
+        const coverStoragePath = process.env.COVER_STORAGE_PATH || './uploads/covers';
+        const coverDir = path.resolve(coverStoragePath);
+        
+        // Create directory if it doesn't exist
+        await fs.mkdir(coverDir, { recursive: true });
+        
+        // Get file extension from MIME type
+        const ext = coverImage.type.split('/')[1] || 'jpg';
+        const coverFileName = `${id}.${ext}`;
+        const coverFilePath = path.join(coverDir, coverFileName);
+        
+        // Save cover image to disk
         const bytes = await coverImage.arrayBuffer();
         const buffer = Buffer.from(bytes);
-        const base64 = buffer.toString('base64');
-        const mimeType = coverImage.type;
-        coverImageUrl = `data:${mimeType};base64,${base64}`;
+        await fs.writeFile(coverFilePath, buffer);
+        
+        // Store the API path for serving
+        coverImageUrl = `/api/covers/${id}.${ext}`;
       }
     } else {
       const body = await request.json();
