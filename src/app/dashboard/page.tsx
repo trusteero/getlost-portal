@@ -5,8 +5,10 @@ import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Plus, FileText, Clock, CheckCircle, Image } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { BookOpen, Plus, RefreshCw, Users } from "lucide-react";
+import { ManuscriptCard } from "@/components/manuscript-card";
+import { CondensedLibrary } from "@/components/condensed-library";
 
 interface Book {
   id: string;
@@ -28,6 +30,12 @@ interface Book {
     requestedAt: string;
     completedAt?: string;
   };
+  digestJob?: {
+    status: string;
+    words?: number;
+    summary?: string;
+    coverUrl?: string;
+  } | null;
 }
 
 export default function Dashboard() {
@@ -100,43 +108,166 @@ export default function Dashboard() {
     );
   }
 
-  const getStatusIcon = (status?: string) => {
-    switch (status) {
-      case "requested":
-        return <Clock className="w-4 h-4 text-yellow-600" />;
-      case "analyzing":
-        return <div className="w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />;
-      case "completed":
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      default:
-        return null;
-    }
+  // Calculate statistics for welcome message
+  const calculateStats = () => {
+    let unlockedInsights = 0;
+    const totalInsights = 5; // 5 features per book
+    
+    books.forEach((book) => {
+      const hasSummary = (book.digestJob?.summary && book.digestJob.status === "completed") || 
+                         (book.latestVersion?.summary !== undefined && book.latestVersion.summary !== null);
+      const hasReport = book.latestReport?.status === "completed";
+      
+      if (hasSummary) unlockedInsights++;
+      if (hasReport) unlockedInsights++;
+    });
+    
+    return {
+      unlockedInsights,
+      totalInsights: books.length * totalInsights,
+      activeManuscripts: books.length,
+    };
   };
 
-  const getStatusText = (status?: string) => {
-    switch (status) {
-      case "requested":
-        return "Report requested";
-      case "analyzing":
-        return "Analyzing";
-      case "completed":
-        return "Report ready";
-      default:
-        return "";
-    }
+  const stats = calculateStats();
+  const userName = session?.user?.name?.split(' ')[0] || session?.user?.email?.split('@')[0] || 'Author';
+
+  // Map book data to condensed library format
+  const mapBookToCondensed = (book: Book) => {
+    const hasSummary = (book.digestJob?.summary && book.digestJob.status === "completed") || 
+                       (book.latestVersion?.summary !== undefined && book.latestVersion.summary !== null);
+    const hasReport = book.latestReport?.status === "completed";
+    
+    const steps = [
+      { id: "summary", status: hasSummary ? ("complete" as const) : ("locked" as const) },
+      { id: "manuscript-report", status: hasReport ? ("complete" as const) : ("locked" as const) },
+      { id: "marketing-assets", status: "locked" as const },
+      { id: "book-covers", status: "locked" as const },
+      { id: "landing-page", status: "locked" as const },
+    ];
+
+    const coverImage = book.digestJob?.coverUrl || book.coverImageUrl || "/placeholder.svg";
+    const genre = "FICTION / Romance / Contemporary"; // Default genre
+
+    return {
+      id: book.id,
+      title: book.title,
+      coverImage,
+      genre,
+      steps,
+    };
+  };
+
+  // Map book data to ManuscriptCard format
+  const mapBookToManuscriptCard = (book: Book) => {
+    // Determine feature statuses - check digest job summary first, then book version summary
+    const hasSummary = (book.digestJob?.summary && book.digestJob.status === "completed") || 
+                       (book.latestVersion?.summary !== undefined && book.latestVersion.summary !== null);
+    const hasReport = book.latestReport?.status === "completed";
+    
+    const steps = [
+      {
+        id: "summary",
+        title: "Free Summary",
+        status: hasSummary ? ("complete" as const) : ("locked" as const),
+        action: "View a basic summary of your manuscript.",
+        price: "Free",
+        buttonText: hasSummary ? "View Summary" : "Unlock",
+      },
+      {
+        id: "manuscript-report",
+        title: "Manuscript Report",
+        status: hasReport ? ("complete" as const) : ("locked" as const),
+        action: "View a comprehensive review and marketing report.",
+        price: hasReport ? "Unlocked" : "$149.99",
+        buttonText: hasReport ? "View Report" : "Unlock",
+      },
+      {
+        id: "marketing-assets",
+        title: "Marketing Assets",
+        status: "locked" as const,
+        action: "Video assets to advertise your book to your audience.",
+        price: "$149.99",
+        buttonText: "Unlock",
+      },
+      {
+        id: "book-covers",
+        title: "Book Covers",
+        status: "locked" as const,
+        action: "Access book covers that appeal to your core audience.",
+        price: "$149.99",
+        buttonText: "Unlock",
+      },
+      {
+        id: "landing-page",
+        title: "Landing Page",
+        status: "locked" as const,
+        action: "Access a landing page for your book that converts.",
+        price: "$149.99",
+        buttonText: "Unlock",
+      },
+    ];
+
+    // Use digest job word count if available, otherwise estimate from file size
+    const wordCount = book.digestJob?.words 
+      ? `${book.digestJob.words.toLocaleString()} words`
+      : book.latestVersion?.fileSize 
+        ? `${Math.round((book.latestVersion.fileSize / 1024) * 500).toLocaleString()} words`
+        : "Unknown word count";
+
+    // Use digest job cover URL if available, otherwise use book coverImageUrl
+    const coverImage = book.digestJob?.coverUrl || book.coverImageUrl || "/placeholder.svg";
+
+    return {
+      id: book.id,
+      title: book.title,
+      subtitle: book.description || "A manuscript awaiting analysis",
+      wordCount,
+      genre: "FICTION", // Default genre, could be enhanced with actual genre data
+      steps,
+      coverImage,
+    };
   };
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Your Books</h1>
-          <Link href="/dashboard/new-book">
-            <Button className="bg-orange-600 hover:bg-orange-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Add New Book
-            </Button>
-          </Link>
-        </div>
+        {/* Welcome Section */}
+        {books.length > 0 && (
+          <>
+            <div className="mb-6 md:mb-8 premium-card rounded-2xl p-4 md:p-8">
+              <h2 className="text-lg md:text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight mb-2">
+                Welcome back, {userName}!
+              </h2>
+              <p className="text-sm md:text-base text-gray-600 font-medium">
+                You've unlocked <b>{stats.unlockedInsights} of {stats.totalInsights} manuscript insights</b> and have <b>{stats.activeManuscripts} active manuscript{stats.activeManuscripts !== 1 ? 's' : ''}</b>.
+              </p>
+              <p className="text-sm md:text-base text-gray-600 font-medium">
+                Ready for your next step? Unlock your Author Data Reports to target your audience better.
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col md:flex-row justify-center gap-4 mb-6 md:mb-8">
+              <Link href="/dashboard/new-book" className="w-full md:w-auto">
+                <button className="w-full md:w-auto btn-premium-emerald text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <RefreshCw className="w-4 h-4 inline-block align-middle" />
+                  Analyze Another Manuscript
+                </button>
+              </Link>
+              <button className="w-full md:w-auto btn-premium-sapphire text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-sapphire-500">
+                <Users className="w-4 h-4 inline-block align-middle" />
+                Refer an Author
+              </button>
+            </div>
+
+            {/* Condensed Library */}
+            <div className="mb-6 md:mb-8">
+              <CondensedLibrary 
+                manuscripts={books.map(mapBookToCondensed)}
+              />
+            </div>
+          </>
+        )}
 
         {books.length === 0 ? (
           <Card className="text-center py-16">
@@ -153,71 +284,13 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-6">
             {books.map((book) => (
-              <Link key={book.id} href={`/dashboard/book/${book.id}`}>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full overflow-hidden">
-                  <div className="flex p-4">
-                    {/* Cover Image */}
-                    {book.coverImageUrl ? (
-                      <div className="w-20 flex-shrink-0 mr-4 sm:mr-6 relative">
-                        <div className="absolute inset-0 bg-gray-500" style={{ transform: 'translate(4px, 4px)' }}></div>
-                        <div className="absolute inset-0 bg-gray-400" style={{ transform: 'translate(3px, 3px)' }}></div>
-                        <div className="absolute inset-0 bg-gray-300" style={{ transform: 'translate(2px, 2px)' }}></div>
-                        <div className="absolute inset-0 bg-gray-200" style={{ transform: 'translate(1px, 1px)' }}></div>
-                        <img
-                          src={book.coverImageUrl}
-                          alt={book.title}
-                          className="relative w-full h-auto rounded border border-gray-200"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-20 h-[120px] flex-shrink-0 mr-4 sm:mr-6 relative">
-                        <div className="absolute inset-0 bg-gray-500" style={{ transform: 'translate(4px, 4px)' }}></div>
-                        <div className="absolute inset-0 bg-gray-400" style={{ transform: 'translate(3px, 3px)' }}></div>
-                        <div className="absolute inset-0 bg-gray-300" style={{ transform: 'translate(2px, 2px)' }}></div>
-                        <div className="absolute inset-0 bg-gray-200" style={{ transform: 'translate(1px, 1px)' }}></div>
-                        <div className="relative w-full h-full bg-gray-100 flex items-center justify-center border border-gray-200">
-                          <Image className="w-6 h-6 text-gray-400" />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Book Details */}
-                    <div className="flex-1 min-w-0 text-left flex flex-col">
-                      <div className="flex-1">
-                        <h3 className="text-base font-semibold line-clamp-2 sm:line-clamp-1">{book.title}</h3>
-
-                        {book.description && (
-                          <p className="text-xs text-gray-600 line-clamp-2 mt-2">{book.description}</p>
-                        )}
-
-                        {book.isProcessing && (
-                          <div className="flex items-center mt-2">
-                            <div className="flex items-center text-xs">
-                              <div className="w-3 h-3 mr-1 border border-orange-600 border-t-transparent rounded-full animate-spin" />
-                              <span className="text-orange-600">Processing</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {!book.isProcessing && book.latestReport && (
-                          <div className="flex items-center mt-2">
-                            <div className="flex items-center text-xs">
-                              {getStatusIcon(book.latestReport.status)}
-                              <span className="ml-1">{getStatusText(book.latestReport.status)}</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <p className="text-xs text-gray-500 mt-auto pt-2">
-                        Added {new Date(book.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
+              <div key={book.id} id={`detail-${book.id}`}>
+                <ManuscriptCard
+                  {...mapBookToManuscriptCard(book)}
+                />
+              </div>
             ))}
           </div>
         )}

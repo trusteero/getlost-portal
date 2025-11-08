@@ -222,16 +222,168 @@ export const notifications = createTable(
 	],
 );
 
-// Relations
+// Book Features/Unlocks table - tracks which features are unlocked for each book
+export const bookFeatures = createTable(
+	"book_feature",
+	(d) => ({
+		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+		bookId: d.text({ length: 255 }).notNull().references(() => books.id),
+		featureType: d.text({ length: 50 }).notNull(), // summary, manuscript-report, marketing-assets, book-covers, landing-page
+		status: d.text({ length: 50 }).notNull().default("locked"), // locked, unlocked, purchased, completed
+		unlockedAt: d.integer({ mode: "timestamp" }),
+		purchasedAt: d.integer({ mode: "timestamp" }),
+		price: d.integer({ mode: "number" }), // Price in cents
+		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+		updatedAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+	}),
+	(t) => [
+		index("feature_book_idx").on(t.bookId),
+		index("feature_type_idx").on(t.featureType),
+		index("feature_status_idx").on(t.status),
+		uniqueIndex("feature_book_type_idx").on(t.bookId, t.featureType),
+	],
+);
+
+// Summaries table - stores book summaries (can be from digest or manual)
+export const summaries = createTable(
+	"summary",
+	(d) => ({
+		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+		bookId: d.text({ length: 255 }).notNull().references(() => books.id),
+		bookVersionId: d.text({ length: 255 }).references(() => bookVersions.id), // Optional: link to specific version
+		source: d.text({ length: 50 }).notNull().default("digest"), // digest, manual
+		brief: d.text(), // Short summary
+		shortSummary: d.text(), // Medium summary
+		fullSummary: d.text(), // Full detailed summary
+		metadata: d.text(), // JSON metadata (genre, themes, etc.)
+		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+		updatedAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+	}),
+	(t) => [
+		index("summary_book_idx").on(t.bookId),
+		index("summary_version_idx").on(t.bookVersionId),
+		index("summary_source_idx").on(t.source),
+	],
+);
+
+// Marketing Assets table - stores video assets, social media content, etc.
+export const marketingAssets = createTable(
+	"marketing_asset",
+	(d) => ({
+		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+		bookId: d.text({ length: 255 }).notNull().references(() => books.id),
+		assetType: d.text({ length: 50 }).notNull(), // video, social-post, banner, etc.
+		title: d.text({ length: 500 }),
+		description: d.text(),
+		fileUrl: d.text({ length: 1000 }), // URL to the asset file
+		thumbnailUrl: d.text({ length: 1000 }), // Thumbnail/preview image
+		metadata: d.text(), // JSON metadata (dimensions, duration, etc.)
+		status: d.text({ length: 50 }).notNull().default("pending"), // pending, processing, completed, failed
+		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+		updatedAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+	}),
+	(t) => [
+		index("marketing_book_idx").on(t.bookId),
+		index("marketing_type_idx").on(t.assetType),
+		index("marketing_status_idx").on(t.status),
+	],
+);
+
+// Book Covers table - stores generated book covers
+export const bookCovers = createTable(
+	"book_cover",
+	(d) => ({
+		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+		bookId: d.text({ length: 255 }).notNull().references(() => books.id),
+		coverType: d.text({ length: 50 }).notNull(), // ebook, paperback, hardcover, social-media
+		title: d.text({ length: 500 }),
+		imageUrl: d.text({ length: 1000 }).notNull(), // URL to cover image
+		thumbnailUrl: d.text({ length: 1000 }), // Thumbnail version
+		metadata: d.text(), // JSON metadata (dimensions, style, etc.)
+		isPrimary: d.integer({ mode: "boolean" }).default(false), // Is this the primary cover?
+		status: d.text({ length: 50 }).notNull().default("pending"), // pending, processing, completed, failed
+		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+		updatedAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+	}),
+	(t) => [
+		index("cover_book_idx").on(t.bookId),
+		index("cover_type_idx").on(t.coverType),
+		index("cover_status_idx").on(t.status),
+		index("cover_primary_idx").on(t.isPrimary),
+	],
+);
+
+// Landing Pages table - stores landing page content for books
+export const landingPages = createTable(
+	"landing_page",
+	(d) => ({
+		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+		bookId: d.text({ length: 255 }).notNull().references(() => books.id),
+		slug: d.text({ length: 255 }).notNull(), // URL slug for the landing page
+		title: d.text({ length: 500 }),
+		headline: d.text(), // Hero headline
+		subheadline: d.text(), // Hero subheadline
+		description: d.text(), // Full description/content
+		htmlContent: d.text(), // Rendered HTML content
+		customCss: d.text(), // Custom CSS styles
+		metadata: d.text(), // JSON metadata (CTA buttons, social links, etc.)
+		isPublished: d.integer({ mode: "boolean" }).default(false),
+		publishedAt: d.integer({ mode: "timestamp" }),
+		status: d.text({ length: 50 }).notNull().default("draft"), // draft, published, archived
+		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+		updatedAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+	}),
+	(t) => [
+		index("landing_book_idx").on(t.bookId),
+		index("landing_slug_idx").on(t.slug),
+		index("landing_status_idx").on(t.status),
+		index("landing_published_idx").on(t.isPublished),
+		uniqueIndex("landing_slug_unique_idx").on(t.slug),
+	],
+);
+
+// Payments/Purchases table - tracks feature purchases
+export const purchases = createTable(
+	"purchase",
+	(d) => ({
+		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+		userId: d.text({ length: 255 }).notNull().references(() => users.id),
+		bookId: d.text({ length: 255 }).notNull().references(() => books.id),
+		featureType: d.text({ length: 50 }).notNull(), // manuscript-report, marketing-assets, book-covers, landing-page
+		amount: d.integer({ mode: "number" }).notNull(), // Amount in cents
+		currency: d.text({ length: 10 }).notNull().default("USD"),
+		paymentMethod: d.text({ length: 50 }), // stripe, paypal, etc.
+		paymentIntentId: d.text({ length: 255 }), // Payment processor ID
+		status: d.text({ length: 50 }).notNull().default("pending"), // pending, completed, failed, refunded
+		completedAt: d.integer({ mode: "timestamp" }),
+		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+		updatedAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+	}),
+	(t) => [
+		index("purchase_user_idx").on(t.userId),
+		index("purchase_book_idx").on(t.bookId),
+		index("purchase_feature_idx").on(t.featureType),
+		index("purchase_status_idx").on(t.status),
+	],
+);
+
+// Relations - Updated to include all new tables
 export const booksRelations = relations(books, ({ one, many }) => ({
 	user: one(users, { fields: [books.userId], references: [users.id] }),
 	versions: many(bookVersions),
 	digestJobs: many(digestJobs),
+	features: many(bookFeatures),
+	summaries: many(summaries),
+	marketingAssets: many(marketingAssets),
+	covers: many(bookCovers),
+	landingPages: many(landingPages),
+	purchases: many(purchases),
 }));
 
 export const bookVersionsRelations = relations(bookVersions, ({ one, many }) => ({
 	book: one(books, { fields: [bookVersions.bookId], references: [books.id] }),
 	reports: many(reports),
+	summaries: many(summaries),
 }));
 
 export const reportsRelations = relations(reports, ({ one }) => ({
@@ -244,4 +396,30 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
 
 export const digestJobsRelations = relations(digestJobs, ({ one }) => ({
 	book: one(books, { fields: [digestJobs.bookId], references: [books.id] }),
+}));
+
+export const bookFeaturesRelations = relations(bookFeatures, ({ one }) => ({
+	book: one(books, { fields: [bookFeatures.bookId], references: [books.id] }),
+}));
+
+export const summariesRelations = relations(summaries, ({ one }) => ({
+	book: one(books, { fields: [summaries.bookId], references: [books.id] }),
+	bookVersion: one(bookVersions, { fields: [summaries.bookVersionId], references: [bookVersions.id] }),
+}));
+
+export const marketingAssetsRelations = relations(marketingAssets, ({ one }) => ({
+	book: one(books, { fields: [marketingAssets.bookId], references: [books.id] }),
+}));
+
+export const bookCoversRelations = relations(bookCovers, ({ one }) => ({
+	book: one(books, { fields: [bookCovers.bookId], references: [books.id] }),
+}));
+
+export const landingPagesRelations = relations(landingPages, ({ one }) => ({
+	book: one(books, { fields: [landingPages.bookId], references: [books.id] }),
+}));
+
+export const purchasesRelations = relations(purchases, ({ one }) => ({
+	user: one(users, { fields: [purchases.userId], references: [users.id] }),
+	book: one(books, { fields: [purchases.bookId], references: [books.id] }),
 }));

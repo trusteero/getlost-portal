@@ -79,6 +79,171 @@
 	--sidebar-accent-foreground: oklch(0.21 0.034 264.665);
 	--sidebar-border: oklch(0.928 0.006 264.531);
 	--sidebar-ring: oklch(0.707 0.022 261.325);
+
+	/* Premium Emerald Suite - Primary Actions */
+	--brand-emerald-dark: 158 64% 42%; /* Deep forest emerald */
+	--brand-emerald: 160 84% 50%; /* Rich emerald */
+	--brand-emerald-light: 158 64% 65%; /* Bright emerald */
+	--brand-emerald-glow: 160 84% 85%; /* Soft emerald glow */
+	
+	/* Premium Sapphire Suite - Secondary Actions */
+	--brand-sapphire-dark: 215 84% 45%; /* Deep ocean sapphire */
+	--brand-sapphire: 217 91% 60%; /* Rich sapphire */
+	--brand-sapphire-light: 215 84% 75%; /* Bright sapphire */
+	--brand-sapphire-glow: 217 91% 90%; /* Soft sapphire glow */
+	
+	/* Luxury Neutral Foundation */
+	--ivory: 48 100% 98%; /* Pure ivory */
+	--pearl: 50 20% 95%; /* Warm pearl */
+	--linen: 50 12% 92%; /* Soft linen */
+	--sage: 120 5% 88%; /* Gentle sage */
+	--warm-gray: 30 2% 75%; /* Sophisticated warm gray */
+	--charcoal: 220 25% 15%; /* Rich charcoal */
+	
+	/* Get Lost Brand Colors - Enhanced */
+	--brand-cream: 48 60% 97%;
+	--brand-dark: 220 25% 15%; /* Now using charcoal */
+	--brand-teal: 160 84% 50%; /* Now using emerald */
+	--brand-success: 160 84% 50%; /* Aligned with emerald */
+	
+	/* System Colors - Premium */
+	--background-page: 220 14% 98%; /* Light gray page background */
+	--background-dashboard: 220 14% 98%; /* Dashboard container */
+	--background-elevated: 0 0% 100%; /* Pure white for cards */
+
+	/* Sophisticated Progress States */
+	--progress-complete: 160 84% 50%; /* Emerald for complete */
+	--progress-active: 217 91% 60%; /* Sapphire for active */
+	--progress-locked: 30 2% 75%; /* Warm gray for locked */
+	--progress-coming-soon: 50 12% 88%; /* Light sage for coming soon */
+	
+	/* Premium Shadow System - Multi-Layered */
+	--shadow-sm: 0 1px 2px 0 hsl(222 84% 5% / 0.05);
+	--shadow-md: 0 4px 6px -1px hsl(222 84% 5% / 0.1), 0 2px 4px -2px hsl(222 84% 5% / 0.1);
+	--shadow-lg: 0 10px 15px -3px hsl(222 84% 5% / 0.1), 0 4px 6px -4px hsl(222 84% 5% / 0.1);
+	--shadow-xl: 0 20px 25px -5px hsl(222 84% 5% / 0.1), 0 8px 10px -6px hsl(222 84% 5% / 0.1);
+	--shadow-book: 0 25px 50px -12px hsl(222 84% 5% / 0.25);
+	
+	/* Enhanced Card Shadow System - Better Depth */
+	--shadow-card-resting: 
+		0 2px 4px 0 hsl(222 84% 5% / 0.08),
+		0 1px 2px -1px hsl(222 84% 5% / 0.06),
+		0 0 0 1px hsl(0 0% 0% / 0.02);
+	--shadow-card-hover: 
+		0 8px 25px -5px hsl(222 84% 5% / 0.15),
+		0 4px 6px -2px hsl(222 84% 5% / 0.1),
+		0 2px 4px -1px hsl(222 84% 5% / 0.08);
+	--shadow-card-active: 
+		0 12px 32px -8px hsl(222 84% 5% / 0.18),
+		0 6px 8px -4px hsl(222 84% 5% / 0.12),
+		0 0 0 1px hsl(160 84% 50% / 0.1);
+	--shadow-card-floating: 
+		0 15px 35px -5px hsl(222 84% 5% / 0.15),
+		0 8px 12px -6px hsl(222 84% 5% / 0.1),
+		0 4px 6px -4px hsl(222 84% 5% / 0.08);
+		
+	/* Mobile-Friendly Shadows - Simplified */
+	--shadow-mobile-card: 0 2px 4px 0 hsl(222 84% 5% / 0.1);
+	--shadow-mobile-button: 0 1px 3px 0 hsl(222 84% 5% / 0.12);
+	--shadow-mobile-cover: 0 2px 8px 0 hsl(222 84% 5% / 0.15);
+	
+	/* Enhanced 3D Book Shadows & Effects */
+	--shadow-book-base: 
+		0 25px 50px -12px hsl(222 84% 5% / 0.25),
+		0 15px 30px -8px hsl(222 84% 5% / 0.15),
+		0 8px 16px -4px hsl(222 84% 5% / 0.1);
+	--shadow-book-hover: 
+		0 35px 65px -15px hsl(222 84% 5% / 0.3),
+		0 25px 45px -12px hsl(222 84% 5% / 0.2),
+		0 15px 25px -8px hsl(222 84% 5% / 0.15),
+		0 0 25px hsl(160 84% 50% / 0.15);
+	--shadow-book-glow-panel: 
+		0 0 40px hsl(160 84% 50% / 0.08),
+		0 0 80px hsl(160 84% 50% / 0.04),
+		inset 0 1px 0 hsl(160 84% 85% / 0.1);
+		
+	/* Enhanced 3D Book Spine Effects */
+	--gradient-book-spine: linear-gradient(90deg, 
+		hsl(0 0% 0% / 0.25), 
+		hsl(0 0% 0% / 0.15) 30%, 
+		hsl(0 0% 0% / 0.08) 50%, 
+		transparent 70%);
+	--gradient-book-spine-hover: linear-gradient(90deg, 
+		hsl(0 0% 0% / 0.35), 
+		hsl(0 0% 0% / 0.25) 25%, 
+		hsl(0 0% 0% / 0.12) 45%, 
+		transparent 65%);
+		
+	/* Premium Header Shadow */
+	--shadow-header: 
+		0 1px 3px 0 hsl(222 84% 5% / 0.06),
+		0 1px 2px -1px hsl(222 84% 5% / 0.04);
+		
+	/* Inner Glow Effects */
+	--shadow-inner-glow: inset 0 1px 0 0 hsl(0 0% 100% / 0.15);
+	--shadow-inner-glow-strong: inset 0 2px 4px 0 hsl(0 0% 100% / 0.1);
+	
+	/* Premium Atmospheric Gradients - Enhanced for Better Card Contrast */
+	--gradient-page: linear-gradient(135deg, hsl(220 15% 96%), hsl(218 12% 94%), hsl(216 10% 92%), hsl(214 8% 90%));
+	--gradient-dashboard: linear-gradient(180deg, hsl(220 15% 96%), hsl(220 12% 94%), hsl(220 9% 92%), hsl(220 6% 90%));
+	--gradient-hero: linear-gradient(135deg, hsl(48 100% 98%), hsl(50 25% 96%), hsl(50 20% 95%), hsl(50 12% 92%));
+	--gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(50 25% 99%), hsl(50 20% 98%));
+	--gradient-card-hover: linear-gradient(145deg, hsl(0 0% 100%), hsl(50 30% 99%), hsl(50 25% 98%));
+	--gradient-emerald: linear-gradient(135deg, hsl(160 84% 50%), hsl(158 74% 46%), hsl(158 64% 42%));
+	--gradient-sapphire: linear-gradient(135deg, hsl(217 91% 60%), hsl(216 87% 52%), hsl(215 84% 45%));
+	--gradient-frosted: linear-gradient(135deg, hsl(50 12% 92% / 0.85), hsl(30 2% 75% / 0.65));
+	
+	/* Mobile-Friendly Backgrounds */
+	--background-mobile-page: hsl(220 15% 98%);
+	--background-mobile-dashboard: hsl(0 0% 100%);
+	--background-mobile-card: hsl(0 0% 100%);
+	
+	/* Enhanced Background Overlays for Premium Feel */
+	--gradient-page-overlay: radial-gradient(ellipse at top, hsl(160 84% 95% / 0.3), transparent 70%);
+	--gradient-dashboard-overlay: linear-gradient(180deg, hsl(0 0% 100% / 0.8), hsl(220 10% 95% / 0.4));
+	
+	/* Premium Book Cover Glow Panels - Enhanced */
+	--gradient-book-panel: radial-gradient(ellipse 120% 100% at center, 
+		hsl(160 84% 95% / 0.15), 
+		hsl(160 84% 90% / 0.08) 40%, 
+		hsl(160 84% 85% / 0.05) 70%, 
+		transparent);
+	--gradient-book-panel-hover: radial-gradient(ellipse 140% 120% at center, 
+		hsl(160 84% 95% / 0.25), 
+		hsl(160 84% 90% / 0.15) 35%, 
+		hsl(160 84% 85% / 0.08) 65%, 
+		transparent);
+	--gradient-book-panel-large: radial-gradient(ellipse 150% 120% at center, 
+		hsl(160 84% 95% / 0.2), 
+		hsl(160 84% 90% / 0.12) 40%, 
+		hsl(160 84% 85% / 0.06) 70%, 
+		transparent);
+	--gradient-book-panel-large-hover: radial-gradient(ellipse 180% 140% at center, 
+		hsl(160 84% 95% / 0.3), 
+		hsl(160 84% 90% / 0.18) 35%, 
+		hsl(160 84% 85% / 0.1) 65%, 
+		transparent);
+	
+	/* Premium Glow System - Enhanced for Card Borders */
+	--glow-emerald: 0 0 25px hsl(160 84% 50% / 0.25);
+	--glow-emerald-strong: 0 0 35px hsl(160 84% 50% / 0.4);
+	--glow-emerald-button: 0 0 20px hsl(160 84% 50% / 0.3);
+	--glow-sapphire: 0 0 25px hsl(217 91% 60% / 0.25);
+	--glow-sapphire-strong: 0 0 35px hsl(217 91% 60% / 0.4);
+	--glow-sapphire-button: 0 0 20px hsl(217 91% 60% / 0.3);
+	
+	/* Card Glow Borders */
+	--glow-card-hover: 0 0 0 1px hsl(160 84% 50% / 0.2), 0 0 20px hsl(160 84% 50% / 0.1);
+	--glow-card-active: 0 0 0 1px hsl(160 84% 50% / 0.3), 0 0 25px hsl(160 84% 50% / 0.15);
+	--glow-card-focus: 0 0 0 2px hsl(160 84% 50% / 0.4), 0 0 30px hsl(160 84% 50% / 0.2);
+	
+	/* Interactive Glows */
+	--glow-pulse-emerald: 0 0 0 0 hsl(160 84% 50% / 0.4);
+	--glow-pulse-sapphire: 0 0 0 0 hsl(217 91% 60% / 0.4);
+	--glow-focus-ring: 0 0 0 3px hsl(160 84% 50% / 0.2);
+	
+	/* Subtle Progress Glows */
+	--glow-progress-line: 0 0 8px hsl(160 84% 50% / 0.2);
 }
 
 .dark {
@@ -122,4 +287,284 @@
   body {
     @apply bg-background text-foreground;
 	}
+}
+
+/* Premium 3D Book & Interactive Components */
+@layer components {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  
+  .transform-gpu {
+    transform: translateZ(0);
+  }
+  
+  /* Enhanced Book 3D Effects - Desktop Only */
+  .rotate-y-15 {
+    transform: rotateY(-15deg);
+  }
+  
+  .rotate-y-8 {
+    transform: rotateY(-8deg);
+  }
+  
+  .rotate-y-6 {
+    transform: rotateY(-6deg);
+  }
+  
+  .rotate-y-12 {
+    transform: rotateY(-12deg);
+  }
+  
+  .skew-y-1 {
+    transform: skewY(1deg);
+  }
+  
+  /* Responsive Premium Card Components */
+  .premium-card {
+    /* Mobile: Simple flat card */
+    background: var(--background-mobile-card);
+    box-shadow: var(--shadow-mobile-card);
+    border: 1px solid hsl(0 0% 0% / 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Desktop: Premium effects */
+  @media (min-width: 768px) {
+    .premium-card {
+      background: var(--gradient-card);
+      box-shadow: var(--shadow-card-resting);
+      border: 1px solid hsl(0 0% 0% / 0.04);
+    }
+    
+    .premium-card:hover {
+      background: var(--gradient-card-hover);
+      box-shadow: var(--shadow-card-hover), var(--glow-card-hover);
+      transform: translateY(-2px);
+      border-color: hsl(160 84% 50% / 0.15);
+    }
+    
+    .premium-card:focus-within {
+      box-shadow: var(--shadow-card-hover), var(--glow-card-focus);
+      border-color: hsl(160 84% 50% / 0.25);
+    }
+    
+    .premium-card-active {
+      box-shadow: var(--shadow-card-active), var(--glow-card-active);
+      border-color: hsl(160 84% 50% / 0.2);
+      background: var(--gradient-card-hover);
+    }
+  }
+  
+  /* Mobile: Active state without glow */
+  .premium-card-active {
+    box-shadow: var(--shadow-mobile-card);
+    border-color: hsl(160 84% 50% / 0.3);
+    background: hsl(160 84% 98%);
+  }
+  
+  /* Responsive Book Panel Effects */
+  .book-glow-panel {
+    /* Mobile: Simple background */
+    background: hsl(220 15% 98%);
+    transition: all 0.3s ease;
+  }
+  
+  /* Desktop: Premium glow effects */
+  @media (min-width: 768px) {
+    .book-glow-panel {
+      background: var(--gradient-book-panel);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+    
+    .book-glow-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--gradient-book-panel);
+      border-radius: inherit;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    
+    .book-glow-panel:hover {
+      background: var(--gradient-book-panel-hover);
+    }
+    
+    .book-glow-panel:hover::before {
+      opacity: 1;
+    }
+  }
+  
+  /* Large Book Panel - Responsive */
+  .book-glow-panel-large {
+    /* Mobile: Simple background */
+    background: hsl(220 15% 98%);
+    transition: all 0.3s ease;
+  }
+  
+  /* Desktop: Premium effects */
+  @media (min-width: 768px) {
+    .book-glow-panel-large {
+      background: var(--gradient-book-panel-large);
+      box-shadow: var(--shadow-book-glow-panel);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+    
+    .book-glow-panel-large::before {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      background: var(--gradient-book-panel-large);
+      border-radius: inherit;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      z-index: -1;
+    }
+    
+    .book-glow-panel-large:hover {
+      background: var(--gradient-book-panel-large-hover);
+      box-shadow: 
+        var(--shadow-book-glow-panel),
+        0 0 60px hsl(160 84% 50% / 0.12);
+    }
+    
+    .book-glow-panel-large:hover::before {
+      opacity: 1;
+    }
+  }
+  
+  /* Responsive Button System */
+  .btn-premium-emerald {
+    /* Mobile: Solid color with simple shadow */
+    background: hsl(160 84% 50%);
+    box-shadow: var(--shadow-mobile-button);
+    transition: all 0.3s ease;
+  }
+  
+  .btn-premium-emerald:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px 0 hsl(222 84% 5% / 0.2);
+  }
+  
+  /* Desktop: Premium gradient and glow */
+  @media (min-width: 768px) {
+    .btn-premium-emerald {
+      background: var(--gradient-emerald);
+      box-shadow: var(--glow-emerald);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .btn-premium-emerald:hover {
+      box-shadow: var(--glow-emerald-button);
+      transform: translateY(-1px);
+    }
+    
+    .btn-premium-emerald:active {
+      transform: translateY(0);
+    }
+  }
+  
+  .btn-premium-sapphire {
+    /* Mobile: Solid color with simple shadow */
+    background: hsl(217 91% 60%);
+    box-shadow: var(--shadow-mobile-button);
+    transition: all 0.3s ease;
+  }
+  
+  .btn-premium-sapphire:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px 0 hsl(222 84% 5% / 0.2);
+  }
+  
+  /* Desktop: Premium gradient and glow */
+  @media (min-width: 768px) {
+    .btn-premium-sapphire {
+      background: var(--gradient-sapphire);
+      box-shadow: var(--glow-sapphire);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .btn-premium-sapphire:hover {
+      box-shadow: var(--glow-sapphire-button);
+      transform: translateY(-1px);
+    }
+    
+    .btn-premium-sapphire:active {
+      transform: translateY(0);
+    }
+  }
+  
+  /* Scrollbar utilities */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  /* Progress unlock animations */
+  @keyframes unlock-pulse {
+    0%, 100% { 
+      transform: scale(1); 
+      box-shadow: var(--glow-pulse-emerald);
+    }
+    50% { 
+      transform: scale(1.05); 
+      box-shadow: var(--glow-emerald-strong);
+    }
+  }
+  
+  @keyframes segment-fill {
+    0% { 
+      transform: scaleX(0);
+    }
+    100% { 
+      transform: scaleX(1);
+    }
+  }
+  
+  @keyframes glow-spread {
+    0% { 
+      opacity: 0; 
+      transform: scaleX(0);
+    }
+    50% { 
+      opacity: 1;
+    }
+    100% { 
+      opacity: 0.6; 
+      transform: scaleX(1);
+    }
+  }
+  
+  @keyframes progress-reveal {
+    0% {
+      opacity: 0;
+      transform: translateY(10px) scale(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Interactive utility class */
+  .interactive {
+    @apply transition-all duration-150 ease-in-out;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }

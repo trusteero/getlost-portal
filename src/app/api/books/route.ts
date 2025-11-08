@@ -37,10 +37,13 @@ export async function GET(request: NextRequest) {
           .orderBy(desc(bookVersions.uploadedAt))
           .limit(1);
 
-        // Get digest job status
+        // Get digest job data
         const digestJob = await db
           .select({
             status: digestJobs.status,
+            words: digestJobs.words,
+            summary: digestJobs.summary,
+            coverUrl: digestJobs.coverUrl,
           })
           .from(digestJobs)
           .where(eq(digestJobs.bookId, book.id))
@@ -78,6 +81,7 @@ export async function GET(request: NextRequest) {
           latestVersion: latestVersion[0],
           latestReport,
           isProcessing: digestJob[0]?.status === "processing" || digestJob[0]?.status === "pending",
+          digestJob: digestJob[0] || null,
         };
       })
     );
