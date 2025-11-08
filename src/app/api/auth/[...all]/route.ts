@@ -23,7 +23,23 @@ export const POST = async (request: Request) => {
       }
     }
     
-    return await handler.POST(request);
+    const response = await handler.POST(request);
+    
+    // Log response status for sign-in requests
+    if (pathname.includes("/sign-in") || pathname.includes("/signin")) {
+      console.log("🔐 [Better Auth] Sign-in response status:", response.status);
+      if (response.status !== 200) {
+        try {
+          const responseClone = response.clone();
+          const errorData = await responseClone.json();
+          console.log("🔐 [Better Auth] Sign-in error response:", JSON.stringify(errorData, null, 2));
+        } catch (e) {
+          console.log("🔐 [Better Auth] Could not parse error response");
+        }
+      }
+    }
+    
+    return response;
   } catch (error: any) {
     console.error("Better Auth API POST error:", error);
     console.error("Error stack:", error?.stack);
