@@ -12,8 +12,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Get user from database to check role (Better Auth session type doesn't include role)
+  const user = await db
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .limit(1);
+
+  if (user.length === 0) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
   // Check if user is admin or super_admin
-  const isAdmin = session.user.role === "admin" || session.user.role === "super_admin";
+  const isAdmin = user[0]!.role === "admin" || user[0]!.role === "super_admin";
 
   if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
