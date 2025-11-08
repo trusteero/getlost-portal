@@ -19,11 +19,11 @@ export const TopNavigation = () => {
   const getInitials = () => {
     if (session?.user?.name) {
       const names = session.user.name.split(' ');
-      if (names.length >= 2 && names[0] && names[names.length - 1]) {
-        const first = names[0][0];
-        const last = names[names.length - 1][0];
-        if (first && last) {
-          return `${first}${last}`.toUpperCase();
+      if (names.length >= 2) {
+        const firstName = names[0];
+        const lastName = names[names.length - 1];
+        if (firstName && lastName && firstName[0] && lastName[0]) {
+          return `${firstName[0]}${lastName[0]}`.toUpperCase();
         }
       }
       return session.user.name.substring(0, 2).toUpperCase();
