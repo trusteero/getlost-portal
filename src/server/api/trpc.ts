@@ -144,13 +144,25 @@ export const protectedProcedure = t.procedure
  */
 export const adminProcedure = t.procedure
 	.use(timingMiddleware)
-	.use(({ ctx, next }) => {
-		if (!ctx.session?.user) {
+	.use(async ({ ctx, next }) => {
+		if (!ctx.session?.user?.id) {
 			throw new TRPCError({ code: "UNAUTHORIZED", message: "Not authenticated" });
 		}
-		if (ctx.session.user.role !== "admin") {
+
+		// Check role from database (Better Auth session type doesn't include role)
+		const { users } = await import("@/server/db/schema");
+		const { eq } = await import("drizzle-orm");
+		
+		const userData = await db
+			.select({ role: users.role })
+			.from(users)
+			.where(eq(users.id, ctx.session.user.id))
+			.limit(1);
+
+		if (userData.length === 0 || (userData[0]!.role !== "admin" && userData[0]!.role !== "super_admin")) {
 			throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
 		}
+
 		return next({
 			ctx: {
 				// infers the `session` as non-nullable with admin role

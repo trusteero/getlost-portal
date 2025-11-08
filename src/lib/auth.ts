@@ -294,18 +294,6 @@ export const auth = betterAuth({
   // Secret for signing tokens (use BETTER_AUTH_SECRET or AUTH_SECRET or generate)
   secret: process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET || undefined,
 
-  // Add hooks to debug user lookups
-  hooks: {
-    async signIn({ user, account }) {
-      console.log("🔍 [Better Auth Hook] Sign-in attempt:", {
-        userId: user?.id,
-        email: user?.email,
-        accountProvider: account?.provider,
-      });
-      return true;
-    },
-  },
-
   // Trust the host in production
   // Use BETTER_AUTH_URL if set, otherwise try to detect from environment
   trustedOrigins: (() => {

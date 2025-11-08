@@ -15,6 +15,14 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Get session to get user email for analyzedBy field
+  const { getSessionFromRequest } = await import("@/server/auth");
+  const session = await getSessionFromRequest(request);
+
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { status } = await request.json();
 
