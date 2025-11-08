@@ -38,23 +38,29 @@ function LoginContent() {
 		setIsSubmitting(true);
 
 		try {
+			console.log("🔐 [Login] Attempting sign-in for:", emailLogin.email);
 			const result = await signIn.email({
 				email: emailLogin.email,
 				password: emailLogin.password,
 				callbackURL: "/dashboard",
 			});
 
+			console.log("🔐 [Login] Sign-in result:", result);
+
 			if (result.error) {
+				console.error("🔐 [Login] Sign-in error:", result.error);
 				// Check various error types
 				if (result.error.code === "EMAIL_NOT_VERIFIED") {
 					setEmailNotVerified(true);
 					throw new Error("Please verify your email before signing in. Check your inbox (and spam folder) for the verification link.");
-				} else if (result.error.code === "INVALID_CREDENTIALS") {
+				} else if (result.error.code === "INVALID_CREDENTIALS" || result.error.code === "INVALID_PASSWORD") {
 					throw new Error("Invalid email or password. Please try again.");
 				} else if (result.error.code === "USER_NOT_FOUND") {
 					throw new Error("No account found with this email. Please sign up first.");
 				} else {
-					throw new Error(result.error.message || "Sign in failed. Please try again.");
+					const errorMessage = result.error.message || result.error.code || "Sign in failed. Please try again.";
+					console.error("🔐 [Login] Unknown error:", errorMessage);
+					throw new Error(errorMessage);
 				}
 			}
 
