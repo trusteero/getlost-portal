@@ -284,6 +284,9 @@
   * {
     @apply border-border outline-ring/50;
 	}
+  html {
+    font-size: 90%; /* Reduce root font size by 10% - scales all rem-based sizes proportionally */
+  }
   body {
     @apply bg-background text-foreground;
 	}
