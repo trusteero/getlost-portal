@@ -1,18 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionFromRequest } from "@/server/auth";
+import { isAdminFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { notifications, reports, bookVersions, books } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function POST(request: NextRequest) {
-  const session = await getSessionFromRequest(request);
-
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // Check if user is admin or super_admin
-  const isAdmin = session.user.role === "admin" || session.user.role === "super_admin";
+  const isAdmin = await isAdminFromRequest(request);
 
   if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
