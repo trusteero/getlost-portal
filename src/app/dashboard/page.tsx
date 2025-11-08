@@ -7,7 +7,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, Plus, RefreshCw, Users } from "lucide-react";
-import { ManuscriptCard } from "@/components/manuscript-card";
 import { CondensedLibrary } from "@/components/condensed-library";
 
 interface Book {
@@ -158,76 +157,6 @@ export default function Dashboard() {
     };
   };
 
-  // Map book data to ManuscriptCard format
-  const mapBookToManuscriptCard = (book: Book) => {
-    // Determine feature statuses - check digest job summary first, then book version summary
-    const hasSummary = (book.digestJob?.summary && book.digestJob.status === "completed") || 
-                       (book.latestVersion?.summary !== undefined && book.latestVersion.summary !== null);
-    const hasReport = book.latestReport?.status === "completed";
-    
-    const steps = [
-      {
-        id: "summary",
-        title: "Free Summary",
-        status: hasSummary ? ("complete" as const) : ("locked" as const),
-        action: "View a basic summary of your manuscript.",
-        price: "Free",
-        buttonText: hasSummary ? "View Summary" : "Unlock",
-      },
-      {
-        id: "manuscript-report",
-        title: "Manuscript Report",
-        status: hasReport ? ("complete" as const) : ("locked" as const),
-        action: "View a comprehensive review and marketing report.",
-        price: hasReport ? "Unlocked" : "$149.99",
-        buttonText: hasReport ? "View Report" : "Unlock",
-      },
-      {
-        id: "marketing-assets",
-        title: "Marketing Assets",
-        status: "locked" as const,
-        action: "Video assets to advertise your book to your audience.",
-        price: "$149.99",
-        buttonText: "Unlock",
-      },
-      {
-        id: "book-covers",
-        title: "Book Covers",
-        status: "locked" as const,
-        action: "Access book covers that appeal to your core audience.",
-        price: "$149.99",
-        buttonText: "Unlock",
-      },
-      {
-        id: "landing-page",
-        title: "Landing Page",
-        status: "locked" as const,
-        action: "Access a landing page for your book that converts.",
-        price: "$149.99",
-        buttonText: "Unlock",
-      },
-    ];
-
-    // Use digest job word count if available, otherwise estimate from file size
-    const wordCount = book.digestJob?.words 
-      ? `${book.digestJob.words.toLocaleString()} words`
-      : book.latestVersion?.fileSize 
-        ? `${Math.round((book.latestVersion.fileSize / 1024) * 500).toLocaleString()} words`
-        : "Unknown word count";
-
-    // Use digest job cover URL if available, otherwise use book coverImageUrl
-    const coverImage = book.digestJob?.coverUrl || book.coverImageUrl || "/placeholder.svg";
-
-    return {
-      id: book.id,
-      title: book.title,
-      subtitle: book.description || "A manuscript awaiting analysis",
-      wordCount,
-      genre: "FICTION", // Default genre, could be enhanced with actual genre data
-      steps,
-      coverImage,
-    };
-  };
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -269,7 +198,7 @@ export default function Dashboard() {
           </>
         )}
 
-        {books.length === 0 ? (
+        {books.length === 0 && (
           <Card className="text-center py-16">
             <CardContent>
               <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -283,16 +212,6 @@ export default function Dashboard() {
               </Link>
             </CardContent>
           </Card>
-        ) : (
-          <div className="space-y-6">
-            {books.map((book) => (
-              <div key={book.id} id={`detail-${book.id}`}>
-                <ManuscriptCard
-                  {...mapBookToManuscriptCard(book)}
-                />
-              </div>
-            ))}
-          </div>
         )}
     </main>
   );
