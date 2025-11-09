@@ -3,9 +3,6 @@ import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookVersions, reports, bookFeatures } from "@/server/db/schema";
 import { eq, desc, and } from "drizzle-orm";
-import { bundleReportHtmlFromContent } from "@/server/utils/bundle-report-html";
-import { promises as fs } from "fs";
-import path from "path";
 
 /**
  * GET /api/books/[id]/report/view
@@ -102,166 +99,39 @@ export async function GET(
       .limit(1);
 
     if (!report || !report.htmlContent) {
-      // Try to fix: if report exists but has no HTML, try to find and load it
-      if (report && !report.htmlContent) {
-        console.log(`[Report View] Report ${report.id} exists but has no HTML content. Attempting to find and load HTML file...`);
-        
-        // Try to find HTML file in report storage
-        const reportStoragePath = process.env.REPORT_STORAGE_PATH || './uploads/reports';
-        const reportDir = path.resolve(reportStoragePath);
-        
-        let htmlContent: string | null = null;
-        let htmlFilePath: string | null = null;
-        
-        // Try to read HTML file from report storage
-        try {
-          const htmlFile = path.join(reportDir, `${report.id}.html`);
-          await fs.access(htmlFile);
-          htmlContent = await fs.readFile(htmlFile, 'utf-8');
-          htmlFilePath = htmlFile;
-          console.log(`[Report View] Found HTML file in report storage: ${htmlFile}`);
-        } catch {
-          // File doesn't exist in report storage, try to find matching report in book-reports folder
-          try {
-            const { findMatchingReport } = await import("@/server/utils/demo-reports");
-            const book = await db
-              .select({ title: books.title })
-              .from(books)
-              .where(eq(books.id, bookId))
-              .limit(1);
-            
-            if (book.length > 0 && book[0]!.title) {
-              const matchingReports = await findMatchingReport(latestVersion.fileName, book[0]!.title);
-              if (matchingReports.htmlPath) {
-                htmlContent = await fs.readFile(matchingReports.htmlPath, 'utf-8');
-                htmlFilePath = matchingReports.htmlPath;
-                console.log(`[Report View] Found matching HTML file in book-reports: ${matchingReports.htmlPath}`);
-              }
-            }
-          } catch (error) {
-            console.error(`[Report View] Error finding matching report:`, error);
-          }
-        }
-        
-        // If we found HTML content, bundle images and update database
-        if (htmlContent && htmlFilePath) {
-          try {
-            // Bundle images into HTML
-            const { bundleReportHtml } = await import("@/server/utils/bundle-report-html");
-            htmlContent = await bundleReportHtml(htmlFilePath, htmlContent);
-            
-            // Update database with bundled HTML
-            await db
-              .update(reports)
-              .set({ htmlContent })
-              .where(eq(reports.id, report.id));
-            
-            console.log(`[Report View] Successfully loaded and updated report ${report.id} with HTML content`);
-            
-            // Continue with serving the HTML
-            report.htmlContent = htmlContent;
-          } catch (error) {
-            console.error(`[Report View] Error bundling/updating report:`, error);
-            // Fall through to error response
-          }
-        }
+      // Provide more detailed error information
+      const hasAnyReport = allReports.length > 0;
+      const hasCompletedReport = allReports.some(r => r.status === "completed");
+      const hasReportWithoutHtml = allReports.some(r => r.status === "completed" && !r.htmlContent);
+      
+      let errorMessage = "No completed report found.";
+      if (!hasAnyReport) {
+        errorMessage += " No reports exist for this book version. Please upload a report or run the seed script.";
+      } else if (!hasCompletedReport) {
+        const statuses = allReports.map(r => r.status).join(", ");
+        errorMessage += ` Found ${allReports.length} report(s) but none are completed. Status(es): ${statuses}`;
+      } else if (hasReportWithoutHtml) {
+        errorMessage += " Report exists but has no HTML content in database. Please re-upload the report via admin interface or run the seed script.";
+      } else {
+        errorMessage += " The report may still be processing or hasn't been uploaded yet.";
       }
       
-      // If still no HTML content, return error
-      if (!report || !report.htmlContent) {
-        // Provide more detailed error information
-        const hasAnyReport = allReports.length > 0;
-        const hasCompletedReport = allReports.some(r => r.status === "completed");
-        const hasReportWithoutHtml = allReports.some(r => r.status === "completed" && !r.htmlContent);
-        
-        let errorMessage = "No completed report found.";
-        if (!hasAnyReport) {
-          errorMessage += " No reports exist for this book version. Please upload a report or run the seed script.";
-        } else if (!hasCompletedReport) {
-          const statuses = allReports.map(r => r.status).join(", ");
-          errorMessage += ` Found ${allReports.length} report(s) but none are completed. Status(es): ${statuses}`;
-        } else if (hasReportWithoutHtml) {
-          errorMessage += " Report exists but has no HTML content and couldn't be found in file system. Please re-upload the report.";
-        } else {
-          errorMessage += " The report may still be processing or hasn't been uploaded yet.";
-        }
-        
-        return NextResponse.json(
-          { 
-            error: errorMessage,
-            debug: {
-              versionId: latestVersion.id,
-              reportCount: allReports.length,
-              reportStatuses: allReports.map(r => ({ id: r.id, status: r.status, hasHtml: !!r.htmlContent }))
-            }
-          },
-          { status: 404 }
-        );
-      }
+      return NextResponse.json(
+        { 
+          error: errorMessage,
+          debug: {
+            versionId: latestVersion.id,
+            reportCount: allReports.length,
+            reportStatuses: allReports.map(r => ({ id: r.id, status: r.status, hasHtml: !!r.htmlContent }))
+          }
+        },
+        { status: 404 }
+      );
     }
 
-    // Check if HTML already has embedded images (data URLs)
-    const hasEmbeddedImages = report.htmlContent.includes('data:image/');
-    
-    let htmlContent = report.htmlContent;
-    
-    // If images aren't embedded, bundle them now
-    if (!hasEmbeddedImages) {
-      console.log(`[Report View] Bundling images for report ${bookId} on-the-fly`);
-      
-      // Build search directories for images
-      const searchDirs: string[] = [];
-      
-      // 1. Report storage directory
-      const reportStoragePath = process.env.REPORT_STORAGE_PATH || './uploads/reports';
-      try {
-        await fs.access(reportStoragePath);
-        searchDirs.push(reportStoragePath);
-      } catch {
-        // Directory doesn't exist, skip
-      }
-      
-      // 2. Book reports directory (only if env var is set, don't use hardcoded local path)
-      const bookReportsPath = process.env.BOOK_REPORTS_PATH;
-      if (bookReportsPath) {
-        try {
-          await fs.access(bookReportsPath);
-          searchDirs.push(bookReportsPath);
-          
-          // Also try subdirectories
-          const entries = await fs.readdir(bookReportsPath, { withFileTypes: true });
-          for (const entry of entries) {
-            if (entry.isDirectory()) {
-              searchDirs.push(path.join(bookReportsPath, entry.name));
-            }
-          }
-        } catch {
-          // Directory doesn't exist, skip
-        }
-      }
-      
-      if (searchDirs.length > 0) {
-        htmlContent = await bundleReportHtmlFromContent(report.htmlContent, searchDirs);
-        console.log(`[Report View] Successfully bundled images for report ${bookId}`);
-        
-        // Update database with bundled HTML so we don't have to bundle on every request
-        // Only update if bundling was successful and HTML changed
-        if (htmlContent !== report.htmlContent) {
-          try {
-            await db
-              .update(reports)
-              .set({ htmlContent })
-              .where(eq(reports.id, report.id));
-            console.log(`[Report View] Updated database with bundled HTML for report ${report.id}`);
-          } catch (error) {
-            console.error(`[Report View] Failed to update database with bundled HTML:`, error);
-            // Continue serving bundled HTML even if DB update fails
-          }
-        }
-      } else {
-        console.warn(`[Report View] No image search directories available for report ${bookId} (this is normal on Render if BOOK_REPORTS_PATH is not set)`);
-      }
-    }
+    // HTML content should already be bundled with images when stored in database
+    // All data comes from database, no file system access needed
+    const htmlContent = report.htmlContent;
 
     // Return HTML directly with proper headers
     return new NextResponse(htmlContent, {
