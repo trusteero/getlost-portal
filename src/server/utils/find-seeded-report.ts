@@ -5,12 +5,42 @@ import { randomUUID } from "crypto";
 
 /**
  * Normalize a filename for comparison
+ * Removes common suffixes and extensions to extract core book name
  */
 function normalizeFilename(filename: string): string {
-  return filename
-    .toLowerCase()
+  // Remove file extension
+  let normalized = filename.toLowerCase().replace(/\.[^.]*$/, '');
+  
+  // Remove common suffixes that might differ between PDF and HTML files
+  normalized = normalized
+    .replace(/\s*(final|book|report|manuscript|draft|version)\s*/g, '')
     .replace(/[^a-z0-9]/g, "")
     .replace(/\s+/g, "");
+  
+  return normalized;
+}
+
+/**
+ * Extract core book name from filename
+ * Removes common words and extracts the meaningful part
+ */
+function extractCoreName(filename: string): string {
+  const normalized = normalizeFilename(filename);
+  
+  // Try to extract meaningful words (at least 3 characters)
+  // This helps match "everlasting-gift" with "theeverlastinggiftbook"
+  const words = normalized.match(/[a-z]{3,}/g) || [];
+  
+  // Return the longest meaningful substring
+  // For "theeverlastinggiftbook" -> "everlastinggift"
+  // For "everlastinggiftfinal" -> "everlastinggift"
+  if (words.length > 0) {
+    // Find the longest word (likely the book name)
+    const longestWord = words.reduce((a, b) => a.length > b.length ? a : b);
+    return longestWord;
+  }
+  
+  return normalized;
 }
 
 /**
@@ -63,10 +93,22 @@ export async function findSeededReportByFilename(
         const notes = JSON.parse(report.adminNotes);
         if (notes.isSeeded && notes.seededFileName) {
           const seededNormalized = normalizeFilename(notes.seededFileName);
-          // Match if filenames are similar (exact match or contains)
-          if (seededNormalized === normalizedFileName ||
-              seededNormalized.includes(normalizedFileName) ||
-              normalizedFileName.includes(seededNormalized)) {
+          const uploadedNormalized = normalizeFilename(fileName);
+          
+          // Extract core names for better matching
+          const seededCore = extractCoreName(notes.seededFileName);
+          const uploadedCore = extractCoreName(fileName);
+          
+          // Match if:
+          // 1. Normalized filenames match exactly or contain each other
+          // 2. Core names match (handles "everlasting-gift" vs "theeverlastinggiftbook")
+          if (seededNormalized === uploadedNormalized ||
+              seededNormalized.includes(uploadedNormalized) ||
+              uploadedNormalized.includes(seededNormalized) ||
+              seededCore === uploadedCore ||
+              seededCore.includes(uploadedCore) ||
+              uploadedCore.includes(seededCore)) {
+            console.log(`[Find Seeded Report] Matched "${fileName}" with seeded report "${notes.seededFileName}"`);
             return report;
           }
         }
