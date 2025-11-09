@@ -6,8 +6,7 @@ import { eq, desc } from "drizzle-orm";
 import { triggerBookDigest } from "@/server/services/bookdigest";
 import { promises as fs } from "fs";
 import path from "path";
-import { findMatchingReport } from "@/server/utils/demo-reports";
-import { bundleReportHtml } from "@/server/utils/bundle-report-html";
+import { findSeededReportByFilename, linkSeededReportToBookVersion } from "@/server/utils/find-seeded-report";
 
 export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request);
@@ -26,7 +25,12 @@ export async function GET(request: NextRequest) {
         createdAt: books.createdAt,
       })
       .from(books)
-      .where(eq(books.userId, session.user.id))
+      .where(
+        and(
+          eq(books.userId, session.user.id),
+          ne(books.title, "SYSTEM_SEEDED_REPORTS") // Exclude system book
+        )
+      )
       .orderBy(desc(books.createdAt));
 
     // Get latest version, report, and digest status for each book
@@ -211,63 +215,21 @@ export async function POST(request: NextRequest) {
       console.error("Failed to trigger BookDigest job:", error);
     }
 
-    // Demo mode: Check if there's a matching report (HTML or PDF) in book-reports folder
+    // Check if there's a seeded report matching this filename
     try {
-      const matchingReports = await findMatchingReport(fileName, title);
+      const seededReport = await findSeededReportByFilename(fileName);
       
-      if (matchingReports.htmlPath || matchingReports.pdfPath) {
-        console.log(`[Demo] Found matching report for "${fileName}", linking it to book ${createdBook.id}`);
+      if (seededReport) {
+        console.log(`[Demo] Found seeded report for "${fileName}", linking it to book ${createdBook.id}`);
         
-        // Save report to report storage
-        const reportStoragePath = process.env.REPORT_STORAGE_PATH || './uploads/reports';
-        const reportDir = path.resolve(reportStoragePath);
-        await fs.mkdir(reportDir, { recursive: true });
+        // Link the seeded report to the new book version
+        const linkedReportId = await linkSeededReportToBookVersion(seededReport, newVersion[0]!.id);
         
-        const reportId = crypto.randomUUID();
-        let htmlContent: string | null = null;
-        let pdfPath: string | null = null;
-        
-        // Prefer HTML over PDF
-        if (matchingReports.htmlPath) {
-          const htmlBuffer = await fs.readFile(matchingReports.htmlPath);
-          let rawHtmlContent = htmlBuffer.toString('utf-8');
-          
-          // Bundle images into HTML as base64 data URLs
-          htmlContent = await bundleReportHtml(matchingReports.htmlPath, rawHtmlContent);
-          
-          const htmlFileName = `${reportId}.html`;
-          const htmlFilePath = path.join(reportDir, htmlFileName);
-          // Save bundled HTML to file system
-          await fs.writeFile(htmlFilePath, htmlContent, 'utf-8');
-          console.log(`[Demo] Stored bundled HTML report for book ${createdBook.id}`);
-        }
-        
-        // Also store PDF if available
-        if (matchingReports.pdfPath) {
-          const pdfBuffer = await fs.readFile(matchingReports.pdfPath);
-          const pdfFileName = `${reportId}.pdf`;
-          pdfPath = path.join(reportDir, pdfFileName);
-          await fs.writeFile(pdfPath, pdfBuffer);
-          console.log(`[Demo] Stored PDF report for book ${createdBook.id}`);
-        }
-        
-        // Create completed report record (user still needs to purchase to view)
-        await db.insert(reports).values({
-          id: reportId,
-          bookVersionId: newVersion[0]!.id,
-          status: "completed",
-          requestedAt: new Date(),
-          completedAt: new Date(),
-          htmlContent: htmlContent,
-          pdfUrl: pdfPath ? `/api/books/${createdBook.id}/report/download` : undefined,
-        });
-        
-        // Note: Feature is NOT auto-unlocked - user must purchase it
-        console.log(`[Demo] Report linked for book ${createdBook.id} (user must purchase to view)`);
+        console.log(`[Demo] Linked seeded report ${linkedReportId} to book ${createdBook.id} (user must purchase to view)`);
       }
     } catch (error) {
       // Log error but don't fail the book creation
-      console.error("[Demo] Failed to link matching report:", error);
+      console.error("[Demo] Failed to link seeded report:", error);
     }
 
     return NextResponse.json({
