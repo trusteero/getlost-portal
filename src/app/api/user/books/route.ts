@@ -14,7 +14,7 @@ import {
   summaries,
   notifications
 } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 
 /**
  * DELETE /api/user/books
@@ -30,11 +30,17 @@ export async function DELETE(request: NextRequest) {
   try {
     const userId = session.user.id;
 
-    // Get all books for this user
+    // Get all books for this user, EXCLUDING the system book for seeded reports
+    // The system book should be preserved for matching with new uploads
     const userBooks = await db
       .select({ id: books.id })
       .from(books)
-      .where(eq(books.userId, userId));
+      .where(
+        and(
+          eq(books.userId, userId),
+          ne(books.title, "SYSTEM_SEEDED_REPORTS")
+        )
+      );
 
     const bookIds = userBooks.map(book => book.id);
 
