@@ -83,35 +83,13 @@ export default function BookDetail() {
   const [checkingDigest, setCheckingDigest] = useState(false);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const [isViewingReport, setIsViewingReport] = useState(false);
-  const reportContainerRef = useRef<HTMLDivElement>(null);
+  const reportContainerRef = useRef<HTMLIFrameElement>(null);
   const [mounted, setMounted] = useState(false);
 
   // Set mounted flag after component mounts (client-side only)
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Execute scripts in report HTML after rendering
-  useEffect(() => {
-    if (isViewingReport && reportContainerRef.current && book) {
-      const reportHtml = book.versions[0]?.reports?.find((r: Report) => r.status === "completed")?.htmlContent;
-      if (!reportHtml) return;
-      
-      // Extract and execute scripts from the HTML
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(reportHtml, 'text/html');
-      const scripts = doc.querySelectorAll('script');
-      
-      scripts.forEach((oldScript) => {
-        const newScript = document.createElement('script');
-        Array.from(oldScript.attributes).forEach((attr) => {
-          newScript.setAttribute(attr.name, attr.value);
-        });
-        newScript.textContent = oldScript.textContent;
-        reportContainerRef.current?.appendChild(newScript);
-      });
-    }
-  }, [isViewingReport, book]);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -415,38 +393,19 @@ export default function BookDetail() {
   // Check if we're viewing just the report (via hash)
   const reportHtml = book.versions[0]?.reports?.find((r: Report) => r.status === "completed")?.htmlContent;
 
-  // Extract scripts from HTML and prepare HTML without scripts
-  const getReportContent = () => {
-    if (!reportHtml) return { htmlWithoutScripts: '', scripts: [] };
-    
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(reportHtml, 'text/html');
-    const scripts = Array.from(doc.querySelectorAll('script')).map(script => ({
-      attributes: Array.from(script.attributes).map(attr => ({ name: attr.name, value: attr.value })),
-      content: script.textContent || ''
-    }));
-    
-    // Remove script tags from the document
-    doc.querySelectorAll('script').forEach(script => script.remove());
-    
-    // Get body content or full document if no body
-    const bodyContent = doc.body ? doc.body.innerHTML : doc.documentElement.innerHTML;
-    
-    return {
-      htmlWithoutScripts: bodyContent,
-      scripts
-    };
-  };
-
-  const reportContent = reportHtml ? getReportContent() : { htmlWithoutScripts: '', scripts: [] };
-
   // If viewing report and HTML content exists, render just the HTML without wrapper
   // Only render after component is mounted to avoid SSR issues
   // IMPORTANT: This check must come AFTER all hooks are called to follow Rules of Hooks
   if (mounted && isViewingReport && reportHtml) {
     return (
-      <div className="min-h-screen bg-white">
-        <div ref={reportContainerRef} className="w-full" dangerouslySetInnerHTML={{ __html: reportContent.htmlWithoutScripts }} />
+      <div className="min-h-screen bg-white w-full">
+        <iframe
+          ref={reportContainerRef}
+          srcDoc={reportHtml}
+          className="w-full h-screen border-0"
+          sandbox="allow-scripts allow-same-origin"
+          title="Report View"
+        />
       </div>
     );
   }
