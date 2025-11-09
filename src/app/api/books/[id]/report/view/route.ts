@@ -53,6 +53,7 @@ export async function GET(
     // Get the latest completed report for this version
     const [report] = await db
       .select({
+        id: reports.id,
         htmlContent: reports.htmlContent,
       })
       .from(reports)
@@ -118,11 +119,8 @@ export async function GET(
             await db
               .update(reports)
               .set({ htmlContent })
-              .where(and(
-                eq(reports.bookVersionId, latestVersion.id),
-                eq(reports.status, "completed")
-              ));
-            console.log(`[Report View] Updated database with bundled HTML for report ${bookId}`);
+              .where(eq(reports.id, report.id));
+            console.log(`[Report View] Updated database with bundled HTML for report ${report.id}`);
           } catch (error) {
             console.error(`[Report View] Failed to update database with bundled HTML:`, error);
             // Continue serving bundled HTML even if DB update fails
