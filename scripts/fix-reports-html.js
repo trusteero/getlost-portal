@@ -26,7 +26,14 @@ import { randomUUID } from "crypto";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const DATABASE_PATH = process.env.DATABASE_URL?.replace(/^file:/, '') || './dev.db';
+// Parse database path the same way the app does
+let dbPath = process.env.DATABASE_URL || './dev.db';
+if (dbPath.startsWith('file://')) {
+  dbPath = dbPath.replace(/^file:\/\//, '');
+} else if (dbPath.startsWith('file:')) {
+  dbPath = dbPath.replace(/^file:/, '');
+}
+const DATABASE_PATH = dbPath;
 const BOOK_REPORTS_PATH = process.env.BOOK_REPORTS_PATH || "/Users/eerogetlost/book-reports";
 
 /**
