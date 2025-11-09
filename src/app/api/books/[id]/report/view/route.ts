@@ -3,11 +3,15 @@ import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookVersions, reports } from "@/server/db/schema";
 import { eq, desc, and } from "drizzle-orm";
+import { bundleReportHtmlFromContent } from "@/server/utils/bundle-report-html";
+import { promises as fs } from "fs";
+import path from "path";
 
 /**
  * GET /api/books/[id]/report/view
  * Returns the report HTML content directly (not as JSON)
  * This avoids JSON response size limits for large HTML files
+ * Bundles images on-the-fly if not already bundled
  */
 export async function GET(
   request: NextRequest,
@@ -63,8 +67,54 @@ export async function GET(
       return NextResponse.json({ error: "No completed report found" }, { status: 404 });
     }
 
+    // Check if HTML already has embedded images (data URLs)
+    const hasEmbeddedImages = report.htmlContent.includes('data:image/');
+    
+    let htmlContent = report.htmlContent;
+    
+    // If images aren't embedded, bundle them now
+    if (!hasEmbeddedImages) {
+      console.log(`[Report View] Bundling images for report ${bookId} on-the-fly`);
+      
+      // Build search directories for images
+      const searchDirs: string[] = [];
+      
+      // 1. Report storage directory
+      const reportStoragePath = process.env.REPORT_STORAGE_PATH || './uploads/reports';
+      try {
+        await fs.access(reportStoragePath);
+        searchDirs.push(reportStoragePath);
+      } catch {
+        // Directory doesn't exist, skip
+      }
+      
+      // 2. Book reports directory
+      const bookReportsPath = process.env.BOOK_REPORTS_PATH || "/Users/eerogetlost/book-reports";
+      try {
+        await fs.access(bookReportsPath);
+        searchDirs.push(bookReportsPath);
+        
+        // Also try subdirectories
+        const entries = await fs.readdir(bookReportsPath, { withFileTypes: true });
+        for (const entry of entries) {
+          if (entry.isDirectory()) {
+            searchDirs.push(path.join(bookReportsPath, entry.name));
+          }
+        }
+      } catch {
+        // Directory doesn't exist, skip
+      }
+      
+      if (searchDirs.length > 0) {
+        htmlContent = await bundleReportHtmlFromContent(report.htmlContent, searchDirs);
+        console.log(`[Report View] Successfully bundled images for report ${bookId}`);
+      } else {
+        console.warn(`[Report View] No image search directories available for report ${bookId}`);
+      }
+    }
+
     // Return HTML directly with proper headers
-    return new NextResponse(report.htmlContent, {
+    return new NextResponse(htmlContent, {
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
