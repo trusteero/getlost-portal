@@ -55,6 +55,14 @@ export async function PATCH(
 
       if (existingReport) {
         // Update existing report
+        // If setting to completed, ensure HTML content exists
+        if (dbStatus === "completed" && !existingReport.htmlContent) {
+          return NextResponse.json(
+            { error: "Cannot set report to completed without HTML content. Please upload the report HTML first via /api/admin/reports/[id]/upload" },
+            { status: 400 }
+          );
+        }
+        
         await db
           .update(reports)
           .set({
@@ -65,6 +73,15 @@ export async function PATCH(
           .where(eq(reports.id, existingReport.id));
       } else {
         // Create new report
+        // Note: If status is "completed", HTML content should be uploaded via /api/admin/reports/[id]/upload
+        // Don't create completed reports without HTML content
+        if (dbStatus === "completed") {
+          return NextResponse.json(
+            { error: "Cannot create completed report without HTML content. Please upload the report HTML first via /api/admin/reports/[id]/upload" },
+            { status: 400 }
+          );
+        }
+        
         await db
           .insert(reports)
           .values({
@@ -72,7 +89,6 @@ export async function PATCH(
             status: dbStatus,
             requestedAt: new Date(),
             ...(status === "analyzing" && { startedAt: new Date() }),
-            ...(status === "completed" && { completedAt: new Date() }),
           });
       }
     }
