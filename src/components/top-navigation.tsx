@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from "@/lib/auth-client";
 import { AccountMenu } from './account-menu';
 import { MobileAccountMenu } from './mobile-account-menu';
@@ -9,6 +9,27 @@ import Link from 'next/link';
 export const TopNavigation = () => {
   const { data: session } = useSession();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Don't render full content until mounted to avoid SSR/hydration issues
+  // But hooks must be called unconditionally
+  if (!mounted) {
+    return (
+      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 md:bg-white/95 md:backdrop-blur-md" style={{ boxShadow: 'var(--shadow-mobile-card)' }}>
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 md:h-[68px] flex items-center justify-between gap-3 md:gap-6">
+          <div className="flex items-center gap-2 md:gap-3">
+            <Link href="/" className="w-6 h-6 text-amber-500 interactive hover:scale-[1.03]">
+              <img src="/logo256.png" alt="Get Lost Logo" className="w-6 h-6" />
+            </Link>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   // Get user display name
   const displayName = session?.user?.name || 
