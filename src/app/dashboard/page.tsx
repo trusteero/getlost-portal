@@ -264,9 +264,9 @@ export default function Dashboard() {
       if (feature && feature.status !== 'locked') {
         return 'complete';
       }
-      // For summary and report, check existing logic
+      // For summary only, check existing logic (summary is free when digest completes)
       if (featureType === 'summary' && hasSummary) return 'complete';
-      if (featureType === 'manuscript-report' && hasReport) return 'complete';
+      // For manuscript-report, require explicit unlock via purchase
       return 'locked';
     };
     
@@ -303,9 +303,9 @@ export default function Dashboard() {
       if (feature && feature.status !== 'locked') {
         return 'complete';
       }
-      // For summary and report, check existing logic
+      // For summary only, check existing logic (summary is free when digest completes)
       if (featureType === 'summary' && hasSummary) return 'complete';
-      if (featureType === 'manuscript-report' && hasReport) return 'complete';
+      // For manuscript-report, require explicit unlock via purchase
       return 'locked';
     };
     
