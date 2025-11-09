@@ -126,10 +126,10 @@ export default function Settings() {
       const data = await response.json();
       setShowDeleteConfirm(false);
       
-      // Redirect to dashboard after successful deletion
+      // Force full page reload to reset all state and show "Welcome" message
       setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
+        window.location.href = "/dashboard";
+      }, 1000);
     } catch (error) {
       setErrors({ deleteBooks: "Failed to delete book data" });
       setShowDeleteConfirm(false);
