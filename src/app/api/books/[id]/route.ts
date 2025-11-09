@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest, isAdminFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
-import { books, bookVersions, reports } from "@/server/db/schema";
+import { books, bookVersions, reports, bookFeatures } from "@/server/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { extractSummaryFromReportHtml } from "@/server/utils/extract-report-summary";
 import { promises as fs } from "fs";
@@ -76,9 +76,16 @@ export async function GET(
       })
     );
 
+    // Get all features for this book
+    const features = await db
+      .select()
+      .from(bookFeatures)
+      .where(eq(bookFeatures.bookId, id));
+
     return NextResponse.json({
       ...book[0],
       versions: versionsWithReports,
+      features,
     });
   } catch (error) {
     console.error("Failed to fetch book:", error);
@@ -214,9 +221,16 @@ export async function PATCH(
       })
     );
 
+    // Get all features for this book
+    const features = await db
+      .select()
+      .from(bookFeatures)
+      .where(eq(bookFeatures.bookId, id));
+
     return NextResponse.json({
       ...updatedBook[0],
       versions: versionsWithReports,
+      features,
     });
   } catch (error) {
     console.error("Failed to update book:", error);
