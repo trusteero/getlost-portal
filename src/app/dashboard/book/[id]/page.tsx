@@ -91,6 +91,11 @@ export default function BookDetail() {
       fetchDigestStatus();
     }
 
+    // Check URL hash to open specific tab
+    if (typeof window !== 'undefined' && window.location.hash === '#report') {
+      setActiveTab("author");
+    }
+
     // Cleanup on unmount
     return () => {
       if (pollingRef.current) {
@@ -118,6 +123,11 @@ export default function BookDetail() {
           const completedReport = latestVersion.reports.find((r: Report) => r.status === "completed");
           if (completedReport) {
             setSelectedReport(completedReport);
+          }
+
+          // If URL has #report hash, switch to author tab
+          if (typeof window !== 'undefined' && window.location.hash === '#report') {
+            setActiveTab("author");
           }
         }
       }
@@ -704,23 +714,21 @@ export default function BookDetail() {
                                   <div>
                                     {version.reports[0]!.status === "completed" ? (
                                       <>
-                                        <div className="text-center py-12">
-                                          <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-600" />
-                                          <h3 className="text-2xl font-semibold text-gray-900 mb-2">Report Ready</h3>
-                                          <p className="text-gray-600 mb-6">Your analysis is complete and ready to download</p>
-                                          <Button
-                                            className="bg-green-600 hover:bg-green-700"
-                                            onClick={() => window.location.href = `/api/books/${book?.id}/report/download`}
-                                          >
-                                            <Download className="w-4 h-4 mr-2" />
-                                            Download Report
-                                          </Button>
-                                        </div>
-                                        {version.reports[0]!.htmlContent && (
-                                          <div className="mt-8 border-t pt-8">
-                                            <h4 className="text-lg font-semibold mb-4">Report Preview</h4>
-                                            <div className="prose prose-sm max-w-none"
-                                                 dangerouslySetInnerHTML={{ __html: version.reports[0]!.htmlContent }} />
+                                        {version.reports[0]!.htmlContent ? (
+                                          <div className="w-full"
+                                               dangerouslySetInnerHTML={{ __html: version.reports[0]!.htmlContent }} />
+                                        ) : (
+                                          <div className="text-center py-12">
+                                            <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-600" />
+                                            <h3 className="text-2xl font-semibold text-gray-900 mb-2">Report Ready</h3>
+                                            <p className="text-gray-600 mb-6">Your analysis is complete and ready to download</p>
+                                            <Button
+                                              className="bg-green-600 hover:bg-green-700"
+                                              onClick={() => window.location.href = `/api/books/${book?.id}/report/download`}
+                                            >
+                                              <Download className="w-4 h-4 mr-2" />
+                                              Download Report
+                                            </Button>
                                           </div>
                                         )}
                                       </>
