@@ -146,13 +146,17 @@ export function CondensedLibrary({
           <div className="absolute right-0 inset-y-0 w-32 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
           
           {/* Plus button - square that fills vertical space */}
-          <Link
-            href="/dashboard/new-book"
+          <button
+            onClick={() => {
+              // Trigger upload modal - this will be handled by parent component
+              const event = new CustomEvent('openUploadModal');
+              window.dispatchEvent(event);
+            }}
             className="relative z-10 pointer-events-auto aspect-square h-full rounded-xl premium-card flex items-center justify-center transition-all duration-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 group ml-2"
             aria-label="Add new manuscript"
           >
             <Plus className="w-8 h-8 text-emerald-500 transition-transform duration-300 group-hover:scale-110" />
-          </Link>
+          </button>
         </div>
       </div>
     </section>

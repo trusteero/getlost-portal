@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, Plus, RefreshCw, Users } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { BookOpen, Plus, RefreshCw, Users, Upload, X, Loader2, FileText } from "lucide-react";
 import { CondensedLibrary } from "@/components/condensed-library";
 import { ManuscriptCard } from "@/components/manuscript-card";
 
@@ -48,6 +50,12 @@ export default function Dashboard() {
   const router = useRouter();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadTitle, setUploadTitle] = useState("");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -56,6 +64,15 @@ export default function Dashboard() {
       fetchBooks();
       checkProcessingJobs();
     }
+
+    // Listen for upload modal open event from condensed library
+    const handleOpenUploadModal = () => {
+      setShowUploadModal(true);
+    };
+    window.addEventListener('openUploadModal', handleOpenUploadModal);
+    return () => {
+      window.removeEventListener('openUploadModal', handleOpenUploadModal);
+    };
   }, [session, isPending]);
 
   useEffect(() => {
@@ -102,6 +119,98 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Failed to check processing jobs:", error);
     }
+  };
+
+  // Upload functionality
+  const supportedFormats = process.env.NEXT_PUBLIC_SUPPORTED_FORMATS || ".docx,.pdf,.epub";
+  const formatList = supportedFormats.split(",").map(f => f.trim());
+
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelect(e.dataTransfer.files[0]);
+    }
+  }, []);
+
+  const handleFileSelect = (file: File) => {
+    const fileExtension = "." + file.name.split(".").pop()?.toLowerCase();
+    if (!formatList.includes(fileExtension)) {
+      setUploadError(`File format not supported. Please upload: ${formatList.join(", ")}`);
+      return;
+    }
+
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSize) {
+      setUploadError("File size must be less than 50MB");
+      return;
+    }
+
+    setUploadFile(file);
+    setUploadError("");
+  };
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!uploadTitle.trim()) {
+      setUploadError("Please enter a book title");
+      return;
+    }
+
+    if (!uploadFile) {
+      setUploadError("Please upload a manuscript file");
+      return;
+    }
+
+    setUploading(true);
+    setUploadError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("title", uploadTitle);
+      formData.append("file", uploadFile);
+
+      const response = await fetch("/api/books", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create book");
+      }
+
+      const data = await response.json();
+      setShowUploadModal(false);
+      setUploadTitle("");
+      setUploadFile(null);
+      await fetchBooks();
+      router.push(`/dashboard/book/${data.bookId}`);
+    } catch (error) {
+      setUploadError("Failed to create book. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const closeUploadModal = () => {
+    setShowUploadModal(false);
+    setUploadTitle("");
+    setUploadFile(null);
+    setUploadError("");
+    setDragActive(false);
   };
 
 
@@ -278,12 +387,13 @@ export default function Dashboard() {
 
             {/* Action Buttons */}
             <div className="flex flex-col md:flex-row justify-center gap-4 mb-6 md:mb-8">
-              <Link href="/dashboard/new-book" className="w-full md:w-auto">
-                <button className="w-full md:w-auto btn-premium-emerald text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                  <RefreshCw className="w-4 h-4 inline-block align-middle" />
-                  Analyze Another Manuscript
-                </button>
-              </Link>
+              <button 
+                onClick={() => setShowUploadModal(true)}
+                className="w-full md:w-auto btn-premium-emerald text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <RefreshCw className="w-4 h-4 inline-block align-middle" />
+                Analyze Another Manuscript
+              </button>
               <button className="w-full md:w-auto btn-premium-sapphire text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-sapphire-500">
                 <Users className="w-4 h-4 inline-block align-middle" />
                 Refer an Author
@@ -316,14 +426,144 @@ export default function Dashboard() {
               <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h2 className="text-2xl font-semibold text-gray-900 mb-2">No books yet</h2>
               <p className="text-gray-600 mb-6">Upload your first manuscript to get started</p>
-              <Link href="/dashboard/new-book">
-                <Button className="bg-orange-600 hover:bg-orange-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Your First Book
-                </Button>
-              </Link>
+              <Button 
+                onClick={() => setShowUploadModal(true)}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Book
+              </Button>
             </CardContent>
           </Card>
+        )}
+
+        {/* Upload Modal */}
+        {showUploadModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">Upload Manuscript</h2>
+                  <button
+                    onClick={closeUploadModal}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    disabled={uploading}
+                  >
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleUploadSubmit} className="space-y-6">
+                  <div>
+                    <Label htmlFor="title">Book Title</Label>
+                    <Input
+                      id="title"
+                      type="text"
+                      value={uploadTitle}
+                      onChange={(e) => setUploadTitle(e.target.value)}
+                      placeholder="Enter your book title"
+                      className="mt-1"
+                      disabled={uploading}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Manuscript File</Label>
+                    <div
+                      onDragEnter={handleDrag}
+                      onDragLeave={handleDrag}
+                      onDragOver={handleDrag}
+                      onDrop={handleDrop}
+                      className={`mt-1 border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                        dragActive
+                          ? "border-emerald-500 bg-emerald-50"
+                          : "border-gray-300 hover:border-gray-400"
+                      } ${uploading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                    >
+                      <input
+                        type="file"
+                        id="file-upload"
+                        name="file-upload"
+                        accept={formatList.join(",")}
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            handleFileSelect(e.target.files[0]);
+                          }
+                        }}
+                        className="hidden"
+                        disabled={uploading}
+                      />
+                      {uploadFile ? (
+                        <div className="space-y-2">
+                          <FileText className="mx-auto h-12 w-12 text-emerald-600" />
+                          <p className="text-sm font-medium text-gray-900">{uploadFile.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {(uploadFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                          {!uploading && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setUploadFile(null)}
+                              className="mt-2"
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <label htmlFor="file-upload" className="cursor-pointer">
+                          <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                          <p className="mt-2 text-sm text-gray-600">
+                            <span className="font-medium text-emerald-600">Click to upload</span> or drag and drop
+                          </p>
+                          <p className="mt-1 text-xs text-gray-500">
+                            {formatList.join(", ").toUpperCase()} (max 50MB)
+                          </p>
+                        </label>
+                      )}
+                    </div>
+                  </div>
+
+                  {uploadError && (
+                    <div className="bg-red-50 text-red-800 p-3 rounded-md text-sm">
+                      {uploadError}
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={closeUploadModal}
+                      disabled={uploading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                      disabled={uploading || !uploadTitle.trim() || !uploadFile}
+                    >
+                      {uploading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          Upload Manuscript
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
         )}
     </main>
   );
