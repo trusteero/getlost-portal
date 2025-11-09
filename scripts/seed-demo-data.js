@@ -282,18 +282,39 @@ async function bundleReportHtmlInline(htmlFilePath, htmlContent) {
 /**
  * Seed report data for a book
  * Bundles images into HTML as base64 data URLs before storing
+ * Handles both HTML and PDF files
  */
-async function seedReport(db, bookId, bookVersionId, htmlFilePath, bookTitle) {
-  console.log(`\n📄 Seeding report for: ${bookTitle}`);
+async function seedReport(db, bookId, bookVersionId, reportFilePath, bookTitle) {
+  const fileExt = path.extname(reportFilePath).toLowerCase();
+  const isHtml = fileExt === '.html';
+  const isPdf = fileExt === '.pdf';
+  
+  if (!isHtml && !isPdf) {
+    console.warn(`  ⚠️  Unsupported file type: ${fileExt}`);
+    return false;
+  }
+  
+  console.log(`\n📄 Seeding ${isHtml ? 'HTML' : 'PDF'} report for: ${bookTitle}`);
   
   try {
-    // Read HTML file
-    const htmlBuffer = await fs.readFile(htmlFilePath);
-    let htmlContent = htmlBuffer.toString('utf-8');
+    let htmlContent = null;
+    let pdfUrl = null;
     
-    // Bundle images into HTML
-    console.log(`  Bundling images...`);
-    htmlContent = await bundleReportHtmlInline(htmlFilePath, htmlContent);
+    if (isHtml) {
+      // Read HTML file
+      const htmlBuffer = await fs.readFile(reportFilePath);
+      let rawHtmlContent = htmlBuffer.toString('utf-8');
+      
+      // Bundle images into HTML
+      console.log(`  Bundling images...`);
+      htmlContent = await bundleReportHtmlInline(reportFilePath, rawHtmlContent);
+    } else if (isPdf) {
+      // For PDFs, we'll store the file path/URL
+      // In production, you might want to upload PDFs to storage and get a URL
+      // For now, we'll store a reference path
+      pdfUrl = reportFilePath;
+      console.log(`  📎 PDF file: ${path.basename(reportFilePath)}`);
+    }
     
     // Check if report already exists
     const existingReport = db.prepare(`
@@ -306,29 +327,50 @@ async function seedReport(db, bookId, bookVersionId, htmlFilePath, bookTitle) {
     
     if (existingReport) {
       // Update existing report
+      const updateData = {
+        status: 'completed',
+        completedAt: Math.floor(Date.now() / 1000),
+        analyzedBy: 'demo@getlost.com'
+      };
+      
+      if (htmlContent) {
+        updateData.htmlContent = htmlContent;
+      }
+      if (pdfUrl) {
+        updateData.pdfUrl = pdfUrl;
+      }
+      
       db.prepare(`
         UPDATE getlostportal_report
-        SET htmlContent = ?, status = 'completed', completedAt = ?
+        SET htmlContent = ?, pdfUrl = ?, status = ?, completedAt = ?, analyzedBy = ?
         WHERE id = ?
-      `).run(htmlContent, Math.floor(Date.now() / 1000), existingReport.id);
-      console.log(`  ✅ Updated existing report with bundled images: ${existingReport.id}`);
+      `).run(
+        htmlContent || null,
+        pdfUrl || null,
+        'completed',
+        Math.floor(Date.now() / 1000),
+        'demo@getlost.com',
+        existingReport.id
+      );
+      console.log(`  ✅ Updated existing report with ${isHtml ? 'bundled HTML' : 'PDF'}: ${existingReport.id}`);
     } else {
       // Create new report
       const reportId = randomUUID();
       db.prepare(`
         INSERT INTO getlostportal_report (
-          id, bookVersionId, status, htmlContent, requestedAt, completedAt, analyzedBy
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          id, bookVersionId, status, htmlContent, pdfUrl, requestedAt, completedAt, analyzedBy
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         reportId,
         bookVersionId,
         'completed',
         htmlContent,
+        pdfUrl || null,
         Math.floor(Date.now() / 1000),
         Math.floor(Date.now() / 1000),
         'demo@getlost.com'
       );
-      console.log(`  ✅ Created new report with bundled images: ${reportId}`);
+      console.log(`  ✅ Created new report with ${isHtml ? 'bundled HTML' : 'PDF'}: ${reportId}`);
     }
     
     return true;
@@ -552,7 +594,7 @@ function seedLandingPage(db, bookId, bookTitle) {
 }
 
 /**
- * Find all HTML reports in the reports directory
+ * Find all HTML and PDF reports in the reports directory
  */
 async function findReportFiles(dir) {
   const files = [];
@@ -567,12 +609,16 @@ async function findReportFiles(dir) {
         // Recursively search subdirectories
         const subFiles = await findReportFiles(fullPath);
         files.push(...subFiles);
-      } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.html')) {
-        files.push({
-          path: fullPath,
-          name: entry.name,
-          folder: path.basename(path.dirname(fullPath))
-        });
+      } else if (entry.isFile()) {
+        const lowerName = entry.name.toLowerCase();
+        if (lowerName.endsWith('.html') || lowerName.endsWith('.pdf')) {
+          files.push({
+            path: fullPath,
+            name: entry.name,
+            folder: path.basename(path.dirname(fullPath)),
+            type: lowerName.endsWith('.html') ? 'html' : 'pdf'
+          });
+        }
       }
     }
   } catch (error) {
@@ -615,22 +661,33 @@ async function main() {
       
       const bookVersionId = getOrCreateBookVersion(db, book.id);
       
-      // Find matching report
+      // Find matching reports (HTML or PDF) - prefer HTML
       const reportFiles = await findReportFiles(BOOK_REPORTS_PATH);
       const normalizedTitle = normalizeText(bookTitle);
       
       let matchedReport = null;
+      let matchedHtml = null;
+      let matchedPdf = null;
+      
       for (const reportFile of reportFiles) {
         const normalizedFileName = normalizeText(reportFile.name);
         const normalizedFolder = normalizeText(reportFile.folder);
         
-        if (normalizedFileName.includes(normalizedTitle) || 
+        const matches = normalizedFileName.includes(normalizedTitle) || 
             normalizedFolder === normalizedTitle ||
-            normalizedTitle.includes(normalizedFileName)) {
-          matchedReport = reportFile;
-          break;
+            normalizedTitle.includes(normalizedFileName);
+        
+        if (matches) {
+          if (reportFile.type === 'html' && !matchedHtml) {
+            matchedHtml = reportFile;
+          } else if (reportFile.type === 'pdf' && !matchedPdf) {
+            matchedPdf = reportFile;
+          }
         }
       }
+      
+      // Prefer HTML, but use PDF if HTML not found
+      matchedReport = matchedHtml || matchedPdf;
       
       if (matchedReport) {
         await seedReport(db, book.id, bookVersionId, matchedReport.path, bookTitle);
@@ -657,24 +714,36 @@ async function main() {
         try {
           const bookVersionId = getOrCreateBookVersion(db, book.id);
           
-          // Try to find matching report
+          // Try to find matching report (prefer HTML, but accept PDF)
           const normalizedTitle = normalizeText(book.title);
           let matchedReport = null;
+          let matchedHtml = null;
+          let matchedPdf = null;
           
           for (const reportFile of reportFiles) {
             const normalizedFileName = normalizeText(reportFile.name);
             const normalizedFolder = normalizeText(reportFile.folder);
             
-            if (normalizedFileName.includes(normalizedTitle) || 
+            const matches = normalizedFileName.includes(normalizedTitle) || 
                 normalizedFolder === normalizedTitle ||
-                normalizedTitle.includes(normalizedFileName)) {
-              matchedReport = reportFile;
-              break;
+                normalizedTitle.includes(normalizedFileName);
+            
+            if (matches) {
+              if (reportFile.type === 'html' && !matchedHtml) {
+                matchedHtml = reportFile;
+              } else if (reportFile.type === 'pdf' && !matchedPdf) {
+                matchedPdf = reportFile;
+              }
             }
           }
           
+          // Prefer HTML, but use PDF if HTML not found
+          matchedReport = matchedHtml || matchedPdf;
+          
           if (matchedReport) {
             await seedReport(db, book.id, bookVersionId, matchedReport.path, book.title);
+          } else {
+            console.log(`  ⚠️  No matching report found for "${book.title}"`);
           }
           
           seedMarketingAssets(db, book.id, book.title);
