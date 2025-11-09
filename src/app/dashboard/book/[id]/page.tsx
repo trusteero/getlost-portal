@@ -109,8 +109,18 @@ export default function BookDetail() {
     const checkHash = () => {
       if (typeof window !== 'undefined') {
         if (window.location.hash === '#report') {
-          setIsViewingReport(true);
-          setActiveTab("author");
+          // Only set viewing report if book data is loaded and has report
+          if (book && book.versions.length > 0) {
+            const hasReport = book.versions[0]?.reports?.some((r: Report) => r.status === "completed");
+            if (hasReport) {
+              setIsViewingReport(true);
+              setActiveTab("author");
+            }
+          } else {
+            // Book not loaded yet, will be checked in fetchBook
+            setIsViewingReport(true);
+            setActiveTab("author");
+          }
         } else {
           setIsViewingReport(false);
         }
@@ -121,16 +131,22 @@ export default function BookDetail() {
     checkHash();
 
     // Listen for hash changes (e.g., when navigating with router.push)
+    // Also poll for hash changes since Next.js router might not trigger hashchange
+    const hashCheckInterval = setInterval(() => {
+      checkHash();
+    }, 100);
+
     window.addEventListener('hashchange', checkHash);
 
     // Cleanup on unmount
     return () => {
+      clearInterval(hashCheckInterval);
       window.removeEventListener('hashchange', checkHash);
       if (pollingRef.current) {
         clearTimeout(pollingRef.current);
       }
     };
-  }, [session, isPending, params.id]);
+  }, [session, isPending, params.id, book]);
 
   const fetchBook = async () => {
     try {
@@ -153,10 +169,13 @@ export default function BookDetail() {
             setSelectedReport(completedReport);
           }
 
-          // If URL has #report hash, switch to author tab and set viewing report mode
+          // Check hash AFTER book data is loaded to ensure hasReport check works
           if (typeof window !== 'undefined' && window.location.hash === '#report') {
-            setIsViewingReport(true);
-            setActiveTab("author");
+            const hasReport = latestVersion.reports?.some((r: Report) => r.status === "completed");
+            if (hasReport) {
+              setIsViewingReport(true);
+              setActiveTab("author");
+            }
           } else {
             setIsViewingReport(false);
           }
