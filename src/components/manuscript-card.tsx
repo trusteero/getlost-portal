@@ -125,7 +125,7 @@ export const ManuscriptCard = ({
         setIsSummaryOpen(!isSummaryOpen);
         break;
       case 'manuscript-report':
-        router.push(`/dashboard/book/${id}`);
+        router.push(`/dashboard/book/${id}#report`);
         break;
       case 'marketing-assets':
         router.push(`/dashboard/book/${id}/marketing-assets`);
