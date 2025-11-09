@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
-import { books, bookFeatures, purchases } from "@/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { books, bookFeatures, purchases, bookVersions, reports } from "@/server/db/schema";
+import { eq, and, desc } from "drizzle-orm";
 import { populateDemoDataForBook } from "@/server/utils/populate-demo-data";
+import { findSeededReportByFilename, linkSeededReportToBookVersion } from "@/server/utils/find-seeded-report";
 
 const FEATURE_PRICES: Record<string, number> = {
   "summary": 0, // Free
@@ -178,6 +179,49 @@ export async function POST(
       .from(bookFeatures)
       .where(eq(bookFeatures.id, featureId))
       .limit(1);
+
+    // For manuscript-report, check if we need to link a seeded report
+    if (featureType === "manuscript-report") {
+      try {
+        // Get the latest version of the book
+        const [latestVersion] = await db
+          .select()
+          .from(bookVersions)
+          .where(eq(bookVersions.bookId, id))
+          .orderBy(desc(bookVersions.uploadedAt))
+          .limit(1);
+
+        if (latestVersion) {
+          // Check if there's already a report for this version
+          const existingReports = await db
+            .select()
+            .from(reports)
+            .where(eq(reports.bookVersionId, latestVersion.id))
+            .limit(1);
+
+          // If no report exists, try to find and link a seeded report
+          if (existingReports.length === 0) {
+            const seededReport = await findSeededReportByFilename(latestVersion.fileName);
+            
+            if (seededReport) {
+              console.log(`[Purchase] Found seeded report for "${latestVersion.fileName}", linking it to book ${id}`);
+              
+              // Link the seeded report to the book version
+              const linkedReportId = await linkSeededReportToBookVersion(seededReport, latestVersion.id);
+              
+              console.log(`[Purchase] Linked seeded report ${linkedReportId} to book ${id}`);
+            } else {
+              console.log(`[Purchase] No seeded report found for "${latestVersion.fileName}"`);
+            }
+          } else {
+            console.log(`[Purchase] Report already exists for book ${id}, skipping seeded report linking`);
+          }
+        }
+      } catch (error) {
+        console.error(`[Purchase] Failed to link seeded report:`, error);
+        // Don't fail the purchase if report linking fails
+      }
+    }
 
     // Populate demo data for the unlocked feature
     try {
