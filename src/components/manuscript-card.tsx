@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Lock, MoreVertical, Download, Eye, Trash2, Loader2 } from "lucide-react";
+import { Check, Lock, MoreVertical, Download, Eye, Trash2, Loader2, CreditCard, X } from "lucide-react";
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +9,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -47,6 +55,34 @@ export const ManuscriptCard = ({
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [unlockingFeature, setUnlockingFeature] = useState<string | null>(null);
   const [updatedSteps, setUpdatedSteps] = useState<ProgressStep[]>(steps);
+  const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
+  const [pendingFeature, setPendingFeature] = useState<ProgressStep | null>(null);
+
+  const handleUnlockClick = (step: ProgressStep) => {
+    // If it's free (summary), unlock immediately without confirmation
+    if (step.price === 'Free') {
+      handleUnlockFeature(step.id);
+      return;
+    }
+
+    // For paid features, show confirmation dialog
+    setPendingFeature(step);
+    setShowPurchaseDialog(true);
+  };
+
+  const handleConfirmPurchase = async () => {
+    if (!pendingFeature) return;
+    
+    const featureId = pendingFeature.id;
+    setShowPurchaseDialog(false);
+    setPendingFeature(null);
+    await handleUnlockFeature(featureId);
+  };
+
+  const handleCancelPurchase = () => {
+    setShowPurchaseDialog(false);
+    setPendingFeature(null);
+  };
 
   const handleUnlockFeature = async (featureType: string) => {
     if (unlockingFeature) return; // Prevent double-clicks
@@ -119,7 +155,7 @@ export const ManuscriptCard = ({
           if (isAvailable) {
             handleStageAction(step.id, step.title);
           } else {
-            handleUnlockFeature(step.id);
+            handleUnlockClick(step);
           }
         }}
         disabled={isUnlocking}
@@ -384,6 +420,69 @@ export const ManuscriptCard = ({
           </div>
         </div>
       </div>
+
+      {/* Purchase Confirmation Dialog */}
+      <Dialog open={showPurchaseDialog} onOpenChange={(open) => {
+        if (!open) {
+          handleCancelPurchase();
+        }
+      }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-emerald-600" />
+              Confirm Purchase
+            </DialogTitle>
+            <DialogDescription>
+              You are about to unlock a premium feature for your manuscript.
+            </DialogDescription>
+          </DialogHeader>
+          {pendingFeature && (
+            <div className="py-4">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-900 mb-1">Feature</p>
+                  <p className="text-base text-gray-700">{pendingFeature.title}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900 mb-1">Price</p>
+                  <p className="text-2xl font-bold text-emerald-600">{pendingFeature.price}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900 mb-1">Description</p>
+                  <p className="text-sm text-gray-600">{pendingFeature.action}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleCancelPurchase}
+              disabled={unlockingFeature === pendingFeature?.id}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmPurchase}
+              disabled={unlockingFeature === pendingFeature?.id || !pendingFeature}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              {unlockingFeature === pendingFeature?.id ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Confirm Purchase
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };
