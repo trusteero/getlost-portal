@@ -109,8 +109,15 @@ export async function DELETE(request: NextRequest) {
       await db.delete(bookVersions).where(eq(bookVersions.bookId, bookId));
     }
 
-    // 11. Finally, delete books
-    const deleteResult = await db.delete(books).where(eq(books.userId, userId));
+    // 11. Finally, delete books (excluding system book)
+    const deleteResult = await db
+      .delete(books)
+      .where(
+        and(
+          eq(books.userId, userId),
+          ne(books.title, "SYSTEM_SEEDED_REPORTS")
+        )
+      );
 
     return NextResponse.json({ 
       message: "All book data deleted successfully",
