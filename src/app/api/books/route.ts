@@ -226,10 +226,13 @@ export async function POST(request: NextRequest) {
         const linkedReportId = await linkSeededReportToBookVersion(seededReport, newVersion[0]!.id);
         
         console.log(`[Demo] Linked seeded report ${linkedReportId} to book ${createdBook.id} (user must purchase to view)`);
+      } else {
+        console.log(`[Demo] No seeded report found for "${fileName}" - system book may not exist or filename doesn't match`);
       }
     } catch (error) {
       // Log error but don't fail the book creation
       console.error("[Demo] Failed to link seeded report:", error);
+      console.error("[Demo] Error details:", error instanceof Error ? error.stack : String(error));
     }
 
     return NextResponse.json({
