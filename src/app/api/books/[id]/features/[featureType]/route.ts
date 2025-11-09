@@ -3,6 +3,7 @@ import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookFeatures, purchases } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
+import { populateDemoDataForBook } from "@/server/utils/populate-demo-data";
 
 const FEATURE_PRICES: Record<string, number> = {
   "summary": 0, // Free
@@ -177,6 +178,15 @@ export async function POST(
       .from(bookFeatures)
       .where(eq(bookFeatures.id, featureId))
       .limit(1);
+
+    // Populate demo data for the unlocked feature
+    try {
+      await populateDemoDataForBook(id, featureType);
+      console.log(`[Purchase] Populated demo data for ${featureType} on book ${id}`);
+    } catch (error) {
+      console.error(`[Purchase] Failed to populate demo data:`, error);
+      // Don't fail the purchase if demo data population fails
+    }
 
     return NextResponse.json({
       message: "Feature unlocked successfully",
