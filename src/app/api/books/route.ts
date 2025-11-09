@@ -210,15 +210,12 @@ export async function POST(request: NextRequest) {
       console.error("Failed to trigger BookDigest job:", error);
     }
 
-    // Demo mode: Check if there's a matching report PDF in book-reports folder
+    // Demo mode: Check if there's a matching report (HTML or PDF) in book-reports folder
     try {
-      const matchingReportPath = await findMatchingReport(fileName, title);
+      const matchingReports = await findMatchingReport(fileName, title);
       
-      if (matchingReportPath) {
+      if (matchingReports.htmlPath || matchingReports.pdfPath) {
         console.log(`[Demo] Found matching report for "${fileName}", linking it to book ${createdBook.id}`);
-        
-        // Read the report PDF
-        const reportBuffer = await fs.readFile(matchingReportPath);
         
         // Save report to report storage
         const reportStoragePath = process.env.REPORT_STORAGE_PATH || './uploads/reports';
@@ -226,43 +223,41 @@ export async function POST(request: NextRequest) {
         await fs.mkdir(reportDir, { recursive: true });
         
         const reportId = crypto.randomUUID();
-        const reportFileName = `${reportId}.pdf`;
-        const reportFilePath = path.join(reportDir, reportFileName);
+        let htmlContent: string | null = null;
+        let pdfPath: string | null = null;
         
-        // Copy report PDF to storage
-        await fs.writeFile(reportFilePath, reportBuffer);
+        // Prefer HTML over PDF
+        if (matchingReports.htmlPath) {
+          const htmlBuffer = await fs.readFile(matchingReports.htmlPath);
+          htmlContent = htmlBuffer.toString('utf-8');
+          const htmlFileName = `${reportId}.html`;
+          const htmlFilePath = path.join(reportDir, htmlFileName);
+          await fs.writeFile(htmlFilePath, htmlBuffer);
+          console.log(`[Demo] Stored HTML report for book ${createdBook.id}`);
+        }
         
-        // Create completed report record
+        // Also store PDF if available
+        if (matchingReports.pdfPath) {
+          const pdfBuffer = await fs.readFile(matchingReports.pdfPath);
+          const pdfFileName = `${reportId}.pdf`;
+          pdfPath = path.join(reportDir, pdfFileName);
+          await fs.writeFile(pdfPath, pdfBuffer);
+          console.log(`[Demo] Stored PDF report for book ${createdBook.id}`);
+        }
+        
+        // Create completed report record (user still needs to purchase to view)
         await db.insert(reports).values({
           id: reportId,
           bookVersionId: newVersion[0]!.id,
           status: "completed",
           requestedAt: new Date(),
           completedAt: new Date(),
-          pdfUrl: `/api/books/${createdBook.id}/report/download`,
+          htmlContent: htmlContent,
+          pdfUrl: pdfPath ? `/api/books/${createdBook.id}/report/download` : undefined,
         });
         
-        // Unlock the manuscript-report feature
-        await db
-          .insert(bookFeatures)
-          .values({
-            bookId: createdBook.id,
-            featureType: "manuscript-report",
-            status: "unlocked",
-            unlockedAt: new Date(),
-            purchasedAt: new Date(),
-            price: 0, // Free in demo mode
-          })
-          .onConflictDoUpdate({
-            target: [bookFeatures.bookId, bookFeatures.featureType],
-            set: {
-              status: "unlocked",
-              unlockedAt: new Date(),
-              updatedAt: new Date(),
-            },
-          });
-        
-        console.log(`[Demo] Report linked and feature unlocked for book ${createdBook.id}`);
+        // Note: Feature is NOT auto-unlocked - user must purchase it
+        console.log(`[Demo] Report linked for book ${createdBook.id} (user must purchase to view)`);
       }
     } catch (error) {
       // Log error but don't fail the book creation
