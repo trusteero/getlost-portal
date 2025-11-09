@@ -17,6 +17,11 @@ interface Book {
   coverImageUrl?: string;
   createdAt: string;
   isProcessing?: boolean;
+  features?: Array<{
+    id: string;
+    featureType: string;
+    status: string;
+  }>;
   latestVersion?: {
     id: string;
     fileName: string;
@@ -138,12 +143,24 @@ export default function Dashboard() {
                        (book.latestVersion?.summary !== undefined && book.latestVersion.summary !== null);
     const hasReport = book.latestReport?.status === "completed";
     
+    // Check feature unlock statuses from database
+    const getFeatureStatus = (featureType: string): 'complete' | 'locked' => {
+      const feature = book.features?.find(f => f.featureType === featureType);
+      if (feature && feature.status !== 'locked') {
+        return 'complete';
+      }
+      // For summary and report, check existing logic
+      if (featureType === 'summary' && hasSummary) return 'complete';
+      if (featureType === 'manuscript-report' && hasReport) return 'complete';
+      return 'locked';
+    };
+    
     const steps = [
-      { id: "summary", status: hasSummary ? ("complete" as const) : ("locked" as const) },
-      { id: "manuscript-report", status: hasReport ? ("complete" as const) : ("locked" as const) },
-      { id: "marketing-assets", status: "locked" as const },
-      { id: "book-covers", status: "locked" as const },
-      { id: "landing-page", status: "locked" as const },
+      { id: "summary", status: getFeatureStatus("summary") },
+      { id: "manuscript-report", status: getFeatureStatus("manuscript-report") },
+      { id: "marketing-assets", status: getFeatureStatus("marketing-assets") },
+      { id: "book-covers", status: getFeatureStatus("book-covers") },
+      { id: "landing-page", status: getFeatureStatus("landing-page") },
     ];
 
     const coverImage = book.digestJob?.coverUrl || book.coverImageUrl || "/placeholder.svg";
@@ -165,46 +182,58 @@ export default function Dashboard() {
                        (book.latestVersion?.summary !== undefined && book.latestVersion.summary !== null);
     const hasReport = book.latestReport?.status === "completed";
     
+    // Check feature unlock statuses from database
+    const getFeatureStatus = (featureType: string): 'complete' | 'locked' => {
+      const feature = book.features?.find(f => f.featureType === featureType);
+      if (feature && feature.status !== 'locked') {
+        return 'complete';
+      }
+      // For summary and report, check existing logic
+      if (featureType === 'summary' && hasSummary) return 'complete';
+      if (featureType === 'manuscript-report' && hasReport) return 'complete';
+      return 'locked';
+    };
+    
     const steps = [
       {
         id: "summary",
         title: "Free Summary",
-        status: hasSummary ? ("complete" as const) : ("locked" as const),
+        status: getFeatureStatus("summary"),
         action: "View a basic summary of your manuscript.",
         price: "Free",
-        buttonText: hasSummary ? "View Summary" : "Unlock",
+        buttonText: getFeatureStatus("summary") === 'complete' ? "View Summary" : "Unlock",
       },
       {
         id: "manuscript-report",
         title: "Manuscript Report",
-        status: hasReport ? ("complete" as const) : ("locked" as const),
+        status: getFeatureStatus("manuscript-report"),
         action: "View a comprehensive review and marketing report.",
-        price: hasReport ? "Unlocked" : "$149.99",
-        buttonText: hasReport ? "View Report" : "Unlock",
+        price: getFeatureStatus("manuscript-report") === 'complete' ? "Unlocked" : "$149.99",
+        buttonText: getFeatureStatus("manuscript-report") === 'complete' ? "View Report" : "Unlock",
       },
       {
         id: "marketing-assets",
         title: "Marketing Assets",
-        status: "locked" as const,
+        status: getFeatureStatus("marketing-assets"),
         action: "Video assets to advertise your book to your audience.",
-        price: "$149.99",
-        buttonText: "Unlock",
+        price: getFeatureStatus("marketing-assets") === 'complete' ? "Unlocked" : "$149.99",
+        buttonText: getFeatureStatus("marketing-assets") === 'complete' ? "View" : "Unlock",
       },
       {
         id: "book-covers",
         title: "Book Covers",
-        status: "locked" as const,
+        status: getFeatureStatus("book-covers"),
         action: "Access book covers that appeal to your core audience.",
-        price: "$149.99",
-        buttonText: "Unlock",
+        price: getFeatureStatus("book-covers") === 'complete' ? "Unlocked" : "$149.99",
+        buttonText: getFeatureStatus("book-covers") === 'complete' ? "View" : "Unlock",
       },
       {
         id: "landing-page",
         title: "Landing Page",
-        status: "locked" as const,
+        status: getFeatureStatus("landing-page"),
         action: "Access a landing page for your book that converts.",
-        price: "$149.99",
-        buttonText: "Unlock",
+        price: getFeatureStatus("landing-page") === 'complete' ? "Unlocked" : "$149.99",
+        buttonText: getFeatureStatus("landing-page") === 'complete' ? "View" : "Unlock",
       },
     ];
 
