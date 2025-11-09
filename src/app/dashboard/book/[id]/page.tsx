@@ -39,6 +39,11 @@ interface Book {
   coverImageUrl?: string;
   createdAt: string;
   versions: BookVersion[];
+  features?: Array<{
+    id: string;
+    featureType: string;
+    status: string;
+  }>;
 }
 
 interface DigestJob {
@@ -431,11 +436,15 @@ export default function BookDetail() {
   // Check if we're viewing just the report (via hash)
   const reportHtml = book.versions[0]?.reports?.find((r: Report) => r.status === "completed")?.htmlContent;
   const hasReport = book.versions[0]?.reports?.some((r: Report) => r.status === "completed");
+  
+  // Check if manuscript-report feature is unlocked
+  const manuscriptReportFeature = book.features?.find(f => f.featureType === "manuscript-report");
+  const isReportUnlocked = manuscriptReportFeature && manuscriptReportFeature.status !== "locked";
 
   // If viewing report and HTML content exists, render just the HTML without wrapper
   // Only render after component is mounted to avoid SSR issues
   // IMPORTANT: This check must come AFTER all hooks are called to follow Rules of Hooks
-  if (mounted && isViewingReport && hasReport) {
+  if (mounted && isViewingReport && hasReport && isReportUnlocked) {
     return (
       <div className="min-h-screen bg-white w-full relative">
         {/* Floating Back Button */}
