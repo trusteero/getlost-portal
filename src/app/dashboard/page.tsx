@@ -377,19 +377,28 @@ export default function Dashboard() {
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
-        {books.length > 0 && (
-          <>
-            <div className="mb-6 md:mb-8 premium-card rounded-2xl p-4 md:p-8">
-              <h2 className="text-lg md:text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight mb-2">
-                Welcome back, {userName}!
-              </h2>
+        <div className="mb-6 md:mb-8 premium-card rounded-2xl p-4 md:p-8">
+          <h2 className="text-lg md:text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight mb-2">
+            {books.length === 0 ? `Welcome, ${userName}!` : `Welcome back, ${userName}!`}
+          </h2>
+          {books.length > 0 ? (
+            <>
               <p className="text-sm md:text-base text-gray-600 font-medium">
                 You've unlocked <b>{stats.unlockedInsights} of {stats.totalInsights} manuscript insights</b> and have <b>{stats.activeManuscripts} active manuscript{stats.activeManuscripts !== 1 ? 's' : ''}</b>.
               </p>
               <p className="text-sm md:text-base text-gray-600 font-medium">
                 Ready for your next step? Unlock your Author Data Reports to target your audience better.
               </p>
-            </div>
+            </>
+          ) : (
+            <p className="text-sm md:text-base text-gray-600 font-medium">
+              Get started by uploading your first manuscript to begin your journey.
+            </p>
+          )}
+        </div>
+
+        {books.length > 0 && (
+          <>
 
             {/* Action Buttons */}
             <div className="flex flex-col md:flex-row justify-center gap-4 mb-6 md:mb-8">
