@@ -82,6 +82,7 @@ export default function BookDetail() {
   const [digestLoaded, setDigestLoaded] = useState(false);
   const [checkingDigest, setCheckingDigest] = useState(false);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const [isViewingReport, setIsViewingReport] = useState(false);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -91,9 +92,12 @@ export default function BookDetail() {
       fetchDigestStatus();
     }
 
-    // Check URL hash to open specific tab
-    if (typeof window !== 'undefined' && window.location.hash === '#report') {
-      setActiveTab("author");
+    // Check URL hash to open specific tab or view report only
+    if (typeof window !== 'undefined') {
+      if (window.location.hash === '#report') {
+        setIsViewingReport(true);
+        setActiveTab("author");
+      }
     }
 
     // Cleanup on unmount
@@ -125,8 +129,9 @@ export default function BookDetail() {
             setSelectedReport(completedReport);
           }
 
-          // If URL has #report hash, switch to author tab
+          // If URL has #report hash, switch to author tab and set viewing report mode
           if (typeof window !== 'undefined' && window.location.hash === '#report') {
+            setIsViewingReport(true);
             setActiveTab("author");
           }
         }
@@ -374,6 +379,18 @@ export default function BookDetail() {
             </Link>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // Check if we're viewing just the report (via hash)
+  const reportHtml = book.versions[0]?.reports?.find((r: Report) => r.status === "completed")?.htmlContent;
+
+  // If viewing report and HTML content exists, render just the HTML without wrapper
+  if (isViewingReport && reportHtml) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="w-full" dangerouslySetInnerHTML={{ __html: reportHtml }} />
       </div>
     );
   }
