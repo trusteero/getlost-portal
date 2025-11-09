@@ -39,6 +39,12 @@ interface BookDigestStatusResponse {
 
 export async function triggerBookDigest(bookId: string, fileBuffer: Buffer, fileName: string) {
   try {
+    // Check if API key is configured
+    if (!BOOKDIGEST_API_KEY) {
+      console.log(`BookDigest API key not configured, skipping digest for book ${bookId}`);
+      return null;
+    }
+
     // Check if a job already exists for this book
     const existingJob = await db
       .select()
@@ -82,7 +88,21 @@ export async function triggerBookDigest(bookId: string, fileBuffer: Buffer, file
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`BookDigest API error: ${error}`);
+      // Don't throw error - just log it and mark job as failed
+      // BookDigest is optional, book creation should still succeed
+      console.error(`BookDigest API error: ${error}`);
+      
+      // Update job status to failed
+      await db
+        .update(digestJobs)
+        .set({
+          status: "failed",
+          error: error,
+          updatedAt: new Date(),
+        })
+        .where(eq(digestJobs.id, newJob!.id));
+      
+      return null;
     }
 
     const data: BookDigestJobResponse = await response.json();
@@ -111,19 +131,24 @@ export async function triggerBookDigest(bookId: string, fileBuffer: Buffer, file
     console.error("Failed to trigger BookDigest:", error);
 
     // Update job status to failed if it exists
-    await db
-      .update(digestJobs)
-      .set({
-        status: "failed",
-        error: error instanceof Error ? error.message : "Unknown error",
-        updatedAt: new Date(),
-      })
-      .where(and(
-        eq(digestJobs.bookId, bookId),
-        eq(digestJobs.status, "pending")
-      ));
+    try {
+      await db
+        .update(digestJobs)
+        .set({
+          status: "failed",
+          error: error instanceof Error ? error.message : "Unknown error",
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(digestJobs.bookId, bookId),
+          eq(digestJobs.status, "pending")
+        ));
+    } catch (updateError) {
+      console.error("Failed to update digest job status:", updateError);
+    }
 
-    throw error;
+    // Don't throw - return null so book creation can continue
+    return null;
   }
 }
 
