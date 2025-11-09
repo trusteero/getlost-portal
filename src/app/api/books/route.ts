@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
-import { books, bookVersions, digestJobs, reports } from "@/server/db/schema";
+import { books, bookVersions, digestJobs, reports, bookFeatures } from "@/server/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { triggerBookDigest } from "@/server/services/bookdigest";
 import { promises as fs } from "fs";
@@ -76,12 +76,19 @@ export async function GET(request: NextRequest) {
           }
         }
 
+        // Get feature statuses
+        const features = await db
+          .select()
+          .from(bookFeatures)
+          .where(eq(bookFeatures.bookId, book.id));
+
         return {
           ...book,
           latestVersion: latestVersion[0],
           latestReport,
           isProcessing: digestJob[0]?.status === "processing" || digestJob[0]?.status === "pending",
           digestJob: digestJob[0] || null,
+          features: features,
         };
       })
     );

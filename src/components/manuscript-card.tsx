@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Lock, MoreVertical, Download, Eye, Trash2 } from "lucide-react";
+import { Check, Lock, MoreVertical, Download, Eye, Trash2, Loader2 } from "lucide-react";
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +45,43 @@ export const ManuscriptCard = ({
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [unlockingFeature, setUnlockingFeature] = useState<string | null>(null);
+  const [updatedSteps, setUpdatedSteps] = useState<ProgressStep[]>(steps);
+
+  const handleUnlockFeature = async (featureType: string) => {
+    if (unlockingFeature) return; // Prevent double-clicks
+    
+    setUnlockingFeature(featureType);
+    try {
+      const response = await fetch(`/api/books/${id}/features/${featureType}`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to unlock feature");
+      }
+
+      const data = await response.json();
+      
+      // Update the step status locally
+      setUpdatedSteps(prevSteps => 
+        prevSteps.map(step => 
+          step.id === featureType 
+            ? { ...step, status: 'complete' as const, price: 'Unlocked', buttonText: step.id === 'summary' ? 'View Summary' : step.id === 'manuscript-report' ? 'View Report' : 'View' }
+            : step
+        )
+      );
+
+      // Navigate to the feature page after unlocking
+      handleStageAction(featureType, "");
+    } catch (error: any) {
+      console.error("Failed to unlock feature:", error);
+      alert(error.message || "Failed to unlock feature. Please try again.");
+    } finally {
+      setUnlockingFeature(null);
+    }
+  };
 
   const handleStageAction = (stepId: string, stepTitle: string) => {
     switch (stepId) {
@@ -55,13 +92,13 @@ export const ManuscriptCard = ({
         router.push(`/dashboard/book/${id}`);
         break;
       case 'marketing-assets':
-        // TODO: Implement marketing assets
+        router.push(`/dashboard/book/${id}/marketing-assets`);
         break;
       case 'book-covers':
-        // TODO: Implement book covers
+        router.push(`/dashboard/book/${id}/covers`);
         break;
       case 'landing-page':
-        // TODO: Implement landing page
+        router.push(`/dashboard/book/${id}/landing-page`);
         break;
     }
   };
@@ -70,6 +107,7 @@ export const ManuscriptCard = ({
     if (!step.buttonText) return null;
     
     const isAvailable = step.status === 'complete';
+    const isUnlocking = unlockingFeature === step.id;
     const buttonClass = isAvailable 
       ? "w-full md:w-auto btn-premium-emerald text-white text-sm font-semibold px-4 py-2 rounded h-10 min-w-[120px] max-w-full whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-emerald-500"
       : "w-full md:w-auto premium-card hover:premium-card text-gray-900 text-sm font-medium px-4 py-2 rounded h-10 min-w-[120px] max-w-full whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-sapphire-500 backdrop-blur-sm";
@@ -77,9 +115,23 @@ export const ManuscriptCard = ({
     return (
       <button 
         className={buttonClass}
-        onClick={() => handleStageAction(step.id, step.title)}
+        onClick={() => {
+          if (isAvailable) {
+            handleStageAction(step.id, step.title);
+          } else {
+            handleUnlockFeature(step.id);
+          }
+        }}
+        disabled={isUnlocking}
       >
-        {step.buttonText}
+        {isUnlocking ? (
+          <>
+            <Loader2 className="w-4 h-4 inline-block align-middle mr-2 animate-spin" />
+            Unlocking...
+          </>
+        ) : (
+          step.buttonText
+        )}
       </button>
     );
   };
@@ -204,7 +256,7 @@ export const ManuscriptCard = ({
                 <div 
                   className="absolute left-0 top-1/2 -translate-y-1/2 h-[2px] bg-emerald-500 z-0 rounded-full transition-all duration-500"
                   style={{
-                    width: `${(steps.slice(0, 5).filter(step => step.status === 'complete').length / Math.max(steps.slice(0, 5).length - 1, 1)) * 100}%`
+                    width: `${(updatedSteps.slice(0, 5).filter(step => step.status === 'complete').length / Math.max(updatedSteps.slice(0, 5).length - 1, 1)) * 100}%`
                   }}
                 ></div>
 
@@ -216,7 +268,7 @@ export const ManuscriptCard = ({
                   role="tablist"
                   aria-label="Progress steps"
                 >
-                  {steps.slice(0, 5).map((step) => (
+                  {updatedSteps.slice(0, 5).map((step) => (
                     <button
                       key={step.id}
                       className={`snap-center shrink-0 relative z-10 h-8 px-3 rounded-full text-xs font-medium whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-300 ${
@@ -242,12 +294,12 @@ export const ManuscriptCard = ({
                 <div 
                   className="absolute left-0 top-1/2 -translate-y-1/2 h-[2px] bg-emerald-500 transition-all duration-500 z-0 rounded-full"
                   style={{
-                    width: `${(steps.slice(0, 5).filter(step => step.status === 'complete').length / 5) * 100}%`,
-                    boxShadow: steps.some(step => step.status === 'complete') ? 'var(--glow-progress-line)' : 'none'
+                    width: `${(updatedSteps.slice(0, 5).filter(step => step.status === 'complete').length / 5) * 100}%`,
+                    boxShadow: updatedSteps.some(step => step.status === 'complete') ? 'var(--glow-progress-line)' : 'none'
                   }}
                 ></div>
                 
-                {steps.slice(0, 5).map((step) => (
+                {updatedSteps.slice(0, 5).map((step) => (
                   <div key={step.id} className="md:col-span-1 flex md:justify-center">
                     <button 
                       className={`relative z-10 flex items-center gap-1.5 h-7 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-300 ${
@@ -298,7 +350,7 @@ export const ManuscriptCard = ({
 
           {/* Action Sections Grid - Mobile: Single Column, Desktop: 5 Column Grid */}
           <div className="flex flex-col space-y-6 md:space-y-0 md:grid md:grid-cols-5 md:gap-6 items-stretch">
-            {steps.slice(0, 5).map((step) => (
+            {updatedSteps.slice(0, 5).map((step) => (
               <div key={step.id} className="flex flex-col items-start justify-start h-full text-left">
                 {/* Top Section */}
                 <div className="w-full">
