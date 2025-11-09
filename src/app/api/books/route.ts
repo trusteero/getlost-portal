@@ -7,6 +7,7 @@ import { triggerBookDigest } from "@/server/services/bookdigest";
 import { promises as fs } from "fs";
 import path from "path";
 import { findMatchingReport } from "@/server/utils/demo-reports";
+import { bundleReportHtml } from "@/server/utils/bundle-report-html";
 
 export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request);
@@ -229,11 +230,16 @@ export async function POST(request: NextRequest) {
         // Prefer HTML over PDF
         if (matchingReports.htmlPath) {
           const htmlBuffer = await fs.readFile(matchingReports.htmlPath);
-          htmlContent = htmlBuffer.toString('utf-8');
+          let rawHtmlContent = htmlBuffer.toString('utf-8');
+          
+          // Bundle images into HTML as base64 data URLs
+          htmlContent = await bundleReportHtml(matchingReports.htmlPath, rawHtmlContent);
+          
           const htmlFileName = `${reportId}.html`;
           const htmlFilePath = path.join(reportDir, htmlFileName);
-          await fs.writeFile(htmlFilePath, htmlBuffer);
-          console.log(`[Demo] Stored HTML report for book ${createdBook.id}`);
+          // Save bundled HTML to file system
+          await fs.writeFile(htmlFilePath, htmlContent, 'utf-8');
+          console.log(`[Demo] Stored bundled HTML report for book ${createdBook.id}`);
         }
         
         // Also store PDF if available

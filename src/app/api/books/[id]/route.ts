@@ -3,6 +3,7 @@ import { getSessionFromRequest, isAdminFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookVersions, reports } from "@/server/db/schema";
 import { eq, desc, and } from "drizzle-orm";
+import { extractSummaryFromReportHtml } from "@/server/utils/extract-report-summary";
 import { promises as fs } from "fs";
 import path from "path";
 
@@ -60,9 +61,17 @@ export async function GET(
           .where(eq(reports.bookVersionId, version.id))
           .orderBy(desc(reports.requestedAt));
 
+        // Extract summary from the latest completed report
+        let extractedSummary: string | null = null;
+        const latestCompletedReport = versionReports.find((r: any) => r.status === "completed");
+        if (latestCompletedReport?.htmlContent) {
+          extractedSummary = extractSummaryFromReportHtml(latestCompletedReport.htmlContent);
+        }
+
         return {
           ...version,
           reports: versionReports,
+          summary: extractedSummary || version.summary, // Use extracted summary if available, fallback to version summary
         };
       })
     );
@@ -190,9 +199,17 @@ export async function PATCH(
           .where(eq(reports.bookVersionId, version.id))
           .orderBy(desc(reports.requestedAt));
 
+        // Extract summary from the latest completed report
+        let extractedSummary: string | null = null;
+        const latestCompletedReport = versionReports.find((r: any) => r.status === "completed");
+        if (latestCompletedReport?.htmlContent) {
+          extractedSummary = extractSummaryFromReportHtml(latestCompletedReport.htmlContent);
+        }
+
         return {
           ...version,
           reports: versionReports,
+          summary: extractedSummary || version.summary, // Use extracted summary if available, fallback to version summary
         };
       })
     );

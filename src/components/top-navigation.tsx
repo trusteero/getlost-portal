@@ -5,9 +5,18 @@ import { useSession } from "@/lib/auth-client";
 import { AccountMenu } from './account-menu';
 import { MobileAccountMenu } from './mobile-account-menu';
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
+import { LayoutDashboard } from 'lucide-react';
 
 export const TopNavigation = () => {
-  const { data: session } = useSession();
+  // Hooks must be called unconditionally
+  // useSession hook - will handle errors internally
+  const sessionResult = useSession();
+  const sessionData = sessionResult?.data || null;
+  const sessionPending = sessionResult?.isPending ?? false;
+  const router = useRouter();
+  const pathname = usePathname();
+  
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -15,8 +24,10 @@ export const TopNavigation = () => {
     setMounted(true);
   }, []);
 
+  // Check if we're on the main dashboard page (not sub-pages)
+  const isOnMainDashboard = pathname === '/dashboard';
+
   // Don't render full content until mounted to avoid SSR/hydration issues
-  // But hooks must be called unconditionally
   if (!mounted) {
     return (
       <header className="sticky top-0 z-40 bg-white border-b border-gray-200 md:bg-white/95 md:backdrop-blur-md" style={{ boxShadow: 'var(--shadow-mobile-card)' }}>
@@ -32,14 +43,14 @@ export const TopNavigation = () => {
   }
 
   // Get user display name
-  const displayName = session?.user?.name || 
-                     session?.user?.email?.split('@')[0] || 
+  const displayName = sessionData?.user?.name || 
+                     sessionData?.user?.email?.split('@')[0] || 
                      'Author';
 
   // Get user initials for avatar
   const getInitials = () => {
-    if (session?.user?.name) {
-      const names = session.user.name.split(' ');
+    if (sessionData?.user?.name) {
+      const names = sessionData.user.name.split(' ');
       if (names.length >= 2) {
         const firstName = names[0];
         const lastName = names[names.length - 1];
@@ -47,10 +58,10 @@ export const TopNavigation = () => {
           return `${firstName[0]}${lastName[0]}`.toUpperCase();
         }
       }
-      return session.user.name.substring(0, 2).toUpperCase();
+      return sessionData.user.name.substring(0, 2).toUpperCase();
     }
-    if (session?.user?.email) {
-      return session.user.email.substring(0, 2).toUpperCase();
+    if (sessionData?.user?.email) {
+      return sessionData.user.email.substring(0, 2).toUpperCase();
     }
     return 'AU';
   };
@@ -63,6 +74,15 @@ export const TopNavigation = () => {
           <Link href="/" className="w-6 h-6 text-amber-500 interactive hover:scale-[1.03]">
             <img src="/logo256.png" alt="Get Lost Logo" className="w-6 h-6" />
           </Link>
+          {!isOnMainDashboard && (
+            <Link
+              href="/dashboard"
+              className="interactive flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </Link>
+          )}
           <div className="flex items-center gap-3 pr-4">
             <h1 className="text-base md:text-lg font-semibold tracking-tight text-gray-900 leading-none">
               <span className="md:hidden">Get Lost</span>

@@ -1,6 +1,23 @@
 "use client";
 
-import { TopNavigation } from "./top-navigation";
+import dynamic from 'next/dynamic';
+
+// Dynamically import TopNavigation with SSR disabled to avoid React initialization issues
+const TopNavigation = dynamic(
+  () => import('./top-navigation').then(mod => ({ default: mod.TopNavigation })),
+  { 
+    ssr: false,
+    loading: () => (
+      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 md:bg-white/95 md:backdrop-blur-md" style={{ boxShadow: 'var(--shadow-mobile-card)' }}>
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 md:h-[68px] flex items-center justify-between gap-3 md:gap-6">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-6 h-6 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+      </header>
+    )
+  }
+);
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (

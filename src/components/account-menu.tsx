@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Settings, HelpCircle, LogOut } from 'lucide-react';
+import { User, Settings, HelpCircle, LogOut, LayoutDashboard } from 'lucide-react';
 import { signOut } from "@/lib/auth-client";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -71,6 +71,18 @@ export const AccountMenu = ({ isOpen, onClose }: AccountMenuProps) => {
       aria-orientation="vertical"
       aria-labelledby="account-menu-button"
     >
+      <Link
+        href="/dashboard"
+        className="interactive w-full text-left px-3 py-2 rounded hover:bg-gray-50 flex items-center gap-3 text-gray-700 hover:text-gray-900"
+        onClick={onClose}
+        role="menuitem"
+      >
+        <LayoutDashboard size={16} className="text-gray-400" />
+        Dashboard
+      </Link>
+      
+      <div className="my-1 h-px bg-gray-200" role="separator"></div>
+      
       <Link
         href="/dashboard/settings"
         className="interactive w-full text-left px-3 py-2 rounded hover:bg-gray-50 flex items-center gap-3 text-gray-700 hover:text-gray-900"

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from 'react';
-import { User, Settings, HelpCircle, LogOut, X } from 'lucide-react';
+import { User, Settings, HelpCircle, LogOut, X, LayoutDashboard } from 'lucide-react';
 import { signOut } from "@/lib/auth-client";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -80,6 +80,17 @@ export const MobileAccountMenu = ({ isOpen, onClose }: MobileAccountMenuProps) =
         </div>
         
         <div className="p-2">
+          <Link
+            href="/dashboard"
+            className="interactive w-full text-left p-4 rounded-lg hover:bg-gray-50 flex items-center gap-4 text-gray-700 hover:text-gray-900"
+            onClick={onClose}
+          >
+            <LayoutDashboard size={20} className="text-gray-400" />
+            <span className="text-base font-medium">Dashboard</span>
+          </Link>
+          
+          <div className="my-2 h-px bg-gray-200" />
+          
           <Link
             href="/dashboard/settings"
             className="interactive w-full text-left p-4 rounded-lg hover:bg-gray-50 flex items-center gap-4 text-gray-700 hover:text-gray-900"

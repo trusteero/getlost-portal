@@ -30,7 +30,7 @@ export async function findMatchingReport(
       await fs.access(BOOK_REPORTS_PATH);
     } catch {
       console.log(`[Demo Reports] Book reports directory not found: ${BOOK_REPORTS_PATH}`);
-      return null;
+      return { htmlPath: null, pdfPath: null };
     }
 
     const normalizedUploaded = normalizeFilename(uploadedFileName);
