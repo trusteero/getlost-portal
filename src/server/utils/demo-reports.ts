@@ -14,15 +14,16 @@ function normalizeFilename(filename: string): string {
 }
 
 /**
- * Find a matching PDF report in the book-reports folder
+ * Find a matching report (HTML or PDF) in the book-reports folder
  * Matches by:
  * 1. Exact filename match (case-insensitive, ignoring special chars)
  * 2. Folder name matching book title (normalized)
+ * Returns both HTML and PDF paths if found
  */
 export async function findMatchingReport(
   uploadedFileName: string,
   bookTitle?: string
-): Promise<string | null> {
+): Promise<{ htmlPath: string | null; pdfPath: string | null }> {
   try {
     // Check if book-reports directory exists
     try {
@@ -35,65 +36,70 @@ export async function findMatchingReport(
     const normalizedUploaded = normalizeFilename(uploadedFileName);
     const normalizedTitle = bookTitle ? normalizeFilename(bookTitle) : null;
 
-    // Recursively find all PDF files
-    async function findPDFs(dir: string): Promise<Array<{ path: string; name: string; folder: string }>> {
+    // Recursively find all report files (HTML and PDF)
+    async function findReportFiles(dir: string): Promise<Array<{ path: string; name: string; folder: string; type: 'html' | 'pdf' }>> {
       const entries = await fs.readdir(dir, { withFileTypes: true });
-      const pdfs: Array<{ path: string; name: string; folder: string }> = [];
+      const files: Array<{ path: string; name: string; folder: string; type: 'html' | 'pdf' }> = [];
 
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
         
         if (entry.isDirectory()) {
           // Recursively search subdirectories
-          const subPdfs = await findPDFs(fullPath);
-          pdfs.push(...subPdfs);
-        } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.pdf')) {
-          const folderName = path.basename(path.dirname(fullPath));
-          pdfs.push({
-            path: fullPath,
-            name: entry.name,
-            folder: folderName,
-          });
+          const subFiles = await findReportFiles(fullPath);
+          files.push(...subFiles);
+        } else if (entry.isFile()) {
+          const lowerName = entry.name.toLowerCase();
+          if (lowerName.endsWith('.html') || lowerName.endsWith('.pdf')) {
+            const folderName = path.basename(path.dirname(fullPath));
+            files.push({
+              path: fullPath,
+              name: entry.name,
+              folder: folderName,
+              type: lowerName.endsWith('.html') ? 'html' : 'pdf',
+            });
+          }
         }
       }
 
-      return pdfs;
+      return files;
     }
 
-    const allPDFs = await findPDFs(BOOK_REPORTS_PATH);
+    const allFiles = await findReportFiles(BOOK_REPORTS_PATH);
+    let htmlPath: string | null = null;
+    let pdfPath: string | null = null;
 
-    // Try to find a match
-    for (const pdf of allPDFs) {
-      const normalizedPdfName = normalizeFilename(pdf.name);
-      const normalizedFolder = normalizeFilename(pdf.folder);
+    // Try to find matches (prefer HTML files)
+    for (const file of allFiles) {
+      const normalizedFileName = normalizeFilename(file.name);
+      const normalizedFolder = normalizeFilename(file.folder);
 
-      // Match 1: Filename matches uploaded file
-      if (normalizedPdfName === normalizedUploaded) {
-        console.log(`[Demo Reports] Found matching PDF by filename: ${pdf.path}`);
-        return pdf.path;
-      }
+      // Check if this file matches
+      const matchesFilename = normalizedFileName === normalizedUploaded ||
+        normalizedFileName.includes(normalizedUploaded) ||
+        normalizedUploaded.includes(normalizedFileName);
+      
+      const matchesFolder = normalizedTitle && normalizedFolder === normalizedTitle;
 
-      // Match 2: Folder name matches book title (if provided)
-      if (normalizedTitle && normalizedFolder === normalizedTitle) {
-        console.log(`[Demo Reports] Found matching PDF by folder name: ${pdf.path}`);
-        return pdf.path;
-      }
-
-      // Match 3: Partial match - uploaded filename contains PDF name or vice versa
-      if (
-        normalizedPdfName.includes(normalizedUploaded) ||
-        normalizedUploaded.includes(normalizedPdfName)
-      ) {
-        console.log(`[Demo Reports] Found matching PDF by partial match: ${pdf.path}`);
-        return pdf.path;
+      if (matchesFilename || matchesFolder) {
+        if (file.type === 'html' && !htmlPath) {
+          htmlPath = file.path;
+          console.log(`[Demo Reports] Found matching HTML by ${matchesFilename ? 'filename' : 'folder name'}: ${file.path}`);
+        } else if (file.type === 'pdf' && !pdfPath) {
+          pdfPath = file.path;
+          console.log(`[Demo Reports] Found matching PDF by ${matchesFilename ? 'filename' : 'folder name'}: ${file.path}`);
+        }
       }
     }
 
-    console.log(`[Demo Reports] No matching PDF found for "${uploadedFileName}"`);
-    return null;
+    if (!htmlPath && !pdfPath) {
+      console.log(`[Demo Reports] No matching report found for "${uploadedFileName}"`);
+    }
+
+    return { htmlPath, pdfPath };
   } catch (error) {
     console.error("[Demo Reports] Error finding matching report:", error);
-    return null;
+    return { htmlPath: null, pdfPath: null };
   }
 }
 
