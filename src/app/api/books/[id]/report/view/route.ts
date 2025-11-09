@@ -102,34 +102,102 @@ export async function GET(
       .limit(1);
 
     if (!report || !report.htmlContent) {
-      // Provide more detailed error information
-      const hasAnyReport = allReports.length > 0;
-      const hasCompletedReport = allReports.some(r => r.status === "completed");
-      const hasReportWithoutHtml = allReports.some(r => r.status === "completed" && !r.htmlContent);
-      
-      let errorMessage = "No completed report found.";
-      if (!hasAnyReport) {
-        errorMessage += " No reports exist for this book version. Please upload a report or run the seed script.";
-      } else if (!hasCompletedReport) {
-        const statuses = allReports.map(r => r.status).join(", ");
-        errorMessage += ` Found ${allReports.length} report(s) but none are completed. Status(es): ${statuses}`;
-      } else if (hasReportWithoutHtml) {
-        errorMessage += " Report exists but has no HTML content. Please re-upload the report.";
-      } else {
-        errorMessage += " The report may still be processing or hasn't been uploaded yet.";
+      // Try to fix: if report exists but has no HTML, try to find and load it
+      if (report && !report.htmlContent) {
+        console.log(`[Report View] Report ${report.id} exists but has no HTML content. Attempting to find and load HTML file...`);
+        
+        // Try to find HTML file in report storage
+        const reportStoragePath = process.env.REPORT_STORAGE_PATH || './uploads/reports';
+        const reportDir = path.resolve(reportStoragePath);
+        
+        let htmlContent: string | null = null;
+        let htmlFilePath: string | null = null;
+        
+        // Try to read HTML file from report storage
+        try {
+          const htmlFile = path.join(reportDir, `${report.id}.html`);
+          await fs.access(htmlFile);
+          htmlContent = await fs.readFile(htmlFile, 'utf-8');
+          htmlFilePath = htmlFile;
+          console.log(`[Report View] Found HTML file in report storage: ${htmlFile}`);
+        } catch {
+          // File doesn't exist in report storage, try to find matching report in book-reports folder
+          try {
+            const { findMatchingReport } = await import("@/server/utils/demo-reports");
+            const book = await db
+              .select({ title: books.title })
+              .from(books)
+              .where(eq(books.id, bookId))
+              .limit(1);
+            
+            if (book.length > 0 && book[0]!.title) {
+              const matchingReports = await findMatchingReport(latestVersion.fileName, book[0]!.title);
+              if (matchingReports.htmlPath) {
+                htmlContent = await fs.readFile(matchingReports.htmlPath, 'utf-8');
+                htmlFilePath = matchingReports.htmlPath;
+                console.log(`[Report View] Found matching HTML file in book-reports: ${matchingReports.htmlPath}`);
+              }
+            }
+          } catch (error) {
+            console.error(`[Report View] Error finding matching report:`, error);
+          }
+        }
+        
+        // If we found HTML content, bundle images and update database
+        if (htmlContent && htmlFilePath) {
+          try {
+            // Bundle images into HTML
+            const { bundleReportHtml } = await import("@/server/utils/bundle-report-html");
+            htmlContent = await bundleReportHtml(htmlFilePath, htmlContent);
+            
+            // Update database with bundled HTML
+            await db
+              .update(reports)
+              .set({ htmlContent })
+              .where(eq(reports.id, report.id));
+            
+            console.log(`[Report View] Successfully loaded and updated report ${report.id} with HTML content`);
+            
+            // Continue with serving the HTML
+            report.htmlContent = htmlContent;
+          } catch (error) {
+            console.error(`[Report View] Error bundling/updating report:`, error);
+            // Fall through to error response
+          }
+        }
       }
       
-      return NextResponse.json(
-        { 
-          error: errorMessage,
-          debug: {
-            versionId: latestVersion.id,
-            reportCount: allReports.length,
-            reportStatuses: allReports.map(r => ({ id: r.id, status: r.status, hasHtml: !!r.htmlContent }))
-          }
-        },
-        { status: 404 }
-      );
+      // If still no HTML content, return error
+      if (!report || !report.htmlContent) {
+        // Provide more detailed error information
+        const hasAnyReport = allReports.length > 0;
+        const hasCompletedReport = allReports.some(r => r.status === "completed");
+        const hasReportWithoutHtml = allReports.some(r => r.status === "completed" && !r.htmlContent);
+        
+        let errorMessage = "No completed report found.";
+        if (!hasAnyReport) {
+          errorMessage += " No reports exist for this book version. Please upload a report or run the seed script.";
+        } else if (!hasCompletedReport) {
+          const statuses = allReports.map(r => r.status).join(", ");
+          errorMessage += ` Found ${allReports.length} report(s) but none are completed. Status(es): ${statuses}`;
+        } else if (hasReportWithoutHtml) {
+          errorMessage += " Report exists but has no HTML content and couldn't be found in file system. Please re-upload the report.";
+        } else {
+          errorMessage += " The report may still be processing or hasn't been uploaded yet.";
+        }
+        
+        return NextResponse.json(
+          { 
+            error: errorMessage,
+            debug: {
+              versionId: latestVersion.id,
+              reportCount: allReports.length,
+              reportStatuses: allReports.map(r => ({ id: r.id, status: r.status, hasHtml: !!r.htmlContent }))
+            }
+          },
+          { status: 404 }
+        );
+      }
     }
 
     // Check if HTML already has embedded images (data URLs)
