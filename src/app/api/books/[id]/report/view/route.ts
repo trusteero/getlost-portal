@@ -88,28 +88,48 @@ export async function GET(
         // Directory doesn't exist, skip
       }
       
-      // 2. Book reports directory
-      const bookReportsPath = process.env.BOOK_REPORTS_PATH || "/Users/eerogetlost/book-reports";
-      try {
-        await fs.access(bookReportsPath);
-        searchDirs.push(bookReportsPath);
-        
-        // Also try subdirectories
-        const entries = await fs.readdir(bookReportsPath, { withFileTypes: true });
-        for (const entry of entries) {
-          if (entry.isDirectory()) {
-            searchDirs.push(path.join(bookReportsPath, entry.name));
+      // 2. Book reports directory (only if env var is set, don't use hardcoded local path)
+      const bookReportsPath = process.env.BOOK_REPORTS_PATH;
+      if (bookReportsPath) {
+        try {
+          await fs.access(bookReportsPath);
+          searchDirs.push(bookReportsPath);
+          
+          // Also try subdirectories
+          const entries = await fs.readdir(bookReportsPath, { withFileTypes: true });
+          for (const entry of entries) {
+            if (entry.isDirectory()) {
+              searchDirs.push(path.join(bookReportsPath, entry.name));
+            }
           }
+        } catch {
+          // Directory doesn't exist, skip
         }
-      } catch {
-        // Directory doesn't exist, skip
       }
       
       if (searchDirs.length > 0) {
         htmlContent = await bundleReportHtmlFromContent(report.htmlContent, searchDirs);
         console.log(`[Report View] Successfully bundled images for report ${bookId}`);
+        
+        // Update database with bundled HTML so we don't have to bundle on every request
+        // Only update if bundling was successful and HTML changed
+        if (htmlContent !== report.htmlContent) {
+          try {
+            await db
+              .update(reports)
+              .set({ htmlContent })
+              .where(and(
+                eq(reports.bookVersionId, latestVersion.id),
+                eq(reports.status, "completed")
+              ));
+            console.log(`[Report View] Updated database with bundled HTML for report ${bookId}`);
+          } catch (error) {
+            console.error(`[Report View] Failed to update database with bundled HTML:`, error);
+            // Continue serving bundled HTML even if DB update fails
+          }
+        }
       } else {
-        console.warn(`[Report View] No image search directories available for report ${bookId}`);
+        console.warn(`[Report View] No image search directories available for report ${bookId} (this is normal on Render if BOOK_REPORTS_PATH is not set)`);
       }
     }
 
