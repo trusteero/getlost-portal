@@ -440,27 +440,9 @@ export default function BookDetail() {
 
   const reportContent = reportHtml ? getReportContent() : { htmlWithoutScripts: '', scripts: [] };
 
-  // Execute scripts in report HTML after rendering
-  useEffect(() => {
-    if (isViewingReport && reportContainerRef.current && reportHtml) {
-      // Extract and execute scripts from the HTML
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(reportHtml, 'text/html');
-      const scripts = doc.querySelectorAll('script');
-      
-      scripts.forEach((oldScript) => {
-        const newScript = document.createElement('script');
-        Array.from(oldScript.attributes).forEach((attr) => {
-          newScript.setAttribute(attr.name, attr.value);
-        });
-        newScript.textContent = oldScript.textContent;
-        reportContainerRef.current?.appendChild(newScript);
-      });
-    }
-  }, [isViewingReport, reportHtml]);
-
   // If viewing report and HTML content exists, render just the HTML without wrapper
   // Only render after component is mounted to avoid SSR issues
+  // IMPORTANT: This check must come AFTER all hooks are called to follow Rules of Hooks
   if (mounted && isViewingReport && reportHtml) {
     return (
       <div className="min-h-screen bg-white">
