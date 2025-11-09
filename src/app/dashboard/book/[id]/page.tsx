@@ -392,16 +392,28 @@ export default function BookDetail() {
 
   // Check if we're viewing just the report (via hash)
   const reportHtml = book.versions[0]?.reports?.find((r: Report) => r.status === "completed")?.htmlContent;
+  const hasReport = book.versions[0]?.reports?.some((r: Report) => r.status === "completed");
 
   // If viewing report and HTML content exists, render just the HTML without wrapper
   // Only render after component is mounted to avoid SSR issues
   // IMPORTANT: This check must come AFTER all hooks are called to follow Rules of Hooks
-  if (mounted && isViewingReport && reportHtml) {
+  if (mounted && isViewingReport && hasReport) {
     return (
-      <div className="min-h-screen bg-white w-full">
+      <div className="min-h-screen bg-white w-full relative">
+        {/* Floating Back Button */}
+        <div className="fixed top-4 left-4 z-50">
+          <Button
+            variant="default"
+            onClick={() => router.push("/dashboard")}
+            className="bg-white hover:bg-gray-50 text-gray-900 shadow-lg border border-gray-200"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
         <iframe
           ref={reportContainerRef}
-          srcDoc={reportHtml}
+          src={`/api/books/${params.id}/report/view`}
           className="w-full h-screen border-0"
           sandbox="allow-scripts allow-same-origin"
           title="Report View"
@@ -699,21 +711,28 @@ export default function BookDetail() {
                                     Free
                                   </span>
                                 </div>
-                                {digestJob && digestJob.status === "completed" && digestJob.summary ? (
-                                  <div className="space-y-4">
-                                    <p className="text-gray-700">{digestJob.summary}</p>
-                                    {digestJob.shortSummary && digestJob.shortSummary !== digestJob.summary && (
-                                      <div>
-                                        <h4 className="font-semibold text-gray-700 mb-1">Short Summary:</h4>
-                                        <p className="text-gray-600 text-sm">{digestJob.shortSummary}</p>
+                                {(() => {
+                                  // Priority: 1. Version summary (extracted from report HTML by API), 2. Digest job summary, 3. Fallback
+                                  if (version.summary) {
+                                    return <p className="text-gray-700">{version.summary}</p>;
+                                  }
+                                  
+                                  if (digestJob && digestJob.status === "completed" && digestJob.summary) {
+                                    return (
+                                      <div className="space-y-4">
+                                        <p className="text-gray-700">{digestJob.summary}</p>
+                                        {digestJob.shortSummary && digestJob.shortSummary !== digestJob.summary && (
+                                          <div>
+                                            <h4 className="font-semibold text-gray-700 mb-1">Short Summary:</h4>
+                                            <p className="text-gray-600 text-sm">{digestJob.shortSummary}</p>
+                                          </div>
+                                        )}
                                       </div>
-                                    )}
-                                  </div>
-                                ) : version.summary ? (
-                                  <p className="text-gray-700">{version.summary}</p>
-                                ) : (
-                                  <p className="text-gray-500 italic">No summary available yet.</p>
-                                )}
+                                    );
+                                  }
+                                  
+                                  return <p className="text-gray-500 italic">No summary available yet.</p>;
+                                })()}
                               </div>
                             )}
 

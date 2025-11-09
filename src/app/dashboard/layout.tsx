@@ -1,5 +1,4 @@
-// Force dynamic rendering - dashboard page requires authentication
-export const dynamic = 'force-dynamic';
+"use client";
 
 import DashboardLayout from "@/components/dashboard-layout";
 
