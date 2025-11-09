@@ -71,6 +71,22 @@ export async function GET(
       return NextResponse.json({ error: "No book version found" }, { status: 404 });
     }
 
+    // Get all reports for this version (for debugging)
+    const allReports = await db
+      .select({
+        id: reports.id,
+        status: reports.status,
+        htmlContent: reports.htmlContent,
+        requestedAt: reports.requestedAt,
+        completedAt: reports.completedAt,
+      })
+      .from(reports)
+      .where(eq(reports.bookVersionId, latestVersion.id))
+      .orderBy(desc(reports.requestedAt));
+
+    console.log(`[Report View] Found ${allReports.length} report(s) for version ${latestVersion.id}:`, 
+      allReports.map(r => ({ id: r.id, status: r.status, hasHtml: !!r.htmlContent })));
+
     // Get the latest completed report for this version
     const [report] = await db
       .select({
@@ -86,8 +102,32 @@ export async function GET(
       .limit(1);
 
     if (!report || !report.htmlContent) {
+      // Provide more detailed error information
+      const hasAnyReport = allReports.length > 0;
+      const hasCompletedReport = allReports.some(r => r.status === "completed");
+      const hasReportWithoutHtml = allReports.some(r => r.status === "completed" && !r.htmlContent);
+      
+      let errorMessage = "No completed report found.";
+      if (!hasAnyReport) {
+        errorMessage += " No reports exist for this book version. Please upload a report or run the seed script.";
+      } else if (!hasCompletedReport) {
+        const statuses = allReports.map(r => r.status).join(", ");
+        errorMessage += ` Found ${allReports.length} report(s) but none are completed. Status(es): ${statuses}`;
+      } else if (hasReportWithoutHtml) {
+        errorMessage += " Report exists but has no HTML content. Please re-upload the report.";
+      } else {
+        errorMessage += " The report may still be processing or hasn't been uploaded yet.";
+      }
+      
       return NextResponse.json(
-        { error: "No completed report found. The report may still be processing or hasn't been uploaded yet." },
+        { 
+          error: errorMessage,
+          debug: {
+            versionId: latestVersion.id,
+            reportCount: allReports.length,
+            reportStatuses: allReports.map(r => ({ id: r.id, status: r.status, hasHtml: !!r.htmlContent }))
+          }
+        },
         { status: 404 }
       );
     }
