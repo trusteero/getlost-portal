@@ -84,6 +84,12 @@ export default function BookDetail() {
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const [isViewingReport, setIsViewingReport] = useState(false);
   const reportContainerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Set mounted flag after component mounts (client-side only)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Execute scripts in report HTML after rendering
   useEffect(() => {
@@ -454,7 +460,8 @@ export default function BookDetail() {
   }, [isViewingReport, reportHtml]);
 
   // If viewing report and HTML content exists, render just the HTML without wrapper
-  if (isViewingReport && reportHtml) {
+  // Only render after component is mounted to avoid SSR issues
+  if (mounted && isViewingReport && reportHtml) {
     return (
       <div className="min-h-screen bg-white">
         <div ref={reportContainerRef} className="w-full" dangerouslySetInnerHTML={{ __html: reportContent.htmlWithoutScripts }} />
