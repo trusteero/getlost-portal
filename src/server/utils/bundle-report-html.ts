@@ -35,20 +35,67 @@ export async function bundleReportHtml(
       
       try {
         // Resolve image path relative to the base directory
-        const resolvedImagePath = path.resolve(reportDir, imagePath);
+        let resolvedImagePath: string | null = null;
         
-        // Security check: ensure the image is within the base directory
-        const reportDirResolved = path.resolve(reportDir);
-        if (!resolvedImagePath.startsWith(reportDirResolved)) {
-          console.warn(`[Bundle Report] Skipping image outside report directory: ${imagePath}`);
+        // Try multiple search strategies:
+        // 1. Relative to HTML file directory
+        const tryPath1 = path.resolve(reportDir, imagePath);
+        if (await fs.access(tryPath1).then(() => true).catch(() => false)) {
+          resolvedImagePath = tryPath1;
+        } else {
+          // 2. Try in parent directory (common structure)
+          const parentDir = path.dirname(reportDir);
+          const tryPath2 = path.resolve(parentDir, imagePath);
+          if (await fs.access(tryPath2).then(() => true).catch(() => false)) {
+            resolvedImagePath = tryPath2;
+          } else {
+            // 3. Try searching in subdirectories of reportDir
+            try {
+              const entries = await fs.readdir(reportDir, { withFileTypes: true });
+              for (const entry of entries) {
+                if (entry.isDirectory()) {
+                  const tryPath3 = path.resolve(reportDir, entry.name, imagePath);
+                  if (await fs.access(tryPath3).then(() => true).catch(() => false)) {
+                    resolvedImagePath = tryPath3;
+                    break;
+                  }
+                }
+              }
+            } catch {
+              // Directory read failed, continue
+            }
+            
+            // 4. Try searching in parent directory's subdirectories
+            if (!resolvedImagePath) {
+              try {
+                const parentEntries = await fs.readdir(parentDir, { withFileTypes: true });
+                for (const entry of parentEntries) {
+                  if (entry.isDirectory()) {
+                    const tryPath4 = path.resolve(parentDir, entry.name, imagePath);
+                    if (await fs.access(tryPath4).then(() => true).catch(() => false)) {
+                      resolvedImagePath = tryPath4;
+                      break;
+                    }
+                  }
+                }
+              } catch {
+                // Directory read failed, continue
+              }
+            }
+          }
+        }
+        
+        if (!resolvedImagePath) {
+          console.warn(`[Bundle Report] Image not found: ${imagePath} (searched relative to ${reportDir})`);
           continue;
         }
         
-        // Check if file exists
-        try {
-          await fs.access(resolvedImagePath);
-        } catch {
-          console.warn(`[Bundle Report] Image not found: ${resolvedImagePath}`);
+        // Security check: ensure the image is within a safe directory
+        const reportDirResolved = path.resolve(reportDir);
+        const parentDirResolved = path.resolve(path.dirname(reportDir));
+        if (!resolvedImagePath.startsWith(reportDirResolved) && 
+            !resolvedImagePath.startsWith(parentDirResolved)) {
+          console.warn(`[Bundle Report] Skipping image outside safe directories: ${imagePath}`);
           continue;
         }
         
@@ -156,24 +203,18 @@ export async function bundleReportHtmlFromContent(
       // Try to find the image in any of the search directories
       let imageBuffer: Buffer | null = null;
       let mimeType = 'image/jpeg';
+      let foundImagePath: string | null = null;
       
       for (const searchDir of searchDirs) {
         try {
-          const resolvedImagePath = path.resolve(searchDir, imagePath);
-          
-          // Security check
-          const searchDirResolved = path.resolve(searchDir);
-          if (!resolvedImagePath.startsWith(searchDirResolved)) {
-            continue;
-          }
-          
-          // Check if file exists
-          try {
-            await fs.access(resolvedImagePath);
-            imageBuffer = await fs.readFile(resolvedImagePath);
+          // Try direct path
+          const tryPath1 = path.resolve(searchDir, imagePath);
+          if (await fs.access(tryPath1).then(() => true).catch(() => false)) {
+            imageBuffer = await fs.readFile(tryPath1);
+            foundImagePath = tryPath1;
             
             // Determine MIME type
-            const ext = path.extname(resolvedImagePath).toLowerCase();
+            const ext = path.extname(tryPath1).toLowerCase();
             switch (ext) {
               case '.png':
                 mimeType = 'image/png';
@@ -192,10 +233,46 @@ export async function bundleReportHtmlFromContent(
               default:
                 mimeType = 'image/jpeg';
             }
-            
-            break; // Found the image, stop searching
+            break;
+          }
+          
+          // Try in subdirectories
+          try {
+            const entries = await fs.readdir(searchDir, { withFileTypes: true });
+            for (const entry of entries) {
+              if (entry.isDirectory()) {
+                const tryPath2 = path.resolve(searchDir, entry.name, imagePath);
+                if (await fs.access(tryPath2).then(() => true).catch(() => false)) {
+                  imageBuffer = await fs.readFile(tryPath2);
+                  foundImagePath = tryPath2;
+                  
+                  // Determine MIME type
+                  const ext = path.extname(tryPath2).toLowerCase();
+                  switch (ext) {
+                    case '.png':
+                      mimeType = 'image/png';
+                      break;
+                    case '.gif':
+                      mimeType = 'image/gif';
+                      break;
+                    case '.webp':
+                      mimeType = 'image/webp';
+                      break;
+                    case '.svg':
+                      mimeType = 'image/svg+xml';
+                      break;
+                    case '.jpg':
+                    case '.jpeg':
+                    default:
+                      mimeType = 'image/jpeg';
+                  }
+                  break;
+                }
+              }
+            }
+            if (imageBuffer) break;
           } catch {
-            // File doesn't exist in this directory, try next
+            // Directory read failed, try next search directory
             continue;
           }
         } catch {
