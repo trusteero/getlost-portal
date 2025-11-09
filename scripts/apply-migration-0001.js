@@ -33,7 +33,7 @@ try {
   // Execute each statement
   for (let i = 0; i < statements.length; i++) {
     const stmt = statements[i];
-    if (stmt.trim()) {
+    if (stmt && stmt.trim()) {
       try {
         console.log(`  Executing statement ${i + 1}/${statements.length}...`);
         db.exec(stmt);
