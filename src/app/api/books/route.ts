@@ -6,6 +6,7 @@ import { eq, desc } from "drizzle-orm";
 import { triggerBookDigest } from "@/server/services/bookdigest";
 import { promises as fs } from "fs";
 import path from "path";
+import { findMatchingReport } from "@/server/utils/demo-reports";
 
 export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request);
@@ -207,6 +208,65 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       // Log error but don't fail the book creation
       console.error("Failed to trigger BookDigest job:", error);
+    }
+
+    // Demo mode: Check if there's a matching report PDF in book-reports folder
+    try {
+      const matchingReportPath = await findMatchingReport(fileName, title);
+      
+      if (matchingReportPath) {
+        console.log(`[Demo] Found matching report for "${fileName}", linking it to book ${createdBook.id}`);
+        
+        // Read the report PDF
+        const reportBuffer = await fs.readFile(matchingReportPath);
+        
+        // Save report to report storage
+        const reportStoragePath = process.env.REPORT_STORAGE_PATH || './uploads/reports';
+        const reportDir = path.resolve(reportStoragePath);
+        await fs.mkdir(reportDir, { recursive: true });
+        
+        const reportId = crypto.randomUUID();
+        const reportFileName = `${reportId}.pdf`;
+        const reportFilePath = path.join(reportDir, reportFileName);
+        
+        // Copy report PDF to storage
+        await fs.writeFile(reportFilePath, reportBuffer);
+        
+        // Create completed report record
+        await db.insert(reports).values({
+          id: reportId,
+          bookVersionId: newVersion[0]!.id,
+          status: "completed",
+          requestedAt: new Date(),
+          completedAt: new Date(),
+          pdfUrl: `/api/books/${createdBook.id}/report/download`,
+        });
+        
+        // Unlock the manuscript-report feature
+        await db
+          .insert(bookFeatures)
+          .values({
+            bookId: createdBook.id,
+            featureType: "manuscript-report",
+            status: "unlocked",
+            unlockedAt: new Date(),
+            purchasedAt: new Date(),
+            price: 0, // Free in demo mode
+          })
+          .onConflictDoUpdate({
+            target: [bookFeatures.bookId, bookFeatures.featureType],
+            set: {
+              status: "unlocked",
+              unlockedAt: new Date(),
+              updatedAt: new Date(),
+            },
+          });
+        
+        console.log(`[Demo] Report linked and feature unlocked for book ${createdBook.id}`);
+      }
+    } catch (error) {
+      // Log error but don't fail the book creation
+      console.error("[Demo] Failed to link matching report:", error);
     }
 
     return NextResponse.json({
