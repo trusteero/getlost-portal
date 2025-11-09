@@ -125,7 +125,8 @@ export const ManuscriptCard = ({
         setIsSummaryOpen(!isSummaryOpen);
         break;
       case 'manuscript-report':
-        router.push(`/dashboard/book/${id}#report`);
+        // Use window.location.href to ensure hash navigation works properly
+        window.location.href = `/dashboard/book/${id}#report`;
         break;
       case 'marketing-assets':
         router.push(`/dashboard/book/${id}/marketing-assets`);
