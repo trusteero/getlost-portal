@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
-import { books, bookVersions, reports } from "@/server/db/schema";
+import { books, bookVersions, reports, bookFeatures } from "@/server/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { bundleReportHtmlFromContent } from "@/server/utils/bundle-report-html";
 import { promises as fs } from "fs";
@@ -12,6 +12,8 @@ import path from "path";
  * Returns the report HTML content directly (not as JSON)
  * This avoids JSON response size limits for large HTML files
  * Bundles images on-the-fly if not already bundled
+ * 
+ * Requires: manuscript-report feature to be unlocked
  */
 export async function GET(
   request: NextRequest,
@@ -36,6 +38,25 @@ export async function GET(
 
     if (!book || book.userId !== session.user.id) {
       return NextResponse.json({ error: "Book not found" }, { status: 404 });
+    }
+
+    // Check if manuscript-report feature is unlocked
+    const [feature] = await db
+      .select()
+      .from(bookFeatures)
+      .where(
+        and(
+          eq(bookFeatures.bookId, bookId),
+          eq(bookFeatures.featureType, "manuscript-report")
+        )
+      )
+      .limit(1);
+
+    if (!feature || feature.status === "locked") {
+      return NextResponse.json(
+        { error: "Feature not unlocked. Please purchase the manuscript report first." },
+        { status: 403 }
+      );
     }
 
     // Get the latest version of the book
@@ -65,7 +86,10 @@ export async function GET(
       .limit(1);
 
     if (!report || !report.htmlContent) {
-      return NextResponse.json({ error: "No completed report found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "No completed report found. The report may still be processing or hasn't been uploaded yet." },
+        { status: 404 }
+      );
     }
 
     // Check if HTML already has embedded images (data URLs)
