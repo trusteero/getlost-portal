@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, User, Mail, Shield, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, User, Mail, Shield, Save, Loader2, Trash2, AlertTriangle } from "lucide-react";
 
 // Force dynamic rendering since we need auth check
 export const dynamic = 'force-dynamic';
@@ -18,6 +18,8 @@ export default function Settings() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [deletingBooks, setDeletingBooks] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -97,6 +99,42 @@ export default function Settings() {
       setErrors({ general: "Failed to save settings" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteAllBooks = async () => {
+    if (!showDeleteConfirm) {
+      setShowDeleteConfirm(true);
+      return;
+    }
+
+    setDeletingBooks(true);
+    setErrors({});
+    
+    try {
+      const response = await fetch("/api/user/books", {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setErrors({ deleteBooks: data.error || "Failed to delete book data" });
+        setShowDeleteConfirm(false);
+        return;
+      }
+
+      const data = await response.json();
+      setShowDeleteConfirm(false);
+      
+      // Redirect to dashboard after successful deletion
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 2000);
+    } catch (error) {
+      setErrors({ deleteBooks: "Failed to delete book data" });
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeletingBooks(false);
     }
   };
 
@@ -270,6 +308,81 @@ export default function Settings() {
                   </Button>
                 </div>
               </form>
+            </CardContent>
+          </Card>
+
+          {/* Delete All Book Data */}
+          <Card className="border-red-200">
+            <CardHeader>
+              <CardTitle className="text-red-600">Danger Zone</CardTitle>
+              <CardDescription>Permanently delete all your book data</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-red-900 mb-2">
+                        Delete All Book Data
+                      </h3>
+                      <p className="text-sm text-red-800 mb-3">
+                        This will permanently delete all your manuscripts, reports, marketing assets, 
+                        book covers, landing pages, and all related data. This action cannot be undone.
+                      </p>
+                      {showDeleteConfirm && (
+                        <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded">
+                          <p className="text-sm font-medium text-red-900 mb-2">
+                            Are you sure you want to delete all your book data?
+                          </p>
+                          <p className="text-xs text-red-700">
+                            This action is permanent and cannot be undone.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {errors.deleteBooks && (
+                  <div className="bg-red-50 text-red-800 p-3 rounded-md text-sm">
+                    {errors.deleteBooks}
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3">
+                  {showDeleteConfirm && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowDeleteConfirm(false);
+                        setErrors({});
+                      }}
+                      disabled={deletingBooks}
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteAllBooks}
+                    disabled={deletingBooks}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    {deletingBooks ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        {showDeleteConfirm ? "Confirm Delete All Books" : "Delete All Book Data"}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
