@@ -52,7 +52,7 @@ export async function POST(
       
       // Bundle images into HTML as base64 data URLs
       const reportStoragePath = process.env.REPORT_STORAGE_PATH || './uploads/reports';
-      const bookReportsPath = process.env.BOOK_REPORTS_PATH || "/Users/eerogetlost/book-reports";
+      const bookReportsPath = process.env.BOOK_REPORTS_PATH; // Only use if env var is set
       
       // Build search directories for images
       const searchDirs: string[] = [];
@@ -65,20 +65,22 @@ export async function POST(
         // Directory doesn't exist, skip
       }
       
-      // 2. Book reports directory
-      try {
-        await fs.access(bookReportsPath);
-        searchDirs.push(bookReportsPath);
-        
-        // Also try subdirectories
-        const entries = await fs.readdir(bookReportsPath, { withFileTypes: true });
-        for (const entry of entries) {
-          if (entry.isDirectory()) {
-            searchDirs.push(path.join(bookReportsPath, entry.name));
+      // 2. Book reports directory (only if env var is set)
+      if (bookReportsPath) {
+        try {
+          await fs.access(bookReportsPath);
+          searchDirs.push(bookReportsPath);
+          
+          // Also try subdirectories
+          const entries = await fs.readdir(bookReportsPath, { withFileTypes: true });
+          for (const entry of entries) {
+            if (entry.isDirectory()) {
+              searchDirs.push(path.join(bookReportsPath, entry.name));
+            }
           }
+        } catch {
+          // Directory doesn't exist, skip
         }
-      } catch {
-        // Directory doesn't exist, skip
       }
       
       // Bundle the HTML
