@@ -12,6 +12,9 @@ import { BookOpen, Plus, RefreshCw, Users, Upload, X, Loader2, FileText } from "
 import { CondensedLibrary } from "@/components/condensed-library";
 import { ManuscriptCard } from "@/components/manuscript-card";
 
+// Force dynamic rendering to prevent prerendering errors
+export const dynamic = 'force-dynamic';
+
 interface Book {
   id: string;
   title: string;
