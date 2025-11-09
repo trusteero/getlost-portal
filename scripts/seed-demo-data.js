@@ -8,7 +8,7 @@
  * 2. Reads and stores them in the database linked to demo book titles
  * 3. Creates demo marketing assets, covers, and landing pages
  * 
- * Note: Images will be bundled on-the-fly when reports are viewed
+ * Note: Images are bundled into HTML as base64 data URLs before storing in database
  * 
  * Usage:
  *   node scripts/seed-demo-data.js [--book-title "Book Title"] [--all]
@@ -100,8 +100,129 @@ function getOrCreateBookVersion(db, bookId) {
 }
 
 /**
+ * Escape special regex characters
+ */
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Bundle report HTML with embedded images (JavaScript version)
+ */
+async function bundleReportHtmlInline(htmlFilePath, htmlContent) {
+  try {
+    const reportDir = path.dirname(htmlFilePath);
+    
+    // Find all image references in the HTML
+    const imageRegex = /(src|href|background-image:\s*url)\(?["']?([^"')]+\.(jpg|jpeg|png|gif|webp|svg))["']?\)?/gi;
+    const matches = Array.from(htmlContent.matchAll(imageRegex));
+    
+    let bundledHtml = htmlContent;
+    const processedImages = new Set();
+    
+    for (const match of matches) {
+      const imagePath = match[2];
+      
+      // Skip if undefined, already processed, or absolute URL/data URL
+      if (!imagePath || processedImages.has(imagePath) || 
+          imagePath.startsWith('http://') || imagePath.startsWith('https://') || 
+          imagePath.startsWith('data:')) {
+        continue;
+      }
+      
+      try {
+        // Resolve image path relative to report directory
+        const resolvedImagePath = path.resolve(reportDir, imagePath);
+        
+        // Security check: ensure image is within report directory
+        const reportDirResolved = path.resolve(reportDir);
+        if (!resolvedImagePath.startsWith(reportDirResolved)) {
+          console.warn(`  ⚠️  Skipping image outside report directory: ${imagePath}`);
+          continue;
+        }
+        
+        // Check if file exists
+        try {
+          await fs.access(resolvedImagePath);
+        } catch {
+          console.warn(`  ⚠️  Image not found: ${resolvedImagePath}`);
+          continue;
+        }
+        
+        // Read image file
+        const imageBuffer = await fs.readFile(resolvedImagePath);
+        const imageBase64 = imageBuffer.toString('base64');
+        
+        // Determine MIME type from extension
+        const ext = path.extname(resolvedImagePath).toLowerCase();
+        let mimeType = 'image/jpeg';
+        
+        switch (ext) {
+          case '.png':
+            mimeType = 'image/png';
+            break;
+          case '.gif':
+            mimeType = 'image/gif';
+            break;
+          case '.webp':
+            mimeType = 'image/webp';
+            break;
+          case '.svg':
+            mimeType = 'image/svg+xml';
+            break;
+          case '.jpg':
+          case '.jpeg':
+          default:
+            mimeType = 'image/jpeg';
+        }
+        
+        // Create data URL
+        const dataUrl = `data:${mimeType};base64,${imageBase64}`;
+        
+        // Replace all occurrences of this image path in the HTML
+        const escapedPath = escapeRegex(imagePath);
+        const patterns = [
+          new RegExp(`src=["']${escapedPath}["']`, 'gi'),
+          new RegExp(`href=["']${escapedPath}["']`, 'gi'),
+          new RegExp(`background-image:\\s*url\\(["']?${escapedPath}["']?\\)`, 'gi'),
+          new RegExp(`url\\(["']?${escapedPath}["']?\\)`, 'gi'),
+        ];
+        
+        for (const pattern of patterns) {
+          bundledHtml = bundledHtml.replace(pattern, (match) => {
+            if (match.includes('src=')) {
+              return match.replace(imagePath, dataUrl);
+            } else if (match.includes('href=')) {
+              return match.replace(imagePath, dataUrl);
+            } else if (match.includes('background-image')) {
+              return match.replace(imagePath, dataUrl);
+            } else if (match.includes('url(')) {
+              return match.replace(imagePath, dataUrl);
+            }
+            return match;
+          });
+        }
+        
+        processedImages.add(imagePath);
+        console.log(`  ✅ Embedded image: ${imagePath} (${(imageBuffer.length / 1024).toFixed(1)}KB)`);
+      } catch (error) {
+        console.error(`  ❌ Failed to embed image ${imagePath}:`, error.message);
+        // Continue processing other images
+      }
+    }
+    
+    console.log(`  ✅ Bundled ${processedImages.size} image(s) into HTML`);
+    return bundledHtml;
+  } catch (error) {
+    console.error(`  ❌ Error bundling HTML:`, error);
+    // Return original HTML if bundling fails
+    return htmlContent;
+  }
+}
+
+/**
  * Seed report data for a book
- * Note: Images will be bundled on-the-fly when the report is viewed
+ * Bundles images into HTML as base64 data URLs before storing
  */
 async function seedReport(db, bookId, bookVersionId, htmlFilePath, bookTitle) {
   console.log(`\n📄 Seeding report for: ${bookTitle}`);
@@ -109,7 +230,11 @@ async function seedReport(db, bookId, bookVersionId, htmlFilePath, bookTitle) {
   try {
     // Read HTML file
     const htmlBuffer = await fs.readFile(htmlFilePath);
-    const htmlContent = htmlBuffer.toString('utf-8');
+    let htmlContent = htmlBuffer.toString('utf-8');
+    
+    // Bundle images into HTML
+    console.log(`  Bundling images...`);
+    htmlContent = await bundleReportHtmlInline(htmlFilePath, htmlContent);
     
     // Check if report already exists
     const existingReport = db.prepare(`
@@ -127,7 +252,7 @@ async function seedReport(db, bookId, bookVersionId, htmlFilePath, bookTitle) {
         SET htmlContent = ?, status = 'completed', completedAt = ?
         WHERE id = ?
       `).run(htmlContent, Math.floor(Date.now() / 1000), existingReport.id);
-      console.log(`  ✅ Updated existing report: ${existingReport.id}`);
+      console.log(`  ✅ Updated existing report with bundled images: ${existingReport.id}`);
     } else {
       // Create new report
       const reportId = randomUUID();
@@ -144,7 +269,7 @@ async function seedReport(db, bookId, bookVersionId, htmlFilePath, bookTitle) {
         Math.floor(Date.now() / 1000),
         'demo@getlost.com'
       );
-      console.log(`  ✅ Created new report: ${reportId}`);
+      console.log(`  ✅ Created new report with bundled images: ${reportId}`);
     }
     
     return true;
