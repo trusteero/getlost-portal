@@ -89,6 +89,12 @@ export default function BookDetail() {
   // Set mounted flag after component mounts (client-side only)
   useEffect(() => {
     setMounted(true);
+    
+    // Check hash after mount (in case navigation happened before mount)
+    if (typeof window !== 'undefined' && window.location.hash === '#report') {
+      setIsViewingReport(true);
+      setActiveTab("author");
+    }
   }, []);
 
   useEffect(() => {
@@ -100,15 +106,26 @@ export default function BookDetail() {
     }
 
     // Check URL hash to open specific tab or view report only
-    if (typeof window !== 'undefined') {
-      if (window.location.hash === '#report') {
-        setIsViewingReport(true);
-        setActiveTab("author");
+    const checkHash = () => {
+      if (typeof window !== 'undefined') {
+        if (window.location.hash === '#report') {
+          setIsViewingReport(true);
+          setActiveTab("author");
+        } else {
+          setIsViewingReport(false);
+        }
       }
-    }
+    };
+
+    // Check hash immediately
+    checkHash();
+
+    // Listen for hash changes (e.g., when navigating with router.push)
+    window.addEventListener('hashchange', checkHash);
 
     // Cleanup on unmount
     return () => {
+      window.removeEventListener('hashchange', checkHash);
       if (pollingRef.current) {
         clearTimeout(pollingRef.current);
       }
@@ -140,6 +157,8 @@ export default function BookDetail() {
           if (typeof window !== 'undefined' && window.location.hash === '#report') {
             setIsViewingReport(true);
             setActiveTab("author");
+          } else {
+            setIsViewingReport(false);
           }
         }
       }
