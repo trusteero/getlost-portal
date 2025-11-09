@@ -197,7 +197,13 @@ export default function Dashboard() {
       setUploadTitle("");
       setUploadFile(null);
       await fetchBooks();
-      router.push(`/dashboard/book/${data.bookId}`);
+      // Scroll to the newly uploaded book
+      setTimeout(() => {
+        const element = document.getElementById(`detail-${data.bookId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
     } catch (error) {
       setUploadError("Failed to create book. Please try again.");
     } finally {
