@@ -114,14 +114,18 @@ async function bundleReportHtmlInline(htmlFilePath, htmlContent) {
     const reportDir = path.dirname(htmlFilePath);
     
     // Find all image references in the HTML
-    const imageRegex = /(src|href|background-image:\s*url)\(?["']?([^"')]+\.(jpg|jpeg|png|gif|webp|svg))["']?\)?/gi;
+    // Match: src="image.jpg", src='image.png', href="image.gif", background-image: url(image.jpg), url(image.png)
+    const imageRegex = /(src|href)\s*=\s*["']([^"']+\.(jpg|jpeg|png|gif|webp|svg))["']|background-image:\s*url\(["']?([^"')]+\.(jpg|jpeg|png|gif|webp|svg))["']?\)/gi;
     const matches = Array.from(htmlContent.matchAll(imageRegex));
     
     let bundledHtml = htmlContent;
     const processedImages = new Set();
     
+    console.log(`  Found ${matches.length} image reference(s) in HTML`);
+    
     for (const match of matches) {
-      const imagePath = match[2];
+      // Extract image path from match (could be in different capture groups)
+      const imagePath = match[2] || match[4] || match[5];
       
       // Skip if undefined, already processed, or absolute URL/data URL
       if (!imagePath || processedImages.has(imagePath) || 
@@ -132,20 +136,75 @@ async function bundleReportHtmlInline(htmlFilePath, htmlContent) {
       
       try {
         // Resolve image path relative to report directory
-        const resolvedImagePath = path.resolve(reportDir, imagePath);
+        let resolvedImagePath = null;
         
-        // Security check: ensure image is within report directory
-        const reportDirResolved = path.resolve(reportDir);
-        if (!resolvedImagePath.startsWith(reportDirResolved)) {
-          console.warn(`  ⚠️  Skipping image outside report directory: ${imagePath}`);
+        // Try multiple search strategies:
+        // 1. Relative to HTML file directory (most common)
+        const tryPath1 = path.resolve(reportDir, imagePath);
+        try {
+          await fs.access(tryPath1);
+          resolvedImagePath = tryPath1;
+        } catch {
+          // 2. Try in parent directory
+          const parentDir = path.dirname(reportDir);
+          const tryPath2 = path.resolve(parentDir, imagePath);
+          try {
+            await fs.access(tryPath2);
+            resolvedImagePath = tryPath2;
+          } catch {
+            // 3. Try searching in subdirectories of reportDir
+            try {
+              const entries = await fs.readdir(reportDir, { withFileTypes: true });
+              for (const entry of entries) {
+                if (entry.isDirectory()) {
+                  const tryPath3 = path.resolve(reportDir, entry.name, imagePath);
+                  try {
+                    await fs.access(tryPath3);
+                    resolvedImagePath = tryPath3;
+                    break;
+                  } catch {
+                    // Continue searching
+                  }
+                }
+              }
+            } catch {
+              // Directory read failed
+            }
+            
+            // 4. Try searching in parent directory's subdirectories
+            if (!resolvedImagePath) {
+              try {
+                const parentEntries = await fs.readdir(parentDir, { withFileTypes: true });
+                for (const entry of parentEntries) {
+                  if (entry.isDirectory()) {
+                    const tryPath4 = path.resolve(parentDir, entry.name, imagePath);
+                    try {
+                      await fs.access(tryPath4);
+                      resolvedImagePath = tryPath4;
+                      break;
+                    } catch {
+                      // Continue searching
+                    }
+                  }
+                }
+              } catch {
+                // Directory read failed
+              }
+            }
+          }
+        }
+        
+        if (!resolvedImagePath) {
+          console.warn(`  ⚠️  Image not found: ${imagePath} (searched in ${reportDir} and subdirectories)`);
           continue;
         }
         
-        // Check if file exists
-        try {
-          await fs.access(resolvedImagePath);
-        } catch {
-          console.warn(`  ⚠️  Image not found: ${resolvedImagePath}`);
+        // Security check: ensure image is within safe directories
+        const reportDirResolved = path.resolve(reportDir);
+        const parentDirResolved = path.resolve(path.dirname(reportDir));
+        if (!resolvedImagePath.startsWith(reportDirResolved) && 
+            !resolvedImagePath.startsWith(parentDirResolved)) {
+          console.warn(`  ⚠️  Skipping image outside safe directories: ${imagePath}`);
           continue;
         }
         
