@@ -6,6 +6,7 @@ import { eq, desc, and, ne } from "drizzle-orm";
 import { triggerBookDigest } from "@/server/services/bookdigest";
 import { promises as fs } from "fs";
 import path from "path";
+import { randomUUID } from "crypto";
 import { findSeededReportByFilename, linkSeededReportToBookVersion } from "@/server/utils/find-seeded-report";
 
 export async function GET(request: NextRequest) {
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate book ID first
-    const bookId = crypto.randomUUID();
+    const bookId = randomUUID();
 
     // Handle cover image upload if provided
     let coverImageUrl: string | null = null;
