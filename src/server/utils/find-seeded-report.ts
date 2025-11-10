@@ -131,7 +131,7 @@ export async function linkSeededReportToBookVersion(
   bookVersionId: string
 ): Promise<string> {
   // Create a new report linked to the book version
-  const newReportId = crypto.randomUUID();
+  const newReportId = randomUUID();
   
   await db.insert(reports).values({
     id: newReportId,
