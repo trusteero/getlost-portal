@@ -8,6 +8,14 @@ import { promises as fs } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import { findSeededReportByFilename, linkSeededReportToBookVersion } from "@/server/utils/find-seeded-report";
+import {
+  findSeededMarketingAssetByFilename,
+  findSeededBookCoverByFilename,
+  findSeededLandingPageByFilename,
+  linkSeededMarketingAssetToBook,
+  linkSeededBookCoverToBook,
+  linkSeededLandingPageToBook,
+} from "@/server/utils/find-seeded-assets";
 
 export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request);
@@ -234,6 +242,36 @@ export async function POST(request: NextRequest) {
       // Log error but don't fail the book creation
       console.error("[Demo] Failed to link seeded report:", error);
       console.error("[Demo] Error details:", error instanceof Error ? error.stack : String(error));
+    }
+
+    // Check if there are matching assets (marketing assets, covers, landing pages)
+    try {
+      const [marketingAsset, bookCover, landingPage] = await Promise.all([
+        findSeededMarketingAssetByFilename(fileName),
+        findSeededBookCoverByFilename(fileName),
+        findSeededLandingPageByFilename(fileName),
+      ]);
+
+      if (marketingAsset) {
+        console.log(`[Demo] Found seeded marketing asset for "${fileName}", linking it to book ${createdBook.id}`);
+        const linkedAssetId = await linkSeededMarketingAssetToBook(marketingAsset, createdBook.id);
+        console.log(`[Demo] Linked marketing asset ${linkedAssetId} to book ${createdBook.id}`);
+      }
+
+      if (bookCover) {
+        console.log(`[Demo] Found seeded book cover for "${fileName}", linking it to book ${createdBook.id}`);
+        const linkedCoverId = await linkSeededBookCoverToBook(bookCover, createdBook.id);
+        console.log(`[Demo] Linked book cover ${linkedCoverId} to book ${createdBook.id}`);
+      }
+
+      if (landingPage) {
+        console.log(`[Demo] Found seeded landing page for "${fileName}", linking it to book ${createdBook.id}`);
+        const linkedPageId = await linkSeededLandingPageToBook(landingPage, createdBook.id);
+        console.log(`[Demo] Linked landing page ${linkedPageId} to book ${createdBook.id}`);
+      }
+    } catch (error) {
+      // Log error but don't fail the book creation
+      console.error("[Demo] Failed to link seeded assets:", error);
     }
 
     return NextResponse.json({

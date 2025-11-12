@@ -7,7 +7,7 @@ import { randomUUID } from "crypto";
  * Normalize a filename for comparison
  * Removes common suffixes and extensions to extract core book name
  */
-function normalizeFilename(filename: string): string {
+export function normalizeFilename(filename: string): string {
   // Remove file extension
   let normalized = filename.toLowerCase().replace(/\.[^.]*$/, '');
   
@@ -24,7 +24,7 @@ function normalizeFilename(filename: string): string {
  * Extract core book name from filename
  * Removes common words and extracts the meaningful part
  */
-function extractCoreName(filename: string): string {
+export function extractCoreName(filename: string): string {
   const normalized = normalizeFilename(filename);
   
   // Try to extract meaningful words (at least 3 characters)
@@ -51,6 +51,7 @@ export async function findSeededReportByFilename(
   fileName: string
 ): Promise<typeof reports.$inferSelect | null> {
   const normalizedFileName = normalizeFilename(fileName);
+  const uploadedCore = extractCoreName(fileName);
   
   // Find system book
   const systemBook = await db
@@ -91,25 +92,41 @@ export async function findSeededReportByFilename(
     try {
       if (report.adminNotes) {
         const notes = JSON.parse(report.adminNotes);
-        if (notes.isSeeded && notes.seededFileName) {
-          const seededNormalized = normalizeFilename(notes.seededFileName);
-          const uploadedNormalized = normalizeFilename(fileName);
-          
-          // Extract core names for better matching
-          const seededCore = extractCoreName(notes.seededFileName);
-          const uploadedCore = extractCoreName(fileName);
-          
-          // Match if:
-          // 1. Normalized filenames match exactly or contain each other
-          // 2. Core names match (handles "everlasting-gift" vs "theeverlastinggiftbook")
-          if (seededNormalized === uploadedNormalized ||
-              seededNormalized.includes(uploadedNormalized) ||
-              uploadedNormalized.includes(seededNormalized) ||
+        if (notes.isSeeded) {
+          const candidates: string[] = [];
+          if (typeof notes.seededFileName === "string") {
+            candidates.push(notes.seededFileName);
+          }
+          if (Array.isArray(notes.uploadFileNames)) {
+            notes.uploadFileNames.forEach((alias: unknown) => {
+              if (typeof alias === "string") {
+                candidates.push(alias);
+              }
+            });
+          }
+
+          for (const candidate of candidates) {
+            const seededNormalized = normalizeFilename(candidate);
+
+            // Extract core names for better matching
+            const seededCore = extractCoreName(candidate);
+            
+            // Match if:
+            // 1. Normalized filenames match exactly or contain each other
+            // 2. Core names match (handles "everlasting-gift" vs "theeverlastinggiftbook")
+            if (
+              seededNormalized === normalizedFileName ||
+              seededNormalized.includes(normalizedFileName) ||
+              normalizedFileName.includes(seededNormalized) ||
               seededCore === uploadedCore ||
               seededCore.includes(uploadedCore) ||
-              uploadedCore.includes(seededCore)) {
-            console.log(`[Find Seeded Report] Matched "${fileName}" with seeded report "${notes.seededFileName}"`);
-            return report;
+              uploadedCore.includes(seededCore)
+            ) {
+              console.log(
+                `[Find Seeded Report] Matched "${fileName}" with seeded report alias "${candidate}"`
+              );
+              return report;
+            }
           }
         }
       }

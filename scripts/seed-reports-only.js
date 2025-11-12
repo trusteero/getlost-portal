@@ -318,6 +318,7 @@ async function storeSeededReport(db, reportFilePath, fileName, folderName, syste
         seededFileName: fileName,
         seededFolder: folderName,
         seededPath: reportFilePath,
+        uploadFileNames: [fileName],
         isSeeded: true
       }),
       Math.floor(Date.now() / 1000),
