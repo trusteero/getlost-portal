@@ -20,6 +20,7 @@
 		"start": "next start",
 		"typecheck": "tsc --noEmit",
 		"make-admin": "tsx src/scripts/make-admin.ts",
+		"create-user": "tsx src/scripts/create-user.ts",
 		"db:reset": "./scripts/reset-db.sh"
 	},
 	"dependencies": {
