@@ -3,7 +3,6 @@ import { isAdminFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { reports } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
-import { bundleReportHtmlFromContent } from "@/server/utils/bundle-report-html";
 import { promises as fs } from "fs";
 import path from "path";
 
@@ -27,6 +26,16 @@ export async function POST(
   }
 
   try {
+    const [existingReport] = await db
+      .select()
+      .from(reports)
+      .where(eq(reports.id, id))
+      .limit(1);
+
+    if (!existingReport) {
+      return NextResponse.json({ error: "Report not found" }, { status: 404 });
+    }
+
     const formData = await request.formData();
     const file = formData.get("file") as File;
 
@@ -43,59 +52,25 @@ export async function POST(
       return NextResponse.json({ error: "File must be HTML or PDF" }, { status: 400 });
     }
 
-    let htmlContent = null;
-    let pdfUrl = null;
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const reportStoragePath =
+      process.env.REPORT_STORAGE_PATH || "./uploads/reports";
+    const reportDir = path.resolve(reportStoragePath);
+    await fs.mkdir(reportDir, { recursive: true });
 
-    if (isHtml) {
-      // Read HTML content
-      let rawHtmlContent = await file.text();
-      
-      // Bundle images into HTML as base64 data URLs
-      const reportStoragePath = process.env.REPORT_STORAGE_PATH || './uploads/reports';
-      const bookReportsPath = process.env.BOOK_REPORTS_PATH; // Only use if env var is set
-      
-      // Build search directories for images
-      const searchDirs: string[] = [];
-      
-      // 1. Report storage directory
-      try {
-        await fs.access(reportStoragePath);
-        searchDirs.push(reportStoragePath);
-      } catch {
-        // Directory doesn't exist, skip
-      }
-      
-      // 2. Book reports directory (only if env var is set)
-      if (bookReportsPath) {
-        try {
-          await fs.access(bookReportsPath);
-          searchDirs.push(bookReportsPath);
-          
-          // Also try subdirectories
-          const entries = await fs.readdir(bookReportsPath, { withFileTypes: true });
-          for (const entry of entries) {
-            if (entry.isDirectory()) {
-              searchDirs.push(path.join(bookReportsPath, entry.name));
-            }
-          }
-        } catch {
-          // Directory doesn't exist, skip
-        }
-      }
-      
-      // Bundle the HTML
-      htmlContent = await bundleReportHtmlFromContent(rawHtmlContent, searchDirs);
-      
-      // Also save bundled HTML to file system
-      const reportDir = path.resolve(reportStoragePath);
-      await fs.mkdir(reportDir, { recursive: true });
-      const htmlFilePath = path.join(reportDir, `${id}.html`);
-      await fs.writeFile(htmlFilePath, htmlContent, 'utf-8');
-      console.log(`[Admin Upload] Bundled and saved HTML report: ${htmlFilePath}`);
-    } else if (isPdf) {
-      // TODO: Upload PDF to storage and get URL
-      pdfUrl = `/uploads/reports/${id}/${file.name}`;
-    }
+    const originalExt = path.extname(file.name);
+    const lowerExt = originalExt ? originalExt.toLowerCase() : "";
+    const targetExt = isHtml ? ".html" : lowerExt || (isPdf ? ".pdf" : "");
+    const storedFileName = `${id}${targetExt}`;
+    const storedFilePath = path.join(reportDir, storedFileName);
+    await fs.writeFile(storedFilePath, fileBuffer);
+
+    const htmlContent = isHtml
+      ? fileBuffer.toString("utf-8")
+      : existingReport.htmlContent;
+    const pdfUrl = isPdf
+      ? `/uploads/reports/${storedFileName}`
+      : existingReport.pdfUrl;
 
     // Update report
     await db

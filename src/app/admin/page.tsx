@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession, signOut } from "@/lib/auth-client";
-import { Clock, CheckCircle, AlertCircle, XCircle, Settings, LogOut, BookOpen, Users, RefreshCw, User, UserX, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Home, TrendingUp, Loader2, Image as ImageIcon, ExternalLink, Mail, MoreHorizontal, Shield, HelpCircle, FileUp } from "lucide-react";
+import { Clock, CheckCircle, AlertCircle, XCircle, Settings, LogOut, BookOpen, Users, RefreshCw, User, UserX, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Home, TrendingUp, Loader2, Image as ImageIcon, ExternalLink, Mail, MoreHorizontal, Shield, HelpCircle, FileUp, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -609,6 +609,12 @@ export default function AdminDashboard() {
             <Users className="w-4 h-4 mr-2" />
             Users
           </Button>
+          <Link href="/admin/system-books">
+            <Button variant="outline">
+              <FileText className="w-4 h-4 mr-2" />
+              System Books
+            </Button>
+          </Link>
         </div>
 
         {/* Books/Users Table */}
