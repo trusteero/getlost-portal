@@ -1,5 +1,6 @@
 services:
   # Web Service for Next.js application
+  # Updated: Fixed BETTER_AUTH_URL and NEXT_PUBLIC_APP_URL to use full URL
   - type: web
     name: getlostportal
     runtime: node
