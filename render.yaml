@@ -17,12 +17,12 @@ services:
         fromService:
           type: web
           name: getlostportal
-          property: host
+          property: url
       - key: NEXT_PUBLIC_APP_URL
         fromService:
           type: web
           name: getlostportal
-          property: host
+          property: url
       - key: AUTH_SECRET
         generateValue: true
       - key: TURSO_DATABASE_URL
