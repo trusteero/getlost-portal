@@ -7,6 +7,7 @@ services:
     plan: free # or starter/standard/pro as needed
     buildCommand: chmod +x scripts/render-build.sh && ./scripts/render-build.sh
     startCommand: npm run start
+    healthCheckPath: /
     envVars:
       - key: NODE_ENV
         value: production

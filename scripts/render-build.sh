@@ -9,11 +9,11 @@ npm ci
 
 # Generate database migrations
 echo "Generating database migrations..."
-npm run db:generate
+npm run db:generate || echo "Warning: db:generate failed, continuing..."
 
-# Run database migrations
-echo "Running database migrations..."
-npm run db:migrate
+# Skip database migrations during build (database not available)
+# Migrations will run at runtime via init scripts
+echo "Skipping database migrations during build (database only available at runtime)..."
 
 # Build the Next.js application
 echo "Building Next.js application..."
