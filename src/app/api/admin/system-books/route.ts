@@ -68,31 +68,16 @@ export async function GET(request: NextRequest) {
       }
       
       // Create system book
-      const { randomUUID } = await import("crypto");
-      const systemBookId = randomUUID();
       const now = Math.floor(Date.now() / 1000); // Unix timestamp
       await db.insert(books).values({
-        id: systemBookId,
         userId: systemUserId,
         title: "SYSTEM_SEEDED_REPORTS",
         description: "System book for seeded reports - not visible to users",
         createdAt: now,
         updatedAt: now,
-      });
+      } as any); // Type assertion to bypass Drizzle type checking for id with defaultFn
       
-      // Create system book version
-      const systemVersionId = randomUUID();
-      await db.insert(bookVersions).values({
-        id: systemVersionId,
-        bookId: systemBookId,
-        versionNumber: 1,
-        fileName: "SYSTEM_SEEDED_VERSION",
-        uploadedAt: now,
-      });
-      
-      console.log("[System Books] Created system book and version");
-      
-      // Re-fetch the system book
+      // Get the created system book ID
       const newSystemBook = await db
         .select()
         .from(books)
@@ -106,6 +91,18 @@ export async function GET(request: NextRequest) {
           message: "Failed to create system book. Please try again."
         }, { status: 500 });
       }
+      
+      const systemBookId = newSystemBook[0]!.id;
+      
+      // Create system book version
+      await db.insert(bookVersions).values({
+        bookId: systemBookId,
+        versionNumber: 1,
+        fileName: "SYSTEM_SEEDED_VERSION",
+        uploadedAt: now,
+      } as any); // Type assertion to bypass Drizzle type checking for id with defaultFn
+      
+      console.log("[System Books] Created system book and version");
       
       systemBook = newSystemBook;
     }
