@@ -35,8 +35,28 @@ function ensureAccountTableMigration() {
       `).get();
 
       if (!tableInfo) {
+        // Table doesn't exist - create it with Better Auth schema
+        console.log("🔄 [Better Auth] Creating account table with Better Auth schema...");
+        sqlite.exec(`
+          CREATE TABLE getlostportal_account (
+            id TEXT PRIMARY KEY,
+            account_id TEXT NOT NULL,
+            provider_id TEXT NOT NULL,
+            user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE,
+            access_token TEXT,
+            refresh_token TEXT,
+            id_token TEXT,
+            access_token_expires_at INTEGER,
+            refresh_token_expires_at INTEGER,
+            scope TEXT,
+            password TEXT,
+            created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+            updated_at INTEGER DEFAULT (unixepoch()) NOT NULL
+          )
+        `);
+        console.log("✅ [Better Auth] Account table created");
         sqlite.close();
-        return; // Table doesn't exist yet
+        return;
       }
 
       // Check if table already has id column (already migrated)
