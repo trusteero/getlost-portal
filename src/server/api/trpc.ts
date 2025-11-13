@@ -32,7 +32,7 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
 	});
 
 	return {
-		db,
+		db: db as typeof db, // Explicitly preserve the type
 		session,
 		...opts,
 	};
