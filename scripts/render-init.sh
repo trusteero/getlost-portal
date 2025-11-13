@@ -112,31 +112,54 @@ const fs = require('fs');
 const dbPath = '/var/data/db.sqlite';
 const migrationsFolder = path.join(process.cwd(), 'drizzle');
 
+console.log('📦 Migration script starting...');
+console.log('   Database path:', dbPath);
+console.log('   Migrations folder:', migrationsFolder);
+console.log('   Database exists:', fs.existsSync(dbPath));
+console.log('   Migrations folder exists:', fs.existsSync(migrationsFolder));
+
 if (!fs.existsSync(migrationsFolder)) {
   console.log('⚠️  No migrations folder found at:', migrationsFolder);
   process.exit(0);
 }
 
+// Ensure database directory exists
+const dbDir = path.dirname(dbPath);
+if (!fs.existsSync(dbDir)) {
+  console.log('📁 Creating database directory:', dbDir);
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+
 try {
+  // Run migrations
+  console.log('🔄 Running Drizzle migrations...');
   const sqlite = new Database(dbPath);
   const db = drizzle(sqlite);
   migrate(db, { migrationsFolder });
   sqlite.close();
   console.log('✅ Database migrations completed');
   
-  // Ensure Better Auth tables exist with correct schema
+  // Now ensure Better Auth session table has correct schema
+  console.log('🔍 Checking Better Auth session table...');
   const sqlite2 = new Database(dbPath);
   
-  // Check if session table exists and has correct schema
+  // Check if session table exists
   const sessionTable = sqlite2.prepare(\"SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_session'\").get();
+  
   if (sessionTable) {
+    console.log('   Session table exists, checking schema...');
     const columns = sqlite2.prepare(\"PRAGMA table_info(getlostportal_session)\").all();
-    const hasId = columns.some(col => col.name === 'id');
-    const hasSessionToken = columns.some(col => col.name === 'sessionToken');
+    const columnNames = columns.map(col => col.name);
+    console.log('   Current columns:', columnNames.join(', '));
+    
+    const hasId = columnNames.includes('id');
+    const hasSessionToken = columnNames.includes('sessionToken');
+    const hasToken = columnNames.includes('token');
+    const hasExpiresAt = columnNames.includes('expires_at');
     
     // If old schema (has sessionToken but no id), migrate it
     if (hasSessionToken && !hasId) {
-      console.log('🔄 Migrating session table to Better Auth schema...');
+      console.log('🔄 Migrating session table from NextAuth to Better Auth schema...');
       sqlite2.exec(\`
         CREATE TABLE IF NOT EXISTS getlostportal_session_new (
           id TEXT PRIMARY KEY,
@@ -177,8 +200,8 @@ try {
         ALTER TABLE getlostportal_session_new RENAME TO getlostportal_session;
       \`);
       console.log('✅ Session table migrated to Better Auth schema');
-    } else if (!hasId) {
-      // Table exists but doesn't have id column - recreate it
+    } else if (!hasId || !hasToken || !hasExpiresAt) {
+      // Table exists but doesn't have required Better Auth columns - recreate it
       console.log('🔄 Recreating session table with Better Auth schema...');
       sqlite2.exec(\`
         DROP TABLE IF EXISTS getlostportal_session;
@@ -193,11 +216,13 @@ try {
           user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
         )
       \`);
-      console.log('✅ Session table created with Better Auth schema');
+      console.log('✅ Session table recreated with Better Auth schema');
+    } else {
+      console.log('✅ Session table already has correct Better Auth schema');
     }
   } else {
     // Table doesn't exist - create it with Better Auth schema
-    console.log('🔄 Creating session table with Better Auth schema...');
+    console.log('🔄 Creating session table with Better Auth schema (table does not exist)...');
     sqlite2.exec(\`
       CREATE TABLE getlostportal_session (
         id TEXT PRIMARY KEY,
@@ -213,11 +238,21 @@ try {
     console.log('✅ Session table created with Better Auth schema');
   }
   
+  // Verify table was created
+  const verifyTable = sqlite2.prepare(\"SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_session'\").get();
+  if (verifyTable) {
+    const verifyColumns = sqlite2.prepare(\"PRAGMA table_info(getlostportal_session)\").all();
+    console.log('✅ Verified: Session table exists with', verifyColumns.length, 'columns');
+  } else {
+    console.error('❌ ERROR: Session table was not created!');
+  }
+  
   const tables = sqlite2.prepare(\"SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'getlostportal_%'\").all();
-  console.log('📋 Found', tables.length, 'getlostportal tables');
+  console.log('📋 Found', tables.length, 'getlostportal tables:', tables.map(t => t.name).join(', '));
   sqlite2.close();
 } catch (error) {
-  console.error('⚠️  Migration error:', error.message);
+  console.error('❌ Migration error:', error.message);
+  console.error('   Stack:', error.stack);
   // Don't fail - migrations might already be applied
   process.exit(0);
 }
