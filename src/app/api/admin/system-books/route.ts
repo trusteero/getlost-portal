@@ -44,12 +44,12 @@ export async function GET(request: NextRequest) {
         // Create system user
         const { randomUUID } = await import("crypto");
         systemUserId = randomUUID();
-        const now = Math.floor(Date.now() / 1000); // Unix timestamp
+        const now = new Date();
         await db.insert(users).values({
           email: "system@getlost.com",
           name: "System",
           role: "admin",
-          emailVerified: now, // Timestamp for verified email
+          emailVerified: now, // Date object for verified email
           createdAt: now,
           updatedAt: now,
         } as any); // Type assertion to bypass Drizzle type checking for id with defaultFn
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
       }
       
       // Create system book
-      const now = Math.floor(Date.now() / 1000); // Unix timestamp
+      const now = new Date();
       await db.insert(books).values({
         userId: systemUserId,
         title: "SYSTEM_SEEDED_REPORTS",
