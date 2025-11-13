@@ -8,7 +8,7 @@ services:
     region: oregon # or your preferred region
     plan: starter # Upgraded to Starter plan for persistent disk support
     buildCommand: chmod +x scripts/render-build.sh && ./scripts/render-build.sh
-    startCommand: npm run start
+    startCommand: chmod +x scripts/render-init.sh && ./scripts/render-init.sh && npm run start
     healthCheckPath: /
     envVars:
       - key: NODE_ENV
