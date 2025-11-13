@@ -29,6 +29,28 @@ if (dbPath.startsWith('file://')) {
 const DATABASE_PATH = dbPath;
 const BOOK_REPORTS_PATH = process.env.BOOK_REPORTS_PATH || "/Users/eerogetlost/book-reports";
 
+// Ensure database directory exists
+async function ensureDatabaseDirectory() {
+  const dbDir = path.dirname(DATABASE_PATH);
+  
+  // For production paths like /var/data, ensure directory exists
+  if (dbDir.startsWith('/var/') || dbDir.startsWith('/mnt/')) {
+    try {
+      await fs.access(dbDir);
+      console.log(`✅ Database directory exists: ${dbDir}`);
+    } catch {
+      console.log(`📁 Creating database directory: ${dbDir}`);
+      try {
+        await fs.mkdir(dbDir, { recursive: true });
+        console.log(`✅ Created database directory: ${dbDir}`);
+      } catch (mkdirError) {
+        console.error(`❌ Failed to create database directory: ${mkdirError.message}`);
+        throw new Error(`Cannot create database directory: ${dbDir}. Make sure the persistent disk is mounted.`);
+      }
+    }
+  }
+}
+
 /**
  * Normalize text for comparison
  */
