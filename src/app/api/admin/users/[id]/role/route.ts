@@ -53,13 +53,16 @@ export async function PATCH(
       );
     }
 
-    // Only super_admins can promote to admin
-    if (role === "admin" && currentUserRole !== "super_admin") {
+    // Prevent admins from demoting themselves
+    if (target.id === session.user.id && role !== "admin" && role !== "super_admin") {
       return NextResponse.json(
-        { error: "Only super admins can promote users to admin" },
+        { error: "Cannot remove your own admin role" },
         { status: 403 }
       );
     }
+
+    // Allow both admins and super_admins to promote users to admin
+    // (super_admins can also demote admins, regular admins can only promote)
 
     // Update user role
     await db
