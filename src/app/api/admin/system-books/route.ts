@@ -46,14 +46,24 @@ export async function GET(request: NextRequest) {
         systemUserId = randomUUID();
         const now = Math.floor(Date.now() / 1000); // Unix timestamp
         await db.insert(users).values({
-          id: systemUserId,
           email: "system@getlost.com",
           name: "System",
           role: "admin",
           emailVerified: now, // Timestamp for verified email
           createdAt: now,
           updatedAt: now,
-        });
+        } as any); // Type assertion to bypass Drizzle type checking for id with defaultFn
+        
+        // Get the created user ID (it will be auto-generated)
+        const createdUser = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.email, "system@getlost.com"))
+          .limit(1);
+        
+        if (createdUser.length > 0) {
+          systemUserId = createdUser[0]!.id;
+        }
         console.log("[System Books] Created system user");
       }
       
