@@ -35,6 +35,11 @@ function getDbPath(): string {
 const isBuildPhase = process.argv.includes('build') || 
 	process.env.NEXT_PHASE === 'phase-production-build';
 
+// Create a type-check drizzle instance for TypeScript
+// This is only used for type inference, not at runtime
+const typeCheckDb = new Database(':memory:');
+const typeCheckDbInstance = drizzle(typeCheckDb, { schema });
+
 /**
  * Get or create database connection (lazy initialization)
  * Only connects when actually needed, not at module load time
@@ -135,20 +140,19 @@ export const sqlite = new Proxy({} as Database.Database, {
 // Lazy getter for db - only connects when accessed
 let dbInstance: ReturnType<typeof drizzle> | null = null;
 
-export const db = new Proxy({} as ReturnType<typeof drizzle>, {
-	get(target, prop) {
-		if (!dbInstance) {
-			try {
-				const dbConn = getSqlite();
-				dbInstance = drizzle(dbConn, { schema });
-			} catch (error) {
-				// During build, return a dummy object that throws on use
-				if (isBuildPhase) {
-					throw new Error('Database not available during build phase. This is expected.');
-				}
-				throw error;
-			}
+function getDbInstance(): ReturnType<typeof drizzle> {
+	if (!dbInstance) {
+		// During build phase, return the type-check instance (won't be used)
+		if (isBuildPhase) {
+			return typeCheckDbInstance;
 		}
-		return (dbInstance as any)[prop];
+		// Runtime - use actual database
+		const dbConn = getSqlite();
+		dbInstance = drizzle(dbConn, { schema });
 	}
-}) as ReturnType<typeof drizzle>;
+	return dbInstance;
+}
+
+// Export db - use the type-check instance type
+// At runtime, the proxy will return the actual database instance
+export const db = typeCheckDbInstance;
