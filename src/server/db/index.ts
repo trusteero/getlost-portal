@@ -30,59 +30,39 @@ if (dbPath.startsWith('file://')) {
 console.log('[DB] Database URL from env:', env.DATABASE_URL);
 console.log('[DB] Resolved database path:', dbPath);
 
-// Check if we're in a build phase or if the production disk is unavailable
-const isBuildPhase = process.argv.includes('build') ||
-	process.env.NEXT_PHASE === 'phase-production-build' ||
-	process.env.VERCEL_ENV === 'production' ||
-	process.env.RENDER === 'true';
+// Check if we're in a build phase - be more specific
+const isBuildPhase = process.argv.includes('build') || 
+	process.env.NEXT_PHASE === 'phase-production-build';
 
-let sqlite: Database.Database | null = null;
-let dbFallbackPath = dbPath;
-
-// For production paths that don't exist, use a temporary build database
-if (dbPath.startsWith('/var/') || dbPath.startsWith('/mnt/')) {
-	const dbDir = dirname(dbPath);
-	const dirExists = existsSync(dbDir);
-
-	if (!dirExists) {
-		console.log(`[DB] Production directory ${dbDir} not available (expected during build on Render)`);
-		console.log('[DB] Using temporary build database at ./build-db.sqlite');
-		dbFallbackPath = './build-db.sqlite';
+/**
+ * Get or create database connection (lazy initialization)
+ * Only connects when actually needed, not at module load time
+ */
+function getDatabase(): Database.Database {
+	// Return cached connection if available
+	if (globalForDb.sqlite) {
+		try {
+			globalForDb.sqlite.prepare('SELECT 1').get();
+			return globalForDb.sqlite;
+		} catch (error) {
+			// Cached connection is stale
+			globalForDb.sqlite = undefined;
+		}
 	}
-}
 
-if (globalForDb.sqlite) {
-	// Check if cached connection is still valid
-	try {
-		globalForDb.sqlite.prepare('SELECT 1').get();
-		console.log('[DB] Using cached database connection');
-		sqlite = globalForDb.sqlite;
-	} catch (error) {
-		// Cached connection is stale, create a new one
-		console.log('[DB] Cached connection is stale, creating new connection');
-		globalForDb.sqlite = undefined;
-		sqlite = null;
+	// During build phase, don't connect to database
+	if (isBuildPhase) {
+		console.log('[DB] Build phase detected - skipping database connection');
+		// Return a dummy connection that will throw if used
+		throw new Error('Database connection not available during build phase');
 	}
-} else if (isBuildPhase && dbFallbackPath !== dbPath) {
-	// During build phase with missing production directory, use fallback
-	console.log('[DB] Build phase detected with missing production directory');
-	console.log('[DB] Creating temporary build database for Next.js compilation');
-	try {
-		sqlite = new Database(dbFallbackPath, { readonly: false });
-		sqlite.pragma('journal_mode = WAL');
-		console.log('[DB] Temporary build database created successfully');
-	} catch (error) {
-		console.error('[DB] Failed to create build database:', error);
-		// Don't throw - let the build continue without a database
-		sqlite = null;
-	}
-} else {
-	// Runtime - use the actual database path
+
+	// Runtime - connect to actual database
 	const dbDir = dirname(dbPath);
 	const dbExists = existsSync(dbPath);
 	const dirExists = dbDir === '.' || dbDir === './' || existsSync(dbDir);
 
-	console.log('[DB] Checking database accessibility:');
+	console.log('[DB] Lazy connection - checking database accessibility:');
 	console.log(`  - Directory: ${dbDir}`);
 	console.log(`  - Directory exists: ${dirExists}`);
 	console.log(`  - Database file exists: ${dbExists}`);
@@ -91,58 +71,81 @@ if (globalForDb.sqlite) {
 	if (!dirExists) {
 		console.error(`[DB] ERROR: Database directory does not exist: ${dbDir}`);
 		console.error('[DB] Make sure the disk is mounted at /var/data on Render');
-		console.error('[DB] This error at runtime indicates the disk is not properly mounted');
 		throw new Error(`Database directory does not exist: ${dbDir}`);
 	}
 
 	if (!dbExists) {
 		console.log('[DB] Database file does not exist yet, will be created at:', dbPath);
 	} else {
-		// Verify we're using the persistent disk (not a fallback)
+		// Verify we're using the persistent disk
 		if (dbPath.startsWith('/var/data')) {
 			const stats = require('fs').statSync(dbPath);
 			const sizeKB = Math.round(stats.size / 1024);
 			console.log(`[DB] Using persistent disk database (${sizeKB} KB)`);
-			
-			// Quick check: try to read a table to verify it's not corrupted
-			try {
-				const testDb = new Database(dbPath, { readonly: true });
-				const tables = testDb.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
-				testDb.close();
-				console.log(`[DB] Database verified: ${tables.length} table(s) found`);
-			} catch (testError) {
-				console.warn('[DB] Warning: Could not verify database integrity:', testError);
-			}
 		}
 	}
 
 	try {
-		console.log('[DB] Attempting to connect to database at:', dbPath);
-		sqlite = new Database(dbPath, { 
+		console.log('[DB] Connecting to database at:', dbPath);
+		const dbConnection = new Database(dbPath, { 
 			readonly: false,
-			// Enable WAL mode for better concurrency
-			// This helps prevent locking issues
 		});
-		// Enable WAL mode for better concurrency
-		sqlite.pragma('journal_mode = WAL');
+		dbConnection.pragma('journal_mode = WAL');
 		console.log('[DB] Successfully connected to database');
 		
-		// Verify we're on the persistent disk (not a fallback)
 		if (dbPath.startsWith('/var/data')) {
 			console.log('[DB] ✅ Using persistent disk - data will persist across redeploys');
 		} else {
-			console.warn('[DB] ⚠️  WARNING: Not using persistent disk path! Data may be lost on redeploy!');
+			console.warn('[DB] ⚠️  WARNING: Not using persistent disk path!');
 			console.warn(`[DB] Expected: /var/data/db.sqlite, Got: ${dbPath}`);
 		}
+
+		// Cache connection in development
+		if (env.NODE_ENV !== "production") {
+			globalForDb.sqlite = dbConnection;
+		}
+
+		return dbConnection;
 	} catch (error) {
 		console.error('[DB] Failed to connect to database:', error);
 		throw error;
 	}
-
-	if (env.NODE_ENV !== "production") {
-		globalForDb.sqlite = sqlite;
-	}
 }
 
-export { sqlite };
-export const db = sqlite ? drizzle(sqlite, { schema }) : drizzle({} as any, { schema });
+// Lazy getter for sqlite - only connects when accessed
+let sqliteInstance: Database.Database | null = null;
+
+function getSqlite(): Database.Database {
+	if (!sqliteInstance) {
+		sqliteInstance = getDatabase();
+	}
+	return sqliteInstance;
+}
+
+export const sqlite = new Proxy({} as Database.Database, {
+	get(target, prop) {
+		const db = getSqlite();
+		return (db as any)[prop];
+	}
+}) as Database.Database;
+
+// Lazy getter for db - only connects when accessed
+let dbInstance: ReturnType<typeof drizzle> | null = null;
+
+export const db = new Proxy({} as ReturnType<typeof drizzle>, {
+	get(target, prop) {
+		if (!dbInstance) {
+			try {
+				const dbConn = getSqlite();
+				dbInstance = drizzle(dbConn, { schema });
+			} catch (error) {
+				// During build, return a dummy object that throws on use
+				if (isBuildPhase) {
+					throw new Error('Database not available during build phase. This is expected.');
+				}
+				throw error;
+			}
+		}
+		return (dbInstance as any)[prop];
+	}
+}) as ReturnType<typeof drizzle>;
