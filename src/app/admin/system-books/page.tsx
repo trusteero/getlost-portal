@@ -596,7 +596,48 @@ export default function SystemBooksAdmin() {
                         "Landing pages available for purchase"}
                     </CardDescription>
                   </div>
-                  {activeTab !== "reports" && (
+                  {activeTab === "reports" ? (
+                    <Button
+                      onClick={async () => {
+                        if (!confirm("This will run the seed script to seed all reports from the book-reports directory. Continue?")) {
+                          return;
+                        }
+                        setLoading(true);
+                        try {
+                          const response = await fetch("/api/admin/seed-reports", {
+                            method: "POST",
+                          });
+                          const result = await response.json();
+                          if (result.success) {
+                            alert(`✅ Seed completed!\nSeeded: ${result.seeded} reports\nErrors: ${result.errors}`);
+                            await fetchData();
+                          } else {
+                            alert(`❌ Seed failed: ${result.error || result.details}\n\nCheck console for details.`);
+                            console.error("Seed error:", result);
+                          }
+                        } catch (error) {
+                          console.error("Failed to seed reports:", error);
+                          alert("Failed to seed reports: " + (error instanceof Error ? error.message : String(error)));
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={loading}
+                      variant="outline"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Seeding...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Seed Reports
+                        </>
+                      )}
+                    </Button>
+                  ) : (
                     <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
                       <DialogTrigger asChild>
                         <Button
