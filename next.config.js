@@ -9,9 +9,6 @@ const config = {
   experimental: {
     serverComponentsExternalPackages: ['better-auth', 'better-sqlite3'],
   },
-  // Skip static analysis of API routes during build
-  // This prevents Next.js from trying to execute API routes that access the database
-  output: 'standalone',
   webpack: (config, { isServer }) => {
     // Prevent better-auth from being bundled in Edge Runtime
     config.externals = config.externals || [];
