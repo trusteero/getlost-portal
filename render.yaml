@@ -59,6 +59,8 @@ services:
         value: /var/data/reports
       - key: UPLOAD_DIR
         value: /var/data/uploads
+      - key: BOOK_REPORTS_PATH
+        value: /var/data/book-reports
     disk:
       name: getlostportal-uploads
       mountPath: /var/data
