@@ -4,6 +4,8 @@ import { db } from "@/server/db";
 import { books, bookVersions, users, digestJobs, reports } from "@/server/db/schema";
 import { desc, eq } from "drizzle-orm";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const isAdmin = await isAdminFromRequest(request);
 

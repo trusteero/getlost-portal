@@ -4,6 +4,8 @@ import { promises as fs } from "fs";
 import { existsSync } from "fs";
 import path from "path";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/admin/disk-status
  * Check persistent disk status and verify data persistence
