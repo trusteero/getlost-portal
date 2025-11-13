@@ -228,6 +228,14 @@ async function findReportFiles(dir) {
   const files = [];
   
   try {
+    // Check if directory exists, create it if it doesn't
+    try {
+      await fs.access(dir);
+    } catch {
+      console.log(`📁 Creating book-reports directory: ${dir}`);
+      await fs.mkdir(dir, { recursive: true });
+    }
+    
     const entries = await fs.readdir(dir, { withFileTypes: true });
     
     for (const entry of entries) {
@@ -267,10 +275,28 @@ function getOrCreateSystemBookVersion(db) {
   `).get();
   
   if (!systemBook) {
-    // Get first user (or create system user)
-    const user = db.prepare(`SELECT id FROM getlostportal_user LIMIT 1`).get();
+    // Get first user, or create a system user if none exists
+    let user = db.prepare(`SELECT id FROM getlostportal_user LIMIT 1`).get();
+    
     if (!user) {
-      throw new Error("No users found. Please create a user first.");
+      // Create a system user for the system book
+      console.log("📝 No users found, creating system user for seeded reports...");
+      const systemUserId = randomUUID();
+      db.prepare(`
+        INSERT INTO getlostportal_user (
+          id, email, name, role, emailVerified, createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        systemUserId,
+        'system@getlost.com',
+        'System',
+        'admin',
+        1, // emailVerified = true
+        Math.floor(Date.now() / 1000),
+        Math.floor(Date.now() / 1000)
+      );
+      user = { id: systemUserId };
+      console.log("✅ Created system user");
     }
     
     // Create system book
