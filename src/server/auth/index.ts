@@ -3,6 +3,44 @@ import { headers as getHeaders } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import type { NextRequest } from "next/server";
+import { db } from "@/server/db";
+import { user } from "@/server/db/better-auth-schema";
+import { eq } from "drizzle-orm";
+
+/**
+ * Check and promote user to super_admin if their email is in SUPER_ADMIN_EMAILS
+ * This runs asynchronously and doesn't block the request
+ */
+async function checkAndPromoteSuperAdmin(userId: string, userEmail: string | null) {
+  if (!userEmail) return;
+  
+  const superAdminEmails = process.env.SUPER_ADMIN_EMAILS?.split(",").map(e => e.trim()) || [];
+  const isSuperAdmin = superAdminEmails.includes(userEmail.toLowerCase());
+
+  if (isSuperAdmin) {
+    try {
+      const existingUser = await db
+        .select()
+        .from(user)
+        .where(eq(user.id, userId))
+        .limit(1);
+
+      if (existingUser.length > 0 && existingUser[0]!.role !== "super_admin") {
+        await db
+          .update(user)
+          .set({
+            role: "super_admin",
+            updatedAt: new Date(),
+          })
+          .where(eq(user.id, userId));
+        
+        console.log(`✅ [Better Auth] Promoted ${userEmail} to super_admin`);
+      }
+    } catch (error) {
+      console.error("⚠️  [Better Auth] Failed to promote user to super_admin:", error);
+    }
+  }
+}
 
 /**
  * Get the current session using Better Auth
@@ -10,9 +48,16 @@ import type { NextRequest } from "next/server";
  */
 export const getSession = cache(async () => {
   const headers = await getHeaders();
-  return auth.api.getSession({
+  const session = await auth.api.getSession({
     headers: headers,
   });
+  
+  // Check and promote to super_admin if needed (fire and forget)
+  if (session?.user?.id && session?.user?.email) {
+    checkAndPromoteSuperAdmin(session.user.id, session.user.email).catch(console.error);
+  }
+  
+  return session;
 });
 
 /**
@@ -25,9 +70,16 @@ export async function getSessionFromRequest(request: NextRequest) {
     headers.set(key, value);
   });
   
-  return auth.api.getSession({
+  const session = await auth.api.getSession({
     headers: headers,
   });
+  
+  // Check and promote to super_admin if needed (fire and forget)
+  if (session?.user?.id && session?.user?.email) {
+    checkAndPromoteSuperAdmin(session.user.id, session.user.email).catch(console.error);
+  }
+  
+  return session;
 }
 
 /**
