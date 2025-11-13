@@ -1,0 +1,260 @@
+{
+  "description": "Template for the Personas section of the book report. This section provides detailed reader personas with demographics, preferences, and reading habits.",
+  "readerPersonas": {
+    "personas": [
+      {
+        "name": "Emma Caldwell",
+        "description": "An inquisitive environmental science lecturer and lifelong science fiction fan who thrives on stories that explore ethics, nature, and technology.",
+        "image": "emma_caldwell_avatar.jpg",
+        "badge": {
+          "text": "Eco-Conscious Thinker",
+          "color": "#4CAF50"
+        },
+        "demographics": {
+          "age": "35-44",
+          "gender": "Female",
+          "location": "Bristol, UK",
+          "job": "University Lecturer in Environmental Science",
+          "education": "PhD",
+          "income": "£40,000-£55,000",
+          "relationshipStatus": "Married",
+          "lifestyle": "Sustainability-focused, intellectually curious, child-free, urban with frequent retreats to nature"
+        },
+        "coreNeeds": "Deep intellectual stimulation combined with exciting adventure; exploring moral dilemmas in science and ecology.",
+        "fears": "Overly simplistic narratives that ignore the environmental consequences or glorify technology without critique.",
+        "values": "Scientific integrity, ecological balance, education, critical thinking.",
+        "psychologicalMotivations": "Driven by a need to explore the ethical grey areas of modern science and connect with stories that question human supremacy.",
+        "readingBehavior": {
+          "socialStyle": "Participates in academic online forums and sustainability-themed book groups.",
+          "readingTimes": "Evenings and weekends, particularly with tea in hand and ambient rain sounds in background.",
+          "likelihoodToRecommend": "High – often shares thought-provoking books with colleagues and students.",
+          "tracking": "Uses Goodreads and paper notebooks to log annotations and ethical points raised."
+        },
+        "readingHabits": {
+          "frequency": "Daily",
+          "preferredFormats": [
+            "Paperback",
+            "Ebook"
+          ],
+          "readingTime": "Primarily evenings and Sunday afternoons",
+          "bookBudget": "£400-£500 annually",
+          "discoveryMethods": [
+            "Academic recommendations",
+            "Podcasts",
+            "Book reviews in The Guardian and Nature",
+            "Goodreads"
+          ],
+          "influences": [
+            "Science experts",
+            "Environmental NGOs",
+            "Public intellectuals",
+            "Literary critics"
+          ],
+          "quote": "I love when a novel confronts our curiosity with caution—what we can do versus what we should do."
+        },
+        "interestProfile": {
+          "books": [
+            "Hard science fiction",
+            "Ecological thrillers",
+            "Science nonfiction with narrative style"
+          ],
+          "films": [
+            "Annihilation",
+            "Don’t Look Up",
+            "Contact"
+          ],
+          "music": [
+            "Sigur Rós",
+            "Explosions in the Sky",
+            "Bon Iver"
+          ],
+          "art": [
+            "Eco-installations",
+            "Impressionism",
+            "Scientific illustrations"
+          ],
+          "hobbies": [
+            "Hiking",
+            "Birdwatching",
+            "Attending science talks",
+            "Composting"
+          ],
+          "lifestyle": [
+            "Vegetarian",
+            "Ethically sourced goods",
+            "Low-impact travel",
+            "Urban gardening"
+          ],
+          "values": [
+            "Environmental responsibility",
+            "Curiosity",
+            "Ethics in science",
+            "Autonomy"
+          ],
+          "tvShows": [
+            "Black Mirror",
+            "Planet Earth",
+            "The Expanse"
+          ]
+        },
+        "booksThisPersonaLoves": [
+          {
+            "description": "A gruelling and hypnotic environmental collapse novel with striking philosophical undercurrents.",
+            "title": "The Overstory",
+            "author": "Richard Powers",
+            "image": "the_overstory_cover.jpg"
+          },
+          {
+            "description": "A moral meditation on genetic science disguised as an edge-of-your-seat thriller.",
+            "title": "Jurassic Park",
+            "author": "Michael Crichton",
+            "image": "jurassic_park_cover.jpg"
+          },
+          {
+            "description": "A modern classic probing biotechnology through suspense and introspection.",
+            "title": "Oryx and Crake",
+            "author": "Margaret Atwood",
+            "image": "oryx_and_crake_cover.jpg"
+          }
+        ],
+        "moreBooks": [
+          "Blindsight by Peter Watts",
+          "The Water Knife by Paolo Bacigalupi",
+          "The Andromeda Strain by Michael Crichton"
+        ],
+        "whyThisBookAppeals": "It deftly combines scientific inquiry, philosophical tension, and high-stakes survival to interrogate humanity’s manipulative relationship with nature.",
+        "readingGoals": "To be challenged ethically and intellectually while engaging with speculative science and immersive storytelling.",
+        "socialMedia": "Active on academic Twitter, Mastodon, and eco-literature Reddit communities. Occasionally posts annotated book reviews.",
+        "bookClubParticipation": "Leads a university eco-fiction reading circle and an online bioethics reading group.",
+        "purchaseBehavior": "Buys from independent bookstores and Bookshop.org; occasionally uses Kindle for travel reading."
+      },
+      {
+        "name": "Jason Morales",
+        "description": "A tech-savvy video game designer with a passion for sci-fi thrillers, survival stories, and cinematic narratives filled with action and chaos.",
+        "image": "jason_morales_avatar.jpg",
+        "badge": {
+          "text": "Thrill-Seeking Technophile",
+          "color": "#2196F3"
+        },
+        "demographics": {
+          "age": "25-34",
+          "gender": "Male",
+          "location": "Austin, Texas, USA",
+          "job": "Lead Game Designer at AAA Studio",
+          "education": "Bachelor’s Degree in Game Design",
+          "income": "$70,000-$90,000",
+          "relationshipStatus": "Single",
+          "lifestyle": "Tech-driven, highly immersive media consumer, fitness-oriented, spends weekends gaming or binge-watching sci-fi"
+        },
+        "coreNeeds": "Escapism blended with plausibility; high-octane speculative entertainment rooted in cutting-edge science or near-future possibilities.",
+        "fears": "Being bored by slow pacing or stories overburdened with exposition without payoff.",
+        "values": "Innovation, entertainment, autonomy, realism in speculative fiction.",
+        "psychologicalMotivations": "Seeks adrenaline and fascination from near-apocalyptic what-ifs that could become real, grounded by believable science.",
+        "readingBehavior": {
+          "socialStyle": "Shares highlights via Instagram Stories and Discord; joins fandoms online.",
+          "readingTimes": "Late at night, during commutes, audiobook during gym sessions.",
+          "likelihoodToRecommend": "Depends on action and cinematic appeal; high if the story “feels like a movie.”",
+          "tracking": "Uses StoryGraph and gaming-inspired reading trackers."
+        },
+        "readingHabits": {
+          "frequency": "Moderate (2-3 books/month)",
+          "preferredFormats": [
+            "Audiobook",
+            "Hardcover",
+            "Ebook"
+          ],
+          "readingTime": "Late nights and travel time",
+          "bookBudget": "$300-$400 annually",
+          "discoveryMethods": [
+            "YouTube reviews",
+            "Sci-fi subreddits",
+            "Amazon algorithms",
+            "Podcasts like Imaginary Worlds"
+          ],
+          "influences": [
+            "YouTubers",
+            "Fellow gamers",
+            "Dystopian TV shows",
+            "Tech news"
+          ],
+          "quote": "If the science could actually happen, and the story rips—I’m in."
+        },
+        "interestProfile": {
+          "books": [
+            "Tech thrillers",
+            "Post-apocalyptic fiction",
+            "Sci-fi horror"
+          ],
+          "films": [
+            "Jurassic World",
+            "Edge of Tomorrow",
+            "District 9"
+          ],
+          "music": [
+            "Synthwave",
+            "Hans Zimmer soundtracks",
+            "Lo-fi beats"
+          ],
+          "art": [
+            "Concept art",
+            "Digital artbooks",
+            "Sci-fi sculpture"
+          ],
+          "hobbies": [
+            "Gaming",
+            "Streaming sci-fi shows",
+            "3D modelling",
+            "VR experiences"
+          ],
+          "lifestyle": [
+            "High-tech home",
+            "Urban explorer",
+            "Cosplay fan",
+            "Esports viewer"
+          ],
+          "values": [
+            "Imagination",
+            "Control",
+            "Escapism",
+            "Progress"
+          ],
+          "tvShows": [
+            "The Mandalorian",
+            "Stranger Things",
+            "Westworld"
+          ]
+        },
+        "booksThisPersonaLoves": [
+          {
+            "description": "A breakneck-paced, tech-heavy novel by the master of disaster-based science fiction.",
+            "title": "The Andromeda Strain",
+            "author": "Michael Crichton",
+            "image": "andromeda_strain_cover.jpg"
+          },
+          {
+            "description": "An action-packed techno-thriller exploring the blurred lines of AI and humanity.",
+            "title": "Daemon",
+            "author": "Daniel Suarez",
+            "image": "daemon_suarez_cover.jpg"
+          },
+          {
+            "description": "Ultimately destructive science brought to vicious life through practical storytelling and terrifying creatures.",
+            "title": "Jurassic Park",
+            "author": "Michael Crichton",
+            "image": "jurassic_park_cover.jpg"
+          }
+        ],
+        "moreBooks": [
+          "Recursion by Blake Crouch",
+          "Project Hail Mary by Andy Weir",
+          "World War Z by Max Brooks"
+        ],
+        "whyThisBookAppeals": "It combines cutting-edge science with relentless thrills, set in a cinematic universe brimming with tech failure, moral dilemmas, and epic dinosaur encounters.",
+        "readingGoals": "To be transported into mind-blowing, fast-paced, visually rich stories that get the adrenaline pumping.",
+        "socialMedia": "Very active on Twitter, YouTube, and TikTok. Shares book hauls and gamer-style book reviews.",
+        "bookClubParticipation": "Occasionally joins sci-fi Discord book clubs and Twitch livestream chapter reads.",
+        "purchaseBehavior": "Prefers Amazon for Kindle and Audible; collects collector’s editions of favourite titles in hardback."
+      }
+    ]
+  }
+}

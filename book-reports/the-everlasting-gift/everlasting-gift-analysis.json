@@ -1,0 +1,935 @@
+{
+  "book": {
+    "title": "The Everlasting Gift",
+    "author": "Wren Valentino",
+    "emoji": "🎁",
+    "subtitle": "A Contemporary Romance of Homecoming, Renewal, and Second Chances",
+    "description": "The Everlasting Gift is a heartfelt contemporary romance set in a small town during the holiday season, centering on themes of resilience, creative renewal, and the power of community. At its core is a second-chance love story that blends the warmth of festive tradition with the stakes of saving a local school through the transformative power of art. Its narrative weaves together the emotional arcs of homecoming, mentorship, and redemption, offering an uplifting reading experience that is both intimate and resonant for a wide audience.",
+    "coverImage": "everlastinggift_cover.jpg"
+  },
+  "audienceMatch": {
+    "title": "Audience Match Analysis",
+    "emoji": "⚠️",
+    "bisac": {
+      "primary": "FIC027020 FICTION / Romance / Contemporary",
+      "secondary": "FIC027120 FICTION / Romance / Small Town",
+      "additional": "FIC044000 FICTION / Women"
+    },
+    "keyCharacteristics": "Warm, small-town contemporary women's fiction with a Christmas backdrop, featuring community bonds, a gentle romance, and a restorative emotional arc."
+  },
+  "analysisOverview": {
+    "title": "Analysis Overview",
+    "emoji": "📊",
+    "readership": "Your book aligns strongly with readers in the 'Comfort & Community' segment. These readers seek uplifting, heart-forward stories where a tight-knit setting and ensemble cast provide emotional safety and a sense of belonging. They are drawn to narratives that blend personal reinvention with intergenerational relationships, often set against a seasonal or event-driven backdrop. Your manuscript scored 8.6/10 on engagement potential in this cluster, reflecting strong alignment with their tastes. Hallmarks of this segment include closed-door romance, gentle pacing, and arcs that resolve with hope and generosity. The Everlasting Gift delivers all of these, from Sharleen's personal growth to the town's collective effort for the holiday variety show. Conflict is moderate, characters are likable yet layered, and the setting becomes a character in its own right. These qualities resonate particularly with holiday-season readers looking for catharsis and calm, who will appreciate the balance of tender emotion, community spirit, and a quietly affirming ending.",
+    "classification": "The classification of the book places it squarely within contemporary romance, with an emphasis on small-town life, holiday warmth, and the rekindling of past love. Its structure draws on a bespoke taxonomy of subgenres, blending second-chance romance with festive arcs and community restoration, while allowing room for secondary cues such as innocence, hidden identity, or contrasting personalities. The inclusion of familiar tropes like hometown returns, save-the-school stakes, and found family ensures strong commercial positioning alongside comparable works in the market.",
+    "personas": "The personas created within the report bring the audience to life, providing portraits of the book's most engaged readers. Emily, a book club-oriented educator, represents the primary persona and stands as the most important figure for connecting with this audience segment. Her profile highlights motivations of inspiration, mentorship, and community impact. A secondary persona, David, offers a complementary perspective rooted in social engagement and collective resilience, helping expand the story's appeal while reinforcing its central emotional values.",
+    "marketingGuidance": "The marketing guidance provides a detailed roadmap for reaching these readers effectively. It outlines practical strategies for digital campaigns, recommended targeting groups, creative hooks, and even sample copy and video scripts that can serve as the foundation for initial promotions. The report holder can use this information directly to begin their marketing efforts, tailoring campaigns around the story's strongest themes of homecoming, resilience, and second chances. While this section is designed as a starting point within the current report, it is intended to evolve into a standalone product in future, offering deeper resources for long-term campaign planning."
+  },
+  "moodAndTone": {
+    "emoji": "❤️",
+    "subtitle": "Emotional atmosphere and narrative style of your manuscript",
+    "moodTags": [
+      {
+        "tag": "#Heartwarming",
+        "description": "Designed to soothe and uplift; ideal when the reader wants reassurance and gentleness."
+      },
+      {
+        "tag": "#Hopeful",
+        "description": "Grief to grace arc that restores optimism and agency."
+      },
+      {
+        "tag": "#SmallTownCosy",
+        "description": "Community-first scenes, ensemble warmth and seasonal rituals."
+      },
+      {
+        "tag": "#TenderRomance",
+        "description": "Closed-door attraction with a principled single father; chemistry without high heat."
+      },
+      {
+        "tag": "#FoundFamily",
+        "description": "Intergenerational bonds, mentorship and supportive friendships."
+      },
+      {
+        "tag": "#HolidaySpirit",
+        "description": "Christmas pageant energy, light traditions and charitable feeling."
+      },
+      {
+        "tag": "#LowPeril",
+        "description": "Emotional safety; conflict stays humane, resolution emphasises care."
+      },
+      {
+        "tag": "#NovellaLength",
+        "description": "Short novel length, roughly 140 to 180 pages equivalent; approachable for busy season."
+      },
+      {
+        "tag": "#ThreeToFourHourRead",
+        "description": "Approximate reading time 3 to 4 hours at typical pace, perfect for a weekend afternoon."
+      },
+      {
+        "tag": "#MoodSetter",
+        "description": "Best when the reader wants to feel comforted, grateful and quietly energised to do good."
+      },
+      {
+        "tag": "#TearThenSmile",
+        "description": "Measured catharsis that moves from lump-in-throat to warm glow."
+      }
+    ]
+  },
+  "positioningConfidence": {
+    "title": "Positioning Confidence",
+    "emoji": "📊",
+    "subtitle": "Market placement strength and commercial appeal metrics",
+    "metrics": [
+      {
+        "label": "Contemporary Romance",
+        "sublabel": "Romance",
+        "percentage": 94
+      },
+      {
+        "label": "Holiday Romance",
+        "sublabel": "Seasonal",
+        "percentage": 91
+      },
+      {
+        "label": "Small Town Romance",
+        "sublabel": "Setting",
+        "percentage": 88
+      },
+      {
+        "label": "Second Chance Romance",
+        "sublabel": "Trope",
+        "percentage": 85
+      },
+      {
+        "label": "Women's Fiction",
+        "sublabel": "Genre",
+        "percentage": 82
+      },
+      {
+        "label": "Contemporary Fiction",
+        "sublabel": "Style",
+        "percentage": 79
+      }
+    ]
+  },
+  "demographics": {
+    "title": "Primary Audience Demographics",
+    "primaryAudience": {
+      "title": "Primary Audience Demographics",
+      "subtitle": "Comprehensive demographic profile of target readers",
+      "genderSplit": {
+        "female": 75,
+        "male": 20,
+        "other": 5
+      },
+      "ageRange": "25-54",
+      "summary": {
+        "ageRange": "25-54",
+        "genderSplit": "75% female, 20% male, 5% other",
+        "incomeRange": "Middle income households ($40k-$85k)",
+        "marketSize": "60,000"
+      },
+      "genderDistribution": {
+        "female": 75,
+        "male": 20,
+        "other": 5
+      },
+      "ageDistribution": {
+        "25-34": 35,
+        "35-44": 40,
+        "45-54": 25
+      },
+      "geographicDistribution": {
+        "unitedStates": 60,
+        "unitedKingdom": 20,
+        "canada": 12,
+        "australia": 8
+      },
+      "preferredFormats": {
+        "audiobooks": 35,
+        "ebooks": 30,
+        "tradePaperbacks": 25,
+        "libraryLoans": 10
+      },
+      "topProfessions": [
+        "Teachers and educators",
+        "Librarians and book club organizers",
+        "Healthcare and social service workers",
+        "Arts administrators and community leaders",
+        "Office and administrative professionals"
+      ],
+      "educationLevel": "University educated with strong representation in humanities and social sciences",
+      "homeOwnership": "Above-average home ownership rates, suburban preferences",
+      "salary": "$45,000-$80,000 USD",
+      "status": "Mix of single and married readers, many in committed relationships",
+      "children": "Significant portion have children or are planning families",
+      "topLocations": {
+        "targetRegions": [
+          "United States",
+          "United Kingdom",
+          "Canada",
+          "Australia",
+          "New Zealand"
+        ],
+        "otherCountries": "Highlighted regions represent strongest reader concentrations"
+      },
+      "discoveryPathways": [
+        "Book clubs and local reading groups",
+        "Public libraries and librarian recommendations",
+        "Facebook and Instagram book communities",
+        "BookTok and YouTube channels focused on wholesome and small-town fiction",
+        "Goodreads lists featuring uplifting and heartfelt contemporary fiction",
+        "Retailer recommendation engines and category browsing"
+      ],
+      "interestProfile": {
+        "tvShows": [
+          "Gilmore Girls",
+          "Virgin River",
+          "Sweet Magnolias",
+          "Glee"
+        ],
+        "films": [
+          "Mr. Holland's Opus",
+          "It's a Wonderful Life",
+          "The Greatest Showman"
+        ],
+        "music": [
+          "Adele ballads",
+          "Ed Sheeran acoustic pop",
+          "Taylor Swift (Folklore and Evermore)"
+        ],
+        "art": [
+          "Community theatre",
+          "School musicals",
+          "Local arts programs"
+        ],
+        "hobbies": [
+          "Volunteering and PTA",
+          "Book clubs",
+          "Baking and crafts",
+          "Gardening",
+          "Attending local community events"
+        ]
+      },
+      "marketReach": {
+        "tam": "9,000,000",
+        "sam": "1,200,000",
+        "som": "60,000"
+      }
+    },
+    "estimatedReach": {
+      "title": "Estimated Reach",
+      "status": "To be determined",
+      "subtitle": "Total reachable demographic across core markets"
+    },
+    "summary": {
+      "title": "Summary",
+      "content": "Women aged 25-54 from English-speaking countries who enjoy community-focused, uplifting contemporary fiction. They are educators, caregivers, and community leaders who value stories about resilience, mentorship, and family bonds. This segment prefers gentle romance, authentic small-town settings, and hopeful endings, making them ideal for The Everlasting Gift's themes of homecoming and second chances."
+    },
+    "whyThisAudience": {
+      "title": "Why this audience",
+      "content": "This audience seeks stories that provide emotional catharsis, hope, and community connection, making them ideal readers for holiday romance with healing themes."
+    },
+    "secondaryAudience": {
+      "title": "Secondary Audience Demographics",
+      "subtitle": "Additional reader segments with potential interest",
+      "genderSplit": {
+        "female": 80,
+        "male": 20,
+        "other": 0
+      },
+      "ageRange": "35-65",
+      "summary": {
+        "ageRange": "35-65",
+        "genderSplit": "80% female, 20% male, 0% other",
+        "incomeRange": "Middle to upper-middle income",
+        "marketSize": "25,000"
+      },
+      "genderDistribution": {
+        "female": 80,
+        "male": 20,
+        "other": 0
+      },
+      "ageDistribution": {
+        "35-44": 30,
+        "45-54": 35,
+        "55-64": 25,
+        "65+": 10
+      },
+      "geographicDistribution": {
+        "unitedStates": 55,
+        "unitedKingdom": 25,
+        "canada": 12,
+        "australia": 8
+      },
+      "preferredFormats": {
+        "tradePaperbacks": 45,
+        "ebooks": 25,
+        "audiobooks": 20,
+        "libraryLoans": 10
+      },
+      "topProfessions": [
+        "Social workers and community organizers",
+        "Non-profit administrators",
+        "Retired educators and public servants",
+        "Small business owners in community-focused industries",
+        "Religious and spiritual leaders"
+      ],
+      "educationLevel": "University educated with strong representation in social sciences and humanities",
+      "homeOwnership": "High home ownership rates, suburban and urban preferences",
+      "salary": "$55,000-$95,000 USD",
+      "status": "Mix of single and married readers, many in leadership roles",
+      "children": "Significant portion have grown children or are empty nesters",
+      "topLocations": {
+        "targetRegions": [
+          "United States",
+          "United Kingdom",
+          "Canada",
+          "Australia",
+          "New Zealand"
+        ],
+        "otherCountries": "Highlighted regions represent strongest reader concentrations"
+      }
+    }
+  },
+  "readerPersonas": {
+    "title": "Reader Personas",
+    "emoji": "👥",
+    "subtitle": "Two distinct reader profiles representing your target audience",
+    "personas": [
+      {
+        "name": "Emily Carter",
+        "badge": {
+          "text": "Romantic Traditionalist",
+          "color": "#f97316"
+        },
+        "image": "emily-carter-persona-avatar-DtWL5Nu2.jpg",
+        "demographics": {
+          "location": "Portland, Oregon",
+          "age": 34,
+          "job": "High School English Teacher",
+          "salary": "$58,000",
+          "education": "Master's in Education",
+          "status": "Married, Two (ages 6 and 9)",
+          "children": "Two children (ages 6 and 9)"
+        },
+        "coreNeeds": "Emotional connection through romance, holiday traditions, hope and healing themes, relatable characters",
+        "fears": "Predictable plots, unrealistic relationships, lack of emotional depth",
+        "values": "Authenticity, emotional growth, community connection, family traditions",
+        "readingHabits": {
+          "discoveryMethods": [
+            "Book club recommendations",
+            "Goodreads reviews",
+            "Local bookstore browsing"
+          ],
+          "quote": "\"I love stories that remind me why I fell in love with teaching in the first place. Books that show how small acts of kindness can change everything—that's the kind of magic I want to share with my students.\"",
+          "quoteAuthor": "— Emily Carter"
+        },
+        "psychologicalMotivations": "Seeks emotional escape and inspiration through well-crafted love stories with holiday magic",
+        "readingBehavior": {
+          "socialStyle": "Balanced; social in groups like book clubs but values quiet solo reading",
+          "readingTimes": "Evenings after work and weekend mornings",
+          "likelihoodToRecommend": "High, especially to colleagues and book clubs",
+          "tracking": "Uses Goodreads to track progress and share reviews"
+        }
+      },
+      {
+        "name": "David Hernandez",
+        "badge": {
+          "text": "Community Builder",
+          "color": "#f97316"
+        },
+        "image": "david-hernandez-persona-avatar-Bcq-eTN0.jpg",
+        "demographics": {
+          "location": "San Antonio, Texas",
+          "age": 47,
+          "job": "Nonprofit Program Director",
+          "salary": "$72,000",
+          "education": "Bachelor's in Social Work",
+          "status": "Divorced, One (age 15, shared custody)",
+          "children": "One child (age 15, shared custody)"
+        },
+        "coreNeeds": "Emotional connection through romance, holiday traditions, hope and healing themes, relatable characters",
+        "fears": "Predictable plots, unrealistic relationships, lack of emotional depth",
+        "values": "Authenticity, emotional growth, community connection, family traditions",
+        "readingHabits": {
+          "discoveryMethods": [
+            "Word-of-mouth from colleagues",
+            "Nonprofit newsletters",
+            "Local bookstores"
+          ],
+          "quote": "\"I'm always looking for books that show how ordinary people can make extraordinary differences in their communities. Real change happens when neighbors support each other, and I love stories that capture that truth.\"",
+          "quoteAuthor": "— David Hernandez"
+        },
+        "psychologicalMotivations": "Seeks emotional escape and inspiration through well-crafted love stories with holiday magic",
+        "booksThisPersonaLoves": [
+          {
+            "title": "Beartown",
+            "author": "by Fredrik Backman",
+            "description": "In a hockey town shaken by crisis, loyalties are tested and a community must choose who it wants to be.",
+            "image": "Beartown.jpeg"
+          },
+          {
+            "title": "Wish You Were Here",
+            "author": "by Jodi Picoult",
+            "description": "A trip gone sideways becomes a journey of reinvention and grace, blending art, love, and upheaval.",
+            "image": "WishYouWereHere.jpeg"
+          },
+          {
+            "title": "An American Marriage",
+            "author": "by Tayari Jones",
+            "description": "A powerful portrait of love under strain when injustice forces a couple to confront identity and loyalty.",
+            "image": "AnAmericanMarriage.jpeg"
+          }
+        ],
+        "moreBooks": [
+          "The Kite Runner by Khaled Hosseini",
+          "Educated by Tara Westover"
+        ],
+        "interestProfile": {
+          "films": [
+            "The Pursuit of Happyness",
+            "Coach Carter",
+            "The Soloist"
+          ],
+          "tvShows": [
+            "Parenthood",
+            "The Good Doctor",
+            "New Amsterdam"
+          ],
+          "music": [
+            "John Legend",
+            "Alicia Keys",
+            "Lin-Manuel Miranda"
+          ],
+          "art": [
+            "Street murals",
+            "Community art projects"
+          ],
+          "hobbies": [
+            "Community organizing",
+            "Attending theatre",
+            "Mentoring youth"
+          ]
+        },
+        "readingBehavior": {
+          "socialStyle": "Social; enjoys discussing books and sharing insights with colleagues and friends.",
+          "readingTimes": "Late evenings and during travel for work.",
+          "likelihoodToRecommend": "Very high—sees books as tools for inspiration and social change.",
+          "tracking": "Keeps a handwritten reading journal; occasionally shares reviews online."
+        }
+      }
+    ]
+  },
+  "classification": {
+    "title": "Classification",
+    "positioning": {
+      "title": "Positioning",
+      "subtitle": "Strategic market placement and competitive positioning",
+      "categories": [
+        {
+          "label": "Romance / Contemporary Romance",
+          "score": 0.94
+        },
+        {
+          "label": "Romance / Holiday Romance",
+          "score": 0.91
+        },
+        {
+          "label": "Romance / Small Town Romance",
+          "score": 0.88
+        },
+        {
+          "label": "Romance / Second Chance Romance",
+          "score": 0.85
+        },
+        {
+          "label": "Fiction / Women's Fiction",
+          "score": 0.82
+        },
+        {
+          "label": "Fiction / Contemporary Fiction",
+          "score": 0.79
+        }
+      ]
+    },
+    "moodAndTone": {
+      "subtitle": "Emotional resonance and narrative atmosphere",
+      "tags": [
+        {
+          "name": "#Heartwarming",
+          "description": "Creates a cozy, emotionally satisfying reading experience that leaves readers feeling uplifted"
+        },
+        {
+          "name": "#HolidayMagic",
+          "description": "Captures the enchantment and warmth of the holiday season with festive traditions"
+        },
+        {
+          "name": "#SecondChance",
+          "description": "Explores themes of redemption, forgiveness, and new beginnings in love"
+        },
+        {
+          "name": "#SmallTown",
+          "description": "Evokes the charm and close-knit community feel of small-town life"
+        },
+        {
+          "name": "#Community",
+          "description": "Emphasizes the power of coming together for a common cause"
+        },
+        {
+          "name": "#CreativeRenewal",
+          "description": "Showcases the transformative power of art and creative expression"
+        }
+      ]
+    },
+    "comparableTitles": {
+      "title": "Comparable Titles",
+      "subtitle": "Top pick in each category with cover art",
+      "categories": [
+        {
+          "categoryName": "Romance / Holiday Romance",
+          "books": [
+            {
+              "title": "The Christmas Wish",
+              "author": "Nora Roberts",
+              "coverImage": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='120' viewBox='0 0 80 120'%3E%3Crect width='80' height='120' fill='%23c0392b'/%3E%3Ctext x='40' y='60' text-anchor='middle' fill='white' font-family='serif' font-size='8'%3EChristmas%3C/text%3E%3Ctext x='40' y='75' text-anchor='middle' fill='white' font-family='serif' font-size='8'%3EWish%3C/text%3E%3C/svg%3E",
+              "comparison": "Both novels explore holiday romance with themes of community and second chances, though The Everlasting Gift has a stronger focus on art and creative renewal.",
+              "otherComps": [
+                "The Holiday Swap by Maggie Knox",
+                "One Day in December by Josie Silver"
+              ]
+            }
+          ]
+        },
+        {
+          "categoryName": "Romance / Small Town Romance",
+          "books": [
+            {
+              "title": "Virgin River",
+              "author": "Robyn Carr",
+              "coverImage": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='120' viewBox='0 0 80 120'%3E%3Crect width='80' height='120' fill='%234a90e2'/%3E%3Ctext x='40' y='60' text-anchor='middle' fill='white' font-family='serif' font-size='10'%3EVirgin%3C/text%3E%3Ctext x='40' y='75' text-anchor='middle' fill='white' font-family='serif' font-size='10'%3ERiver%3C/text%3E%3C/svg%3E",
+              "comparison": "Similar small-town setting and community focus, but The Everlasting Gift has a more contemporary feel with stronger artistic elements and holiday themes.",
+              "otherComps": [
+                "Sweet Magnolias by Sherryl Woods",
+                "Cedar Cove by Debbie Macomber"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "competitiveAnalysis": {
+      "title": "Competitive Analysis",
+      "subtitle": "Direct Competitors",
+      "competitors": [
+        {
+          "title": "The Christmas Sisters",
+          "author": "Sarah Morgan",
+          "coverImage": "ChristmasSisters.jpg",
+          "marketPosition": "Established bestseller with strong holiday romance following",
+          "similarities": [
+            "Holiday setting",
+            "Family dynamics",
+            "Small-town feel",
+            "Emotional healing"
+          ],
+          "differences": [
+            "More family drama",
+            "Multiple POVs",
+            "Longer length",
+            "International setting"
+          ]
+        },
+        {
+          "title": "The Snow Globe",
+          "author": "Sheila Roberts",
+          "coverImage": "TheSnowGlobe.jpg",
+          "marketPosition": "Popular in cozy Christmas fiction category",
+          "similarities": [
+            "Christmas theme",
+            "Community focus",
+            "Second chances",
+            "Uplifting tone"
+          ],
+          "differences": [
+            "More magical realism",
+            "Different age demographic",
+            "Established series"
+          ]
+        },
+        {
+          "title": "A December Bride",
+          "author": "Denise Hunter",
+          "coverImage": "ADecemberBride.jpg",
+          "marketPosition": "Strong in Christian romance market",
+          "similarities": [
+            "Holiday romance",
+            "Small-town setting",
+            "Clean content",
+            "Community involvement"
+          ],
+          "differences": [
+            "More romance-focused",
+            "Wedding theme",
+            "Established author platform"
+          ]
+        }
+      ],
+      "indirectCompetitors": [
+        {
+          "title": "Beach Read",
+          "author": "Emily Henry",
+          "coverImage": "BeachRead.jpg",
+          "marketPosition": "Crossover success in literary and commercial fiction",
+          "similarities": [
+            "Contemporary romance",
+            "Character growth",
+            "Emotional depth"
+          ],
+          "differences": [
+            "Summer setting",
+            "Higher heat level",
+            "Younger protagonists",
+            "More humor"
+          ]
+        },
+        {
+          "title": "The Midnight Library",
+          "author": "Matt Haig",
+          "coverImage": "TheMidnightLibrary.jpg",
+          "marketPosition": "Literary fiction with broad commercial appeal",
+          "similarities": [
+            "Themes of second chances",
+            "Life reflection",
+            "Uplifting message"
+          ],
+          "differences": [
+            "Philosophical approach",
+            "Speculative elements",
+            "Different genre classification"
+          ]
+        }
+      ],
+      "marketGaps": {
+        "title": "Market Gaps & Opportunities",
+        "opportunities": [
+          "Holiday fiction featuring arts education specifically",
+          "Small-town stories with realistic community organizing",
+          "Clean romance with mature protagonists in education",
+          "Christmas stories that focus on saving local institutions"
+        ]
+      },
+      "uniquePositioning": {
+        "title": "Unique Positioning",
+        "description": "The Everlasting Gift occupies a unique space as a holiday-themed contemporary romance that authentically portrays the challenges facing small-town schools and the power of arts education to unite communities. Unlike many holiday romances that focus primarily on the romantic relationship, this story balances romance with meaningful community engagement and realistic portrayals of educational advocacy."
+      },
+      "subgenreClassification": {
+        "title": "Subgenre Classification",
+        "subgenres": [
+          {
+            "label": "Small Town & Community — Women's Fiction",
+            "score": 0.93
+          },
+          {
+            "label": "Christmas — Holiday Fiction",
+            "score": 0.91
+          },
+          {
+            "label": "Sweet Contemporary / Closed-Door — Romance",
+            "score": 0.88
+          },
+          {
+            "label": "Intergenerational & Found Family — Family Life",
+            "score": 0.86
+          },
+          {
+            "label": "Quarter-Life Reinvention — Coming-of-Age",
+            "score": 0.82
+          },
+          {
+            "label": "Uplifting Contemporary — Inspirational (General)",
+            "score": 0.78
+          }
+        ]
+      },
+      "marketPositioning": {
+        "title": "Market Positioning",
+        "primaryCategory": "Contemporary Women's Fiction",
+        "secondaryCategories": [
+          "Holiday Fiction",
+          "Small-Town Romance",
+          "Inspirational Fiction"
+        ],
+        "targetShelfPlacement": [
+          "Holiday/Seasonal",
+          "Women's Fiction",
+          "Romance - Sweet/Clean"
+        ],
+        "pricePositioning": "Mid-range pricing ($12.99-$15.99 paperback, $4.99-$6.99 ebook)",
+        "seasonalStrategy": "Primary launch October-December, with potential for year-round appeal in education and small-town fiction markets"
+      },
+      "brandPositioning": {
+        "title": "Brand Positioning",
+        "coreMessage": "A heartwarming story about the power of community, the importance of arts education, and the magic of second chances during the holiday season",
+        "keyDifferentiators": [
+          "Authentic portrayal of small-town school challenges",
+          "Focus on arts education as community building",
+          "Mature protagonists with realistic life experiences",
+          "Balance of romance and community themes",
+          "Clean content appropriate for wide audience"
+        ],
+        "emotionalPromise": "Readers will feel inspired about the impact of community involvement and hopeful about the power of second chances",
+        "targetReaderIdentity": "Community-minded women who value education, family, and the importance of local institutions"
+      }
+    }
+  },
+  "marketing": {
+    "title": "Digital Marketing Advertising Strategy",
+    "subtitle": "Strategic marketing insights and positioning recommendations",
+    "objective": "Acquire readers for The Everlasting Gift through targeted digital marketing campaigns focusing on holiday romance enthusiasts",
+    "keyInsight": "Readers respond best to emotional hooks that emphasize holiday magic, community healing, and the transformative power of art",
+    "howToUse": [
+      "Set up audiences targeting holiday romance readers aged 28-45",
+      "Launch creative campaigns focusing on holiday magic and community themes",
+      "Optimize based on engagement metrics and seasonal trends"
+    ],
+    "primaryKPIs": [
+      "Return on ad spend",
+      "Cost per acquisition",
+      "Click through rate",
+      "Video completion rate",
+      "Social sharing rate"
+    ],
+    "campaignStructure": {
+      "title": "Campaign Structure",
+      "funnels": [
+        {
+          "name": "Awareness",
+          "description": "Build awareness and interest through holiday-themed emotional storytelling",
+          "formats": "Video ads, carousel posts, Instagram stories",
+          "optimisation": "Video views and engagement"
+        },
+        {
+          "name": "Consideration",
+          "description": "Convert interest into consideration through detailed content about community and art themes",
+          "formats": "Long-form video, detailed posts, book excerpts",
+          "optimisation": "Website visits and time on page"
+        },
+        {
+          "name": "Conversion",
+          "description": "Drive purchase decisions with compelling holiday-themed offers",
+          "formats": "Product ads, testimonials, limited-time holiday offers",
+          "optimisation": "Purchase conversions"
+        }
+      ],
+      "budgetAllocation": {
+        "topOfFunnel": "50%",
+        "midFunnel": "30%",
+        "bottomOfFunnel": "20%",
+        "note": "Adjust based on performance and seasonal peaks during holidays"
+      },
+      "flightSchedule": {
+        "launchWindow": "Year-round with strong focus during holiday seasons",
+        "cadence": "Daily campaigns with increased activity during holidays",
+        "seasonality": "Highest engagement during fall and winter months"
+      }
+    },
+    "metaTargeting": {
+      "title": "Meta Targeting",
+      "geolocation": [
+        "United States",
+        "United Kingdom",
+        "Canada",
+        "Australia"
+      ],
+      "ageRange": "28-45",
+      "gender": "Primarily female",
+      "householdIncome": "$40,000-$80,000 USD",
+      "professions": [
+        "Marketing professional",
+        "Healthcare worker",
+        "Teacher",
+        "Small business owner",
+        "Administrative professional"
+      ],
+      "languages": [
+        "English (US)",
+        "English (UK)"
+      ],
+      "interests": [
+        "Holiday romance",
+        "Book clubs",
+        "Goodreads",
+        "Small town life",
+        "Women's fiction",
+        "Romance novels",
+        "Book recommendations",
+        "Reading communities",
+        "Contemporary fiction"
+      ],
+      "behaviours": [
+        "Frequent book buyers",
+        "Ebook readers",
+        "Social media users",
+        "Online shoppers"
+      ],
+      "placements": [
+        "Facebook Feed",
+        "Instagram Feed",
+        "Instagram Stories",
+        "Facebook Video",
+        "Instagram Reels",
+        "Audience Network"
+      ],
+      "devices": "Mobile first, desktop secondary",
+      "exclusions": "Recent purchasers, under 18"
+    },
+    "lookaalikeAudiences": {
+      "title": "Lookalike Audiences",
+      "seedEvents": [
+        "Book purchasers (90 days)",
+        "Website visitors (30 days)",
+        "Video viewers (14 days)",
+        "Email subscribers"
+      ],
+      "sizes": [
+        "1%",
+        "2%",
+        "5%"
+      ],
+      "regions": [
+        "US",
+        "UK",
+        "CA",
+        "AU"
+      ],
+      "refreshCadence": "Weekly",
+      "prioritisationRules": [
+        "Prioritize 1% lookalikes for best performance",
+        "Use separate ad sets per lookalike size"
+      ]
+    },
+    "targetChannels": {
+      "title": "Target Channels",
+      "digitalChannels": {
+        "title": "Digital Channels",
+        "socialMedia": {
+          "title": "Social Media",
+          "items": [
+            "Facebook groups focused on book clubs and women's fiction",
+            "Instagram accounts featuring cozy reads and holiday books",
+            "BookTok creators who focus on wholesome and uplifting content",
+            "Pinterest boards for holiday reading lists and book recommendations"
+          ]
+        },
+        "advertising": {
+          "title": "Advertising",
+          "items": [
+            "Facebook and Instagram ads targeting women 25-54 interested in contemporary fiction",
+            "Amazon advertising targeting readers of similar authors and genres",
+            "Goodreads advertising and author program participation",
+            "BookBub featured deals and newsletter inclusion"
+          ]
+        },
+        "contentMarketing": {
+          "title": "Content Marketing",
+          "items": [
+            "Blog posts about small-town life and community involvement",
+            "Educational content about arts programs in schools",
+            "Holiday-themed content and reading lists",
+            "Behind-the-scenes content about writing process and inspiration"
+          ]
+        }
+      },
+      "traditionalChannels": {
+        "title": "Traditional Channels",
+        "printMedia": {
+          "title": "Print Media",
+          "items": [
+            "Local newspapers in small-town markets",
+            "Education-focused publications and newsletters",
+            "Library journals and professional publications",
+            "Community organization newsletters"
+          ]
+        },
+        "events": {
+          "title": "Events",
+          "items": [
+            "Library author talks and book discussions",
+            "Book club visits and virtual presentations",
+            "Education conferences and community events",
+            "Holiday-themed bookstore events"
+          ]
+        },
+        "partnerships": {
+          "title": "Partnerships",
+          "items": [
+            "Collaborations with education organizations",
+            "Partnerships with community arts programs",
+            "Library system partnerships for group reads",
+            "Book club outreach programs"
+          ]
+        }
+      }
+    },
+    "messagingFramework": {
+      "title": "Messaging Framework",
+      "primaryTagline": "Sometimes the greatest gifts come from coming home",
+      "supportingMessages": [
+        "A heartwarming tale of community, creativity, and second chances",
+        "Perfect for readers who love small-town stories with heart",
+        "An inspiring story about the power of arts education",
+        "A clean, uplifting romance perfect for the holiday season"
+      ],
+      "keyThemes": [
+        "Community resilience and support",
+        "The importance of arts education",
+        "Second chances and personal growth",
+        "Holiday warmth and tradition",
+        "Clean, family-friendly content"
+      ],
+      "audienceSpecificMessaging": {
+        "educators": {
+          "title": "Educators",
+          "message": "A story that celebrates the impact of dedicated teachers and the importance of arts in education"
+        },
+        "bookClubs": {
+          "title": "Book Clubs",
+          "message": "Perfect for holiday discussions about community, family, and the power of coming together"
+        },
+        "parents": {
+          "title": "Parents",
+          "message": "A wholesome story that reinforces the value of community involvement and supporting local schools"
+        },
+        "romanceReaders": {
+          "title": "Romance Readers",
+          "message": "A sweet, clean romance with mature characters and meaningful relationship development"
+        }
+      }
+    },
+    "sampleCopy": {
+      "title": "Sample Copy",
+      "backCoverBlurb": "When Sharleen returns to her small hometown for the holidays, she never expected to find herself at the center of a campaign to save the local school's arts program. With the help of an old friend and the support of a community that refuses to give up, she discovers that sometimes the most meaningful gifts are the ones we give to others. A heartwarming story of second chances, community spirit, and the magic that happens when people come together for a common cause.",
+      "socialMediaPosts": [
+        {
+          "emoji": "🌲",
+          "text": "Looking for the perfect holiday read? *The Everlasting Gift* combines small-town charm, community spirit, and a sweet romance that will warm your heart. Perfect for cozy winter nights! #HolidayReads #SmallTownRomance #BookLovers"
+        },
+        {
+          "emoji": "📚",
+          "text": "Teachers and educators, this one's for you! *The Everlasting Gift* celebrates the power of arts education and the dedicated people who fight to keep creativity alive in our schools. #TeachersOfInstagram #ArtsEducation #InspirationalFiction"
+        },
+        {
+          "emoji": "💕",
+          "text": "Sometimes coming home means finding yourself. Join Sharleen as she discovers that the greatest gifts are the ones we give to our communities. #ContemporaryFiction #SecondChances #CommunityLove"
+        }
+      ],
+      "emailSubjectLines": [
+        "Your next book club pick is here! 📖",
+        "A holiday story that will restore your faith in community",
+        "Perfect for educators: A story that celebrates arts in schools",
+        "New release: Small-town charm meets holiday magic"
+      ]
+    }
+  }
+}

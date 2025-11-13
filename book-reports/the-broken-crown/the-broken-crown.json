@@ -1,0 +1,1076 @@
+{
+  "book": {
+    "title": "The Broken Crown",
+    "author": "Jesse Karjalainen",
+    "emoji": "👑",
+    "subtitle": "Secrets buried in Wiltshire soil connect grief, power, and the ghosts of England’s past.",
+    "description": "When a grieving cab driver unearths a golden artefact in the Wiltshire countryside, his discovery sets off a chain of events linking him to Bibi, a young journalist chasing a royal mystery buried since King Alfred’s reign. As their search moves between medieval archives and modern corruption, they uncover a story of betrayal and redemption that spans centuries. Both must decide how much truth they are willing to expose—and what it will cost them. A literary thriller that fuses emotional depth with historical intrigue, The Broken Crown explores how the past refuses to stay buried.",
+    "coverImage": "the_broken_crown_cover.png"
+  },
+  "audienceMatch": {
+    "title": "Audience Match and Market Fit",
+    "emoji": "🎯",
+    "bisac": {
+      "primary": "Fiction / Historical / Mystery & Detective",
+      "secondary": "Fiction / Thrillers / Suspense",
+      "additional": "Fiction / Women / Contemporary"
+    },
+    "engagement": "High reader engagement potential across historical and mystery audiences",
+    "keyCharacteristics": "Culturally literate adult readers aged 30–55 with a strong interest in British history, dual-timeline mysteries, and emotionally resonant fiction. The readership spans established historical fiction fans and upmarket thriller readers drawn to intellectual intrigue and human drama.",
+    "detailedAnalysis": "The novel’s thematic blend of loss, discovery, and historical revelation resonates with a readership split between thoughtful women readers of historical fiction and globally dispersed mystery enthusiasts. The inclusion of a Black female journalist protagonist expands the book’s appeal to readers seeking inclusive representation and depth in character-driven suspense. Market research indicates strong alignment with communities engaged in book clubs, heritage literature, and online historical fiction networks, with crossover appeal to audiobook and digital-first consumers."
+  },
+  "analysisOverview": {
+    "title": "Analysis Overview",
+    "emoji": "📚",
+    "readership": "The core audience includes mature, educated readers who favour emotionally intelligent mysteries and stories that illuminate personal and national history. They seek literary depth without sacrificing narrative drive and are receptive to layered emotional arcs and morally complex protagonists.",
+    "classification": "The book sits within a bespoke subgenre taxonomy that bridges the emotional weight of literary fiction with the propulsion of a historical thriller. It combines the investigative curiosity of treasure hunt fiction, the sensitivity of grief-centred narratives, and the authenticity of archaeological adventure. Positioned between mass-market historical thrillers and reflective literary works, it offers a hybrid form ideal for both book clubs and critical readerships.",
+    "personas": "Rachel Montgomery, the primary persona, exemplifies the book’s target readership—a historically engaged, empathetic woman who values authenticity, depth, and emotional truth in fiction. Her response to stories that intertwine human legacy with discovery mirrors the book’s emotional purpose. Secondary personas, such as the analytical reader Marcus Tanaka, broaden its appeal across professional, globally connected readers who value intellectual tension and ethical storytelling.",
+    "marketingGuidance": "The marketing insights provide clear pathways for shaping first-stage campaign strategy. They emphasise positioning the book as a cross-era literary thriller that humanises history through emotional investigation. Campaign hooks should highlight its dual timelines, the contrast between heritage and modern corruption, and the emotional journey of recovery through truth. These insights serve as a practical guide for ad copy, visuals, and tone. In future, this framework will evolve into a standalone marketing product, but for now forms an integral component of the report’s first release."
+  },
+  "moodAndTone": {
+    "title": "Mood and Tone Profile",
+    "emoji": "🌫️",
+    "subtitle": "Emotionally resonant, historically textured, and quietly suspenseful",
+    "moodTags": [
+      {
+        "tag": "Reflective Suspense",
+        "description": "A balance between introspection and investigative drive, sustaining tension without sacrificing emotional depth."
+      },
+      {
+        "tag": "Historical Resonance",
+        "description": "Echoes of England’s royal and ecclesiastical past enrich the narrative atmosphere and moral themes."
+      },
+      {
+        "tag": "Emotional Discovery",
+        "description": "Characters process loss and guilt through uncovering hidden truths, offering catharsis and empathy."
+      },
+      {
+        "tag": "Atmospheric Mystery",
+        "description": "Wiltshire’s landscapes, chapels, and relics evoke a haunting sense of continuity between past and present."
+      },
+      {
+        "tag": "Quiet Determination",
+        "description": "A tone of resilience and moral conviction underlies the protagonists’ pursuit of truth and justice."
+      }
+    ]
+  },
+  "demographics": {
+    "primaryAudience": {
+      "summary": {
+        "ageRange": "30-55",
+        "genderSplit": "70% Female, 30% Male",
+        "incomeRange": "$50K-$100K",
+        "marketSize": "2.8M readers"
+      },
+      "ageDistribution": {
+        "18-24": 5,
+        "25-34": 15,
+        "35-44": 30,
+        "45-54": 35,
+        "55+": 15
+      },
+      "genderDistribution": {
+        "Female": 70,
+        "Male": 30,
+        "Non-binary": 0,
+        "Other": 0
+      },
+      "geographicDistribution": {
+        "United States": 40,
+        "United Kingdom": 35,
+        "Canada": 10,
+        "Australia": 8,
+        "Other": 7
+      },
+      "preferredFormats": {
+        "Ebook": 35,
+        "Audiobook": 20,
+        "Paperback": 30,
+        "Hardcover": 15
+      },
+      "educationLevel": "College-educated",
+      "homeOwnership": "Mix of renters and homeowners",
+      "salary": "$50K-$100K annually",
+      "status": "Mix of single and married",
+      "children": "Mix of parents and non-parents",
+      "topLocations": [
+        "London",
+        "New York",
+        "Toronto",
+        "Oxford",
+        "Melbourne"
+      ],
+      "interestProfile": {
+        "books": [
+          "historical thrillers",
+          "dual-timeline fiction",
+          "mystery and suspense",
+          "character-driven contemporary fiction",
+          "archaeological adventures"
+        ],
+        "films": [
+          "The Da Vinci Code",
+          "The Dig",
+          "National Treasure",
+          "Woman in Gold",
+          "The Imitation Game"
+        ],
+        "music": [
+          "classical crossover",
+          "folk ballads",
+          "cinematic soundtrack",
+          "alt-pop",
+          "UK indie rock"
+        ],
+        "art": [
+          "historical artefacts",
+          "Renaissance painting",
+          "British museum exhibitions",
+          "archival photography",
+          "textile arts"
+        ],
+        "hobbies": [
+          "metal detecting",
+          "heritage site tourism",
+          "reading historical fiction",
+          "attending literary festivals",
+          "genealogy research"
+        ],
+        "lifestyle": [
+          "culturally curious",
+          "historically conscious",
+          "book club attendees",
+          "moderate social media users",
+          "urban-suburban dwellers"
+        ],
+        "values": [
+          "historical preservation",
+          "personal growth",
+          "intellectual curiosity",
+          "integrity",
+          "freedom of information"
+        ],
+        "tvShows": [
+          "Downton Abbey",
+          "Broadchurch",
+          "The Crown",
+          "Endeavour",
+          "Call The Midwife"
+        ]
+      },
+      "discoveryPathways": {
+        "socialMedia": [
+          "Facebook",
+          "Instagram",
+          "Goodreads",
+          "TikTok (sub 35s)"
+        ],
+        "bookClubs": [
+          "local literary clubs",
+          "online historical fiction communities",
+          "church-affiliated reading groups",
+          "library-sponsored book circles"
+        ],
+        "recommendations": [
+          "social media influencers",
+          "professional reviews (e.g., The Guardian, NYT)",
+          "word-of-mouth",
+          "Goodreads lists"
+        ],
+        "bookstores": [
+          "Waterstones",
+          "Barnes & Noble",
+          "independent bookshops",
+          "airport retailers",
+          "chain bookstores with historical shelves"
+        ]
+      },
+      "marketReach": {
+        "estimatedSize": "2.8M readers",
+        "engagementLevel": "high",
+        "purchaseBehavior": "frequent fiction buyers, favour new releases and critical acclaim",
+        "readingFrequency": "at least 1-2 books per month"
+      }
+    },
+    "secondaryAudience": {
+      "summary": {
+        "ageRange": "20-35",
+        "genderSplit": "60% Female, 40% Male",
+        "incomeRange": "$35K-$70K",
+        "marketSize": "950K readers"
+      },
+      "ageDistribution": {
+        "18-24": 25,
+        "25-34": 40,
+        "35-44": 20,
+        "45-54": 10,
+        "55+": 5
+      },
+      "genderDistribution": {
+        "Female": 60,
+        "Male": 40,
+        "Non-binary": 0,
+        "Other": 0
+      },
+      "geographicDistribution": {
+        "United States": 42,
+        "United Kingdom": 30,
+        "Canada": 12,
+        "Australia": 9,
+        "Other": 7
+      },
+      "preferredFormats": {
+        "Ebook": 45,
+        "Audiobook": 25,
+        "Paperback": 20,
+        "Hardcover": 10
+      },
+      "educationLevel": "University students or graduates",
+      "homeOwnership": "Predominantly renters",
+      "salary": "$35K-$70K annually",
+      "status": "Predominantly single or partnered",
+      "children": "Primarily non-parents",
+      "topLocations": [
+        "Los Angeles",
+        "Manchester",
+        "Dublin",
+        "Seattle",
+        "Cambridge"
+      ],
+      "interestProfile": {
+        "books": [
+          "upmarket thrillers",
+          "female-led mysteries",
+          "dark academia",
+          "speculative history fiction",
+          "queer historical narratives"
+        ],
+        "films": [
+          "Knives Out",
+          "Enola Holmes",
+          "The Favourite",
+          "Ammonite",
+          "The King's Speech"
+        ],
+        "music": [
+          "indie folk",
+          "electronic ambient",
+          "baroque pop",
+          "vintage vinyl",
+          "podcast playlists"
+        ],
+        "art": [
+          "interactive exhibits",
+          "digital collage",
+          "gothic illustration",
+          "museum installations",
+          "historical fashion design"
+        ],
+        "hobbies": [
+          "podcasting",
+          "creative writing",
+          "urban exploration",
+          "archive diving",
+          "true crime consumption"
+        ],
+        "lifestyle": [
+          "digitally native",
+          "ethically minded",
+          "politically engaged",
+          "culturally progressive",
+          "urban lifestyle"
+        ],
+        "values": [
+          "journalistic integrity",
+          "truth-seeking",
+          "anti-corruption",
+          "personal authenticity",
+          "reparative justice"
+        ],
+        "tvShows": [
+          "Sherlock",
+          "Killing Eve",
+          "His Dark Materials",
+          "A Discovery of Witches",
+          "The Night Manager"
+        ]
+      },
+      "discoveryPathways": {
+        "socialMedia": [
+          "Instagram",
+          "TikTok (BookTok)",
+          "Twitter/X",
+          "YouTube"
+        ],
+        "bookClubs": [
+          "virtual book chats",
+          "university read-alongs",
+          "Pod-based Book Clubs",
+          "feminist literary collectives"
+        ],
+        "recommendations": [
+          "YouTube reviewers",
+          "Instagram book influencers",
+          "TikTok reading lists",
+          "BookTube channels"
+        ],
+        "bookstores": [
+          "indie bookstores",
+          "university campus shops",
+          "online retailers",
+          "subscription book boxes"
+        ]
+      },
+      "marketReach": {
+        "estimatedSize": "950K readers",
+        "engagementLevel": "medium to high",
+        "purchaseBehavior": "more selective but influencable by trends and strong reviews",
+        "readingFrequency": "1 book per month on average"
+      }
+    }
+  },
+  "classification": {
+    "positioning": {
+      "title": "A Contemporary Thriller Rooted in History",
+      "subtitle": "An emotionally layered, dual-timeline treasure hunt exposing modern corruption through a historic lens",
+      "description": "This novel positions itself at the intersection of contemporary mystery and historical thriller. With resonant emotional stakes and a gripping treasure hunt narrative, it appeals to fans of literary thrillers that blend archival intrigue with modern sociopolitical relevance. By entwining the royal legacies of King Alfred and Katherine Parr with a present-day journalist's truth-seeking narrative, the book broadens its appeal to both readers of intelligent suspense fiction and seekers of historically immersive storytelling. It balances mass-market pacing with upmarket voice and character interiority, emerging as a hybrid literary thriller uniquely suited for readers of Kate Morton and Maja Lunde."
+    },
+    "moodAndTone": {
+      "title": "Mood and Tone",
+      "subtitle": "Suspenseful, reflective, and rich with historical curiosity",
+      "description": "The mood is one of layered tension and emotional resonance, shifting between present-day urgency and a reflective, history-laden tone. There are elements of dry humour and poignancy that offer levity amidst danger and grief. The tone is introspective and meticulous—rooted in character psychology and historical revelation. Vivid landscapes and eerie monastic relics heighten the sensory atmosphere, while the romantic subplot provides moments of warmth. Overall, the book carries a contemplative undercurrent that explores grief, personal legacy, and the moral weight of history."
+    },
+    "competitiveAnalysis": {
+      "title": "Competitive Analysis",
+      "competitors": [
+        {
+          "title": "The Goldfinch",
+          "author": "Donna Tartt",
+          "coverImage": "goldfinch.jpg",
+          "description": "An artistic, mystery-driven novel entwining personal loss with cultural legacy.",
+          "similarities": [
+            "Themes of grief and identity",
+            "Historical artefact at the centre of conflict",
+            "Dual timelines shaping the protagonist’s emotional arc"
+          ],
+          "differences": [
+            "The Goldfinch is more introspective and stylized",
+            "Less overt conflict and more emphasis on emotional descent"
+          ]
+        },
+        {
+          "title": "The Secret Keeper",
+          "author": "Kate Morton",
+          "coverImage": "images/the_secret_keeper.jpg",
+          "description": "A family mystery novel bridging historical secrets with modern discoveries.",
+          "similarities": [
+            "Intertwining timelines",
+            "Historical stakes influencing the present",
+            "Mystery unravelled through personal relationships"
+          ],
+          "differences": [
+            "Focuses more intimately on family dynamics",
+            "Lacks an action-driven quest tone"
+          ]
+        },
+        {
+          "title": "The History of Bees",
+          "author": "Maja Lunde",
+          "coverImage": "images/the_history_of_bees.jpg",
+          "description": "A generational novel interpreting ecological shifts through human connection and time straddling.",
+          "similarities": [
+            "Multiple timelines and intergenerational connection",
+            "Explores legacy through modern moral frameworks"
+          ],
+          "differences": [
+            "Themes involve environmental legacy rather than political corruption",
+            "Lacks treasure hunt/action-mystery elements"
+          ]
+        }
+      ],
+      "indirectCompetitors": [
+        {
+          "title": "Anxious People",
+          "author": "Fredrik Backman",
+          "coverImage": "images/anxious_people.jpg",
+          "description": "Humorous exploration of flawed individuals brought together by accident.",
+          "similarities": [
+            "Uses humour amidst tension and grief",
+            "Features emotionally lost protagonists seeking redemption"
+          ],
+          "differences": [
+            "Centered around a domestic crisis rather than treasure-driven action",
+            "More focused on psychological exploration than historical narrative"
+          ]
+        }
+      ],
+      "brandPositioning": {
+        "uniqueValueProposition": "A character-driven literary treasure hunt blending suspense, historical mystery, and emotional awakening across centuries.",
+        "targetReaderIdentity": "Readers of intelligent thrillers and historical fiction who enjoy puzzle-driven storytelling arc with high emotional payoff.",
+        "emotionalAppeal": "Delivers a poignant combination of suspense and emotional catharsis as characters confront both internal and ancestral truths.",
+        "marketDifferentiation": "Combines treasure hunt structure with dual-character narrative, rotating between a grieving cab driver and an ambitious Black journalist, anchored by England’s cultural and geographical legacy."
+      },
+      "marketPositioning": {
+        "title": "Market Placement Strategy",
+        "primaryCategory": "Historical Thriller",
+        "secondaryCategories": [
+          "Historical Mystery",
+          "Contemporary Suspense",
+          "Dual-Timeline Fiction",
+          "Archaeological Adventure",
+          "Upmarket Fiction"
+        ],
+        "targetShelfPlacement": [
+          "Historical Fiction",
+          "Mystery/Thriller",
+          "Upmarket or Literary Fiction",
+          "Book Club Favorites"
+        ],
+        "pricePositioning": "Mid-to-premium pricing aligned with upmarket suspense and historical fiction paperbacks (e.g., $16.99–$19.99 paperback range)",
+        "seasonalStrategy": "Best suited for spring or fall publication to capture historical fiction readers and book club market pre-holiday cycle."
+      },
+      "uniquePositioning": {
+        "title": "Unique Genre Attributes",
+        "description": "Merges the emotional stakes of literary fiction with the tension of page-turning thrillers while rooting mystery in English historical tradition.",
+        "elements": [
+          "Treasure hunt driven by dual protagonists from contrasting classes and identities",
+          "Historical resonance from Alfred the Great to modern politics",
+          "Exploration of political corruption through monastic and governmental institutions",
+          "Female journalist lead with contemporary voice",
+          "Metal detecting and archaeological research as investigative devices"
+        ]
+      },
+      "subgenreClassification": {
+        "title": "Subgenre Classification",
+        "subtitle": "Book demonstrates genre overlap across historical, suspense and quest-based fiction",
+        "subgenres": [
+          {
+            "label": "Treasure Hunt",
+            "score": 1
+          },
+          {
+            "label": "Archaeological Adventure",
+            "score": 0.986
+          },
+          {
+            "label": "Time Travel Adventure",
+            "score": 0.946
+          },
+          {
+            "label": "Aristocratic Decline Fiction",
+            "score": 0.939
+          },
+          {
+            "label": "Missing Heir Mystery",
+            "score": 0.93
+          },
+          {
+            "label": "Lost World Adventure",
+            "score": 0.927
+          },
+          {
+            "label": "Expedition & Exploration Fiction",
+            "score": 0.924
+          },
+          {
+            "label": "Alternate History Fiction",
+            "score": 0.921
+          },
+          {
+            "label": "Cold Case Mystery",
+            "score": 0.919
+          },
+          {
+            "label": "Coming-of-Age Adventure",
+            "score": 0.917
+          },
+          {
+            "label": "Middle Grade Historical Fiction",
+            "score": 0.916
+          },
+          {
+            "label": "Historical Crime Caper",
+            "score": 0.913
+          },
+          {
+            "label": "Hero's Journey Fantasy",
+            "score": 0.906
+          },
+          {
+            "label": "Survivalist Adventure",
+            "score": 0.905
+          },
+          {
+            "label": "Time-Slip Historical Fiction",
+            "score": 0.904
+          }
+        ]
+      }
+    },
+    "marketGaps": {
+      "title": "Market Gaps and Opportunities",
+      "opportunities": [
+        {
+          "opportunity": "Add diversity to the treasure-hunt genre via a strong Black female journalist protagonist.",
+          "rationale": "Most historical mysteries or adventure thrillers lack racially diverse perspectives, especially in investigative leads.",
+          "potentialImpact": "Attracts media, academic, and book club attention for intersectional representation in genre narratives."
+        },
+        {
+          "opportunity": "Bridge between emotionally literary and plot-driven treasure thrillers.",
+          "rationale": "Appeals to readers who enjoy historical intrigue but crave deeper emotional and psychological lenses.",
+          "potentialImpact": "Broadens crossover potential across thriller, literary and historical fiction markets."
+        },
+        {
+          "opportunity": "Revive interest in early English historical figures like King Alfred through contemporary storytelling.",
+          "rationale": "English pre-medieval figures are underutilized in accessible mainstream fiction.",
+          "potentialImpact": "Enriches educational appeal and curriculum-based promotional tie-ins, especially in UK markets."
+        }
+      ],
+      "underservedAudiences": [
+        {
+          "audience": "Readers of colour interested in historical fiction beyond slavery or colonial trauma narratives.",
+          "whyUnderserved": "Many BIPOC readers are not reflected in genre fiction unless stories centre on racial pain.",
+          "potential": "High potential for inclusive readership across diaspora communities and demand for broader narrative inclusion in upmarket genre fiction."
+        },
+        {
+          "audience": "Emotionally attuned male readers aged 40+ seeking character-based thrillers",
+          "whyUnderserved": "Thrillers often lean into action at the expense of emotional depth, especially from male protagonists.",
+          "potential": "Well-developed emotional arc of Andrew Keynes offers high engagement for male readers navigating grief, responsibility, and redemption."
+        }
+      ]
+    }
+  },
+  "readerPersonas": {
+    "personas": [
+      {
+        "name": "Rachel Montgomery",
+        "description": "A culturally engaged heritage tour guide who relishes both historical detail and contemporary mystery. Rachel seeks stories that mix intellectual intrigue with emotional depth.",
+        "image": "images/rachel_montgomery.jpg",
+        "badge": {
+          "text": "Historical Fiction Devotee",
+          "color": "#9055A2"
+        },
+        "demographics": {
+          "age": "45-54",
+          "gender": "Female",
+          "location": "Bath, UK",
+          "job": "Cultural Heritage Educator and Tour Guide",
+          "education": "Master’s Degree in History",
+          "income": "£40,000-£55,000",
+          "relationshipStatus": "Divorced, one teenage child",
+          "lifestyle": "Intellectually curious, environmentally conscious, values experiences over possessions"
+        },
+        "coreNeeds": "To be moved and mentally engaged by stories that explore layers of the past and their resonance in the present.",
+        "fears": "Fears disengagement from surface-level or plot-only narratives that don’t respect historical nuance or emotional realism.",
+        "values": "Integrity, authenticity, empathy, historical accuracy, intellectual engagement",
+        "psychologicalMotivations": "Driven by a need to make emotional sense of the past and reclaim meaning through layered storytelling that harmonises past and present.",
+        "readingBehavior": {
+          "socialStyle": "Discusses books eagerly with a close circle and participates in historical fiction online groups.",
+          "readingTimes": "Late evenings and Sunday afternoons",
+          "likelihoodToRecommend": "Very likely—often lends books and writes short reviews",
+          "tracking": "Keeps a notebook and logs books via Goodreads"
+        },
+        "readingHabits": {
+          "frequency": "Reads 3–4 books per month",
+          "preferredFormats": [
+            "Hardback",
+            "Paperback",
+            "eBook"
+          ],
+          "readingTime": "Evenings with a cup of tea",
+          "bookBudget": "£500 annually",
+          "discoveryMethods": [
+            "Independent bookshops",
+            "Book club recommendations",
+            "BBC History magazine",
+            "Author events",
+            "Historical fiction reading groups on Facebook"
+          ],
+          "influences": [
+            "Librarians",
+            "Bookish friends",
+            "Curated blog recommendations",
+            "Literary festivals"
+          ],
+          "quote": "I want fiction that honours history while offering an emotional arc that lingers."
+        },
+        "interestProfile": {
+          "books": [
+            "Historical mysteries",
+            "Dual-timeline dramas",
+            "Character-driven fiction with roots in real events"
+          ],
+          "films": [
+            "The Dig",
+            "Elizabeth",
+            "The Imitation Game"
+          ],
+          "music": [
+            "Classical crossovers",
+            "Historical film scores",
+            "Folk revival"
+          ],
+          "art": [
+            "Pre-Raphaelite paintings",
+            "Manuscript illumination",
+            "Subtle modern art with historical references"
+          ],
+          "hobbies": [
+            "Walking tours",
+            "Reading biographies",
+            "Visiting stately homes",
+            "Journalling"
+          ],
+          "lifestyle": [
+            "Cultural excursions",
+            "Heritage volunteering",
+            "Mindfulness retreats"
+          ],
+          "values": [
+            "Tradition",
+            "Empathy",
+            "Sustainability",
+            "Knowledge",
+            "Community"
+          ],
+          "tvShows": [
+            "The Crown",
+            "Wolf Hall",
+            "Detectorists",
+            "Broadchurch"
+          ]
+        },
+        "booksThisPersonaLoves": [
+          {
+            "description": "A deeply emotive, time-shifting mystery connecting buried secrets, ideal for Rachel’s love of layered storytelling.",
+            "title": "The Secret Keeper",
+            "author": "Kate Morton",
+            "image": "images/the_secret_keeper.jpg"
+          },
+          {
+            "description": "Its blend of historical depth and contemporary resonance aligns with her values around justice and legacy.",
+            "title": "The History of Bees",
+            "author": "Maja Lunde",
+            "image": "images/the_history_of_bees.jpg"
+          },
+          {
+            "description": "A beautifully told exploration of art, grief and inheritance, matching Rachel’s emotional and intellectual tastes.",
+            "title": "The Goldfinch",
+            "author": "Donna Tartt",
+            "image": "goldfinch.jpg"
+          }
+        ],
+        "moreBooks": [
+          "Hamnet by Maggie O'Farrell",
+          "A Single Thread by Tracy Chevalier",
+          "An Instance of the Fingerpost by Iain Pears"
+        ],
+        "whyThisBookAppeals": "It weaves English history with contemporary ethical questions, offering Rachel a rich, reflective experience that satisfies both emotional and intellectual curiosity.",
+        "readingGoals": "To feel connected to the continuum of history and derive personal meaning through fiction anchored in truth.",
+        "socialMedia": "Primarily Facebook for reader communities; follows literary historians on Twitter; moderate Instagram use to follow bookstagrammers.",
+        "bookClubParticipation": "Loyal member of a local heritage-themed book club and participates in virtual historical fiction circles.",
+        "purchaseBehavior": "Prefers supporting local independent bookstores and museum shops; occasionally orders through Waterstones online or Book Depository for international titles."
+      },
+      {
+        "name": "Marcus Tanaka",
+        "description": "An ambitious international professional in a high-pressure role who escapes into thrillers layered with political intrigue and philosophical dilemmas.",
+        "image": "images/marcus_tanaka.jpg",
+        "badge": {
+          "text": "Thriller Intellectual",
+          "color": "#31597F"
+        },
+        "demographics": {
+          "age": "30-39",
+          "gender": "Male",
+          "location": "Singapore (expatriate from New Zealand)",
+          "job": "Data Scientist in FinTech",
+          "education": "PhD in Computational Social Science",
+          "income": "£85,000–£110,000 equivalent",
+          "relationshipStatus": "In a relationship, no children",
+          "lifestyle": "Fast-paced, tech-savvy, achievement-oriented with intense downtime rituals"
+        },
+        "coreNeeds": "Narratives that challenge cognitive engagement but still offer escape; morally complex characters navigating legacy, responsibility, and global relevance.",
+        "fears": "Wasting time on shallow or formulaic stories; fears predictability or blatant emotional manipulation in fiction.",
+        "values": "Precision, curiosity, meritocracy, responsibility, systemic thinking",
+        "psychologicalMotivations": "Books offer a counterbalance to a rational job—seeking layered plots that tap into human complexity and ethical tension.",
+        "readingBehavior": {
+          "socialStyle": "Rarely discusses in person, but actively tracks, reviews, and rates on Goodreads and Reddit forums.",
+          "readingTimes": "Evenings post-exercise and on long flights",
+          "likelihoodToRecommend": "Sometimes, usually via a shared reading log or private message",
+          "tracking": "Strict Goodreads habit including rating system, tags, and yearly challenges"
+        },
+        "readingHabits": {
+          "frequency": "2–3 books per month",
+          "preferredFormats": [
+            "eBook",
+            "Audiobook",
+            "Hardback (collector's edition only)"
+          ],
+          "readingTime": "Late night and while travelling",
+          "bookBudget": "£600–£800 annually",
+          "discoveryMethods": [
+            "Reddit threads",
+            "Goodreads lists",
+            "YouTube essayists",
+            "Book podcasts",
+            "Tech-professional Slack communities"
+          ],
+          "influences": [
+            "Podcast hosts",
+            "NPR Book of the Month",
+            "Bill Gates’ reading list",
+            "Economist Book Club bulletin"
+          ],
+          "quote": "If a book can entangle reason, ethics, and mystery in one, I'm all in."
+        },
+        "interestProfile": {
+          "books": [
+            "Political thrillers",
+            "Ethical sci-fi",
+            "Historical intelligence dramas"
+          ],
+          "films": [
+            "Tinker Tailor Soldier Spy",
+            "Arrival",
+            "The Imitation Game"
+          ],
+          "music": [
+            "Lo-fi hip-hop",
+            "Neoclassical",
+            "Metafictional soundtracks"
+          ],
+          "art": [
+            "Surrealism",
+            "Information design in galleries"
+          ],
+          "hobbies": [
+            "Backgammon strategy",
+            "Travel blogging",
+            "Open-source coding",
+            "Language learning"
+          ],
+          "lifestyle": [
+            "Minimalist design",
+            "High-protein diet",
+            "Smart home automation"
+          ],
+          "values": [
+            "Progress",
+            "Intellect",
+            "Honour",
+            "Evidence-based reasoning"
+          ],
+          "tvShows": [
+            "Sherlock",
+            "Dark",
+            "Slow Horses",
+            "Mr. Robot"
+          ]
+        },
+        "booksThisPersonaLoves": [
+          {
+            "description": "Captures Marcus’s appetite for complex psychological stories rooted in big societal questions.",
+            "title": "Anxious People",
+            "author": "Fredrik Backman",
+            "image": "images/anxious_people.jpg"
+          },
+          {
+            "description": "Explores deceit, power, and historical manipulation, ideal for Marcus’ analytic interests.",
+            "title": "The Secret History",
+            "author": "Donna Tartt",
+            "image": "images/the_secret_history.jpg"
+          },
+          {
+            "description": "A cerebral mystery woven through time and consequence—a strong thematic resonance for Marcus.",
+            "title": "The Goldfinch",
+            "author": "Donna Tartt",
+            "image": "images/the-goldfinch.jpg"
+          }
+        ],
+        "moreBooks": [
+          "Sapiens by Yuval Noah Harari",
+          "The Silent Patient by Alex Michaelides",
+          "Machines Like Me by Ian McEwan"
+        ],
+        "whyThisBookAppeals": "The blend of a tangible quest, layered secrets, and historical depth mirrors Marcus’s interest in truth beneath institutional façades, with a brisk pace that fits his analytic curiosity.",
+        "readingGoals": "To be intellectually provoked while emotionally intrigued, ideally through interwoven plots with ethical or psychological tension.",
+        "socialMedia": "Primarily LinkedIn and Reddit; follows book-focused YouTube and Medium essays; avoids Facebook.",
+        "bookClubParticipation": "Only through asynchronous online forums like r/books or professional Slack reading channels.",
+        "purchaseBehavior": "Mostly Kindle purchases with occasional hardcover collector’s editions from global online retailers; tracks price alerts."
+      }
+    ]
+  },
+  "marketing": {
+    "title": "Unearthing Intrigue: Marketing for a Modern Historical Treasure Hunt",
+    "subtitle": "Combining historical gravitas with contemporary emotional suspense",
+    "objective": "To establish the book as a distinctive cross-era historical mystery-thriller appealing to sophisticated adult fiction readers globally and to generate awareness, engagement, and sales through multi-platform campaigns.",
+    "keyInsight": "Readers are drawn to layered narratives that blend personal emotional journeys with gripping puzzles rooted in real historical contexts—particularly where modern-day characters uncover buried legacies that illuminate both past and present social dynamics.",
+    "howToUse": [
+      "Focus messaging on emotional discovery just as much as mystery, history, or suspense.",
+      "Deploy multi-platform promotion emphasising Wiltshire and royal heritage as hooks.",
+      "Engage book clubs and history-loving communities with discussion guides and author Q&A.",
+      "Leverage the dual timeline to create layered visual content and teaser campaigns.",
+      "Position the female protagonist as a lens into both systemic history and modern identity."
+    ],
+    "primaryKPIs": [
+      "Impressions and CTR from historical fiction digital adverts",
+      "Preorder volumes during campaign phase 2",
+      "Social media engagement rates on teaser trailers and historical facts content",
+      "Book club uptake and inquiry metrics",
+      "Amazon and Goodreads review velocity and quality in first 6 weeks"
+    ],
+    "campaignStructure": {
+      "title": "Cross-Era Secrets Campaign",
+      "funnels": [
+        {
+          "name": "Awareness",
+          "description": "Generate excitement and curiosity through storytelling teasers and timeline-spanning visuals.",
+          "formats": "30–60 second video trailers, POV image quotes, historical trivia reels, location mapping",
+          "optimisation": "Target interest-based audiences with lookalikes via meta-data history, archaeology, dual-timeline fiction"
+        },
+        {
+          "name": "Consideration",
+          "description": "Position the book as emotionally AND intellectually enriching with targeted reviews, themes, and influencer alignment.",
+          "formats": "Amazon A+ content, book review carousel, Pinterest moodboards and visual pins, social carousels",
+          "optimisation": "Monitor high-performing content (themes of grief, legacy, truth) and adjust content direction"
+        },
+        {
+          "name": "Conversion",
+          "description": "Drive readers to direct purchase via retail partner campaigns, email CTAs, and pre-order bundles.",
+          "formats": "Limited-time offers, partner newsletters, direct Facebook shop ads",
+          "optimisation": "Segment high-interest groups (book clubs, UK regional readers, journalism students)"
+        }
+      ],
+      "budgetAllocation": {
+        "title": "Budget Emphasis on Front-Loaded Awareness",
+        "breakdown": "50% awareness (video, social carousel), 30% conversion assets (retailer co-op, UGC), 20% consideration (reviews, micro-influencers, discussion guides)."
+      },
+      "flightSchedule": {
+        "title": "Phased Global Campaign Schedule",
+        "timeline": "Preorder Tease (Weeks 1-3), Awareness Blast (Weeks 4-6), Consideration & Community Anchoring (Weeks 7-10), Conversion Drive (Weeks 11-12), Evergreen Content Boost (post-launch weeks 13+)."
+      }
+    },
+    "metaTargeting": {
+      "title": "Precision Targeting Framework",
+      "geolocation": [
+        "United Kingdom",
+        "United States",
+        "Canada",
+        "Ireland",
+        "Australia",
+        "New Zealand",
+        "Germany",
+        "Netherlands"
+      ],
+      "ageRange": "30–65",
+      "gender": "All genders",
+      "householdIncome": "Middle to upper-middle",
+      "professions": [
+        "journalists",
+        "teachers",
+        "history academics",
+        "heritage professionals",
+        "book editors",
+        "readers circle leaders"
+      ],
+      "languages": [
+        "English"
+      ],
+      "interests": [
+        "historical fiction",
+        "mystery novels",
+        "British history",
+        "archaeology",
+        "royal lineage",
+        "female-led stories",
+        "metal detecting",
+        "book clubs",
+        "dual timeline fiction"
+      ],
+      "behaviours": [
+        "frequent buyers of mystery novels",
+        "subscribers to historical content newsletters",
+        "engaged with historical drama TV"
+      ],
+      "placements": [
+        "Facebook",
+        "Instagram",
+        "YouTube",
+        "Amazon",
+        "Goodreads",
+        "Pinterest",
+        "Google Display Network"
+      ],
+      "devices": "Mobile and tablet optimised with desktop supplemental",
+      "exclusions": "Under 25s, non-English primary speakers in non-target regions, low mystery fiction engagement audiences"
+    },
+    "lookaalikeAudiences": {
+      "title": "Expanding Touchpoints Through Lookalikes",
+      "seedEvents": [
+        "ebook preview downloads",
+        "historical fiction page likes",
+        "podcast listeners of royal drama/historic topics"
+      ],
+      "sizes": [
+        "1%",
+        "2%",
+        "5%"
+      ],
+      "regions": [
+        "UK",
+        "US",
+        "Australia",
+        "Ireland",
+        "Canada"
+      ],
+      "refreshCadence": "Every 6 weeks",
+      "prioritisationRules": [
+        "Prioritise high-converting interest sources (archaeology, UK history)",
+        "Narrow age-focused targeting on 45-65 for phase 2"
+      ]
+    },
+    "targetChannels": {
+      "title": "Omnichannel Promotion Strategy",
+      "digitalChannels": {
+        "title": "Digital Channels",
+        "socialMedia": {
+          "title": "Social Media Platforms",
+          "items": [
+            "Instagram",
+            "Facebook",
+            "YouTube Shorts",
+            "Pinterest",
+            "TikTok (narrative storytelling niche)"
+          ]
+        },
+        "advertising": {
+          "title": "Advertising Platforms",
+          "items": [
+            "Meta Ads Manager",
+            "Amazon DSP",
+            "Google Ads",
+            "Goodreads CPC",
+            "YouTube Discovery"
+          ]
+        },
+        "contentMarketing": {
+          "title": "Content Marketing Approaches",
+          "items": [
+            "Behind-the-book blog posts",
+            "Dual-timeline explainers",
+            "Character introduction reels",
+            "Author origin story content",
+            "Historical site map visuals"
+          ]
+        }
+      },
+      "traditionalChannels": {
+        "title": "Traditional Channels",
+        "printMedia": {
+          "title": "Print Media",
+          "items": [
+            "BBC History Magazine",
+            "The Times Book Review",
+            "Independent on Sunday",
+            "Your Family History",
+            "Literary Review"
+          ]
+        },
+        "events": {
+          "title": "Event Marketing",
+          "items": [
+            "Literary festivals",
+            "Heritage open days",
+            "Bookshop readings",
+            "Online author Q&As",
+            "Historical society appearances"
+          ]
+        },
+        "partnerships": {
+          "title": "Partnership Opportunities",
+          "items": [
+            "English Heritage",
+            "Historic Houses",
+            "Bookshop.org",
+            "Waterstones in-store recommendation list",
+            "Royal History podcasts"
+          ]
+        }
+      }
+    },
+    "messagingFramework": {
+      "title": "Messaging and Positioning Framework",
+      "primaryTagline": "Some secrets are too precious to stay buried.",
+      "supportingMessages": [
+        "A crown, a cabbie, a journalist, and a centuries-old secret.",
+        "Where grief and history collide, truth emerges.",
+        "A stolen artefact binds generations across time.",
+        "From Wiltshire’s green fields to Windsor’s stone halls — every step uncovers betrayal.",
+        "Two strangers, one forgotten jewel, and the royal history no one wanted unearthed."
+      ],
+      "keyThemes": [
+        "Grief and healing",
+        "Historical legacy",
+        "Royal intrigue",
+        "Contemporary corruption",
+        "Dual-timeline mystery",
+        "Estranged family"
+      ],
+      "audienceSpecificMessaging": {
+        "romanceReaders": {
+          "title": "Romantic Subtext Enthusiasts",
+          "message": "While secrets unfold, unexpected affection blooms—proving even buried grief can't hide the pull of human connection."
+        },
+        "bookClubs": {
+          "title": "Book Clubs",
+          "message": "A dual-timeline tale perfect for debate: what happens when historical truth jeopardises the present? Includes downloadable reading guides."
+        },
+        "matureReaders": {
+          "title": "Mature Fiction Fans",
+          "message": "A deep, character-driven uncovering of royal secrets and human pain—ideal for readers who value emotional intelligence with suspense."
+        },
+        "ruralReaders": {
+          "title": "Rural Fiction Appreciators",
+          "message": "Set in the heart of Wiltshire’s hidden corners, this is a story that brings England’s green pastures and long-buried truths to vivid life."
+        }
+      }
+    },
+    "sampleCopy": {
+      "title": "Sample Marketing Messaging",
+      "backCoverBlurb": "When a grieving cab driver unearths a golden artefact in the Wiltshire soil, he inadvertently entwines his future with that of Bibi—an ambitious young journalist chasing clues from 878 AD to modern-day scandal. As the pair hurtle through a past steeped in royal secrets, monastic corruption, and ancient betrayal, they discover that letting go of the past may be the only way to reclaim the present. A gripping historical mystery with a heart, 'Uncovering Past Secrets' reveals that history isn’t buried—it’s waiting.",
+      "socialMediaPosts": [
+        {
+          "emoji": "🔍",
+          "text": "One stolen crown. Two broken lives. Centuries of secrets. Will unearthing the past save them—or bury them deeper? #UncoveringPastSecrets"
+        },
+        {
+          "emoji": "👑",
+          "text": "Some treasures were never meant to be found… but that won’t stop journalist Bibi from trying. Dive into the mystery now."
+        },
+        {
+          "emoji": "🏰",
+          "text": "From monastic halls to metal detectors in Wiltshire—every clue brings them closer to a royal truth that could shatter everything. #HistoricalMystery"
+        }
+      ],
+      "emailSubjectLines": [
+        "A Crown Jewel Gone Missing… Are You Ready to Follow the Clues?",
+        "From Wiltshire to Windsor: A Gripping Tale of Lies and Lineage",
+        "What if History Could Rewrite the Future?",
+        "One Artefact. Two Timelines. Infinite Secrets."
+      ],
+      "callToActionExamples": [
+        "Preorder now to start the chase.",
+        "Get your copy and uncover royal lies.",
+        "Read the mystery critics are calling ‘impossible to put down’.",
+        "Start chapter one free—then try to stop.",
+        "Join thousands solving a centuries-old puzzle."
+      ],
+      "videoCreativeScripts": [
+        {
+          "script": "Visual: A hand touches a dirt-covered gold object. Cut to Bibi scanning old newspapers. Switch to maps flickering between past and present. Voice-over: 'Centuries separate them—grief connects them. One artefact could reveal the truth… if it doesn't ruin them first.' Final visual: A golden crown screaming under a spotlight. Text: 'Uncovering Past Secrets. Available Now.'",
+          "soraPrompt": "Create a cinematic trailer showing a historical mystery told in dual timelines: modern-day Wiltshire, ancient chapels, and flashes of royal courtrooms. Include emotional tension, suspense music, and a powerful female narrator."
+        }
+      ]
+    }
+  }
+}

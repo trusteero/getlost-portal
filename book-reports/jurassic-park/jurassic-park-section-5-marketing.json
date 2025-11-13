@@ -1,0 +1,273 @@
+{
+  "description": "Template for the Marketing section of the book report. This section provides comprehensive marketing strategy, targeting, and promotional content.",
+  "marketing": {
+    "title": "Reviving Chaos: Marketing Jurassic Park - Chaos Unleashed",
+    "subtitle": "An integrated campaign for a high-octane, science-driven thriller bringing dinosaurs and ethical dilemma to a global stage",
+    "objective": "To drive global awareness, build pre-launch anticipation, and convert interest into early sales for 'Jurassic Park: Chaos Unleashed'.",
+    "keyInsight": "Audiences are increasingly drawn to high-stakes narratives intersecting scientific realism with thrilling adventure — particularly those featuring moral conflicts rooted in real-world plausibility, such as genetic experimentation and nature’s unpredictability.",
+    "howToUse": [
+      "Deploy across digital and traditional platforms via targeted content rollout",
+      "Use data-informed funnel strategies to test creative approaches and optimise budget allocation",
+      "Target niche interest groups within science fiction, thrillers, and scientific ethics communities",
+      "Run multi-phase campaign: pre-launch awareness, mid-launch conversion, post-launch engagement"
+    ],
+    "primaryKPIs": [
+      "Pre-order volume",
+      "Landing page click-through rate",
+      "Social media engagement (shares, comments, saves)",
+      "Email open rate and conversions",
+      "Retailer sales velocity in weeks 1-4",
+      "Audience reviews and rating volume"
+    ],
+    "campaignStructure": {
+      "title": "Thematic Funnel Campaign Framework",
+      "funnels": [
+        {
+          "name": "Awareness",
+          "description": "Raise global awareness through visually stunning and thought-provoking creative that introduces the setting, themes, and scale of the narrative.",
+          "formats": "Teaser trailers, reels, concept art, themed Instagram carousels, influencer reads, podcast features",
+          "optimisation": "A/B test visuals (dinosaurs vs human drama), refine creative based on engagement rates"
+        },
+        {
+          "name": "Consideration",
+          "description": "Push narrative intrigue and ethical dilemmas; position the book as both thriller and conversation starter on genetic engineering.",
+          "formats": "Behind-the-scenes author Q&A, science explainer videos, audiogram snippets, Amazon book page excerpts",
+          "optimisation": "Track interaction depth across content strands; prioritise scientific intrigue for academically inclined audiences"
+        },
+        {
+          "name": "Conversion",
+          "description": "Prompt immediate purchase through urgency-led CTAs, social proof, and bonus content offers.",
+          "formats": "Countdown graphics, discount codes, influencer launch-day reviews, newsletter samples",
+          "optimisation": "Test CTA language (e.g., 'Buy Now' vs 'Discover the Consequences'); focus retargeting on warm leads"
+        }
+      ],
+      "budgetAllocation": {
+        "title": "Budget Distribution by Funnel Phase",
+        "breakdown": "40% Awareness, 35% Consideration, 25% Conversion — with flexibility to reallocate based on early performance data"
+      },
+      "flightSchedule": {
+        "title": "Rolling Global Campaign Schedule",
+        "timeline": "Pre-launch 8 weeks: Awareness → Launch week: Consideration + Conversion heavy push → Weeks 2-6 post-launch: Sustained engagement and review amplification"
+      }
+    },
+    "metaTargeting": {
+      "title": "Audience Targeting Strategy",
+      "geolocation": [
+        "United States",
+        "United Kingdom",
+        "Canada",
+        "Australia",
+        "Germany",
+        "India"
+      ],
+      "ageRange": "18–55",
+      "gender": "All genders",
+      "householdIncome": "middle to upper-middle income brackets",
+      "professions": [
+        "students",
+        "university academics",
+        "researchers",
+        "engineers",
+        "creative professionals",
+        "tech workers"
+      ],
+      "languages": [
+        "English",
+        "German",
+        "Spanish"
+      ],
+      "interests": [
+        "science fiction",
+        "dinosaur documentaries",
+        "ethical debates",
+        "genetics",
+        "thrillers",
+        "Jurassic Park franchise",
+        "nature shows",
+        "technology advancements"
+      ],
+      "behaviours": [
+        "frequent book buyers",
+        "sci-fi newsletter subscribers",
+        "streaming users of similar genres",
+        "attendees of pop culture expos",
+        "virtual reality gamers"
+      ],
+      "placements": [
+        "Facebook News Feed",
+        "Instagram Reels",
+        "YouTube pre-roll",
+        "Amazon Sponsored Products",
+        "Google Discover",
+        "Reddit threads",
+        "Spotify podcast ads"
+      ],
+      "devices": "Mobile-first with desktop and tablet remarketing",
+      "exclusions": "Audiences disinterested in science fiction or action genres; sensitive to animal-related content"
+    },
+    "lookaalikeAudiences": {
+      "title": "Expanding Reach with Lookalikes",
+      "seedEvents": [
+        "email subscribers",
+        "social engagers",
+        "pre-order converters",
+        "book sampler downloaders"
+      ],
+      "sizes": [
+        "1%",
+        "2%",
+        "5%"
+      ],
+      "regions": [
+        "North America",
+        "UK",
+        "Europe",
+        "India",
+        "Australia"
+      ],
+      "refreshCadence": "Bi-weekly",
+      "prioritisationRules": [
+        "Engaged in the past 7 days",
+        "High session duration",
+        "Completed add-to-cart action"
+      ]
+    },
+    "targetChannels": {
+      "title": "Multi-Platform Channel Approach",
+      "digitalChannels": {
+        "title": "Digital Engagement Stack",
+        "socialMedia": {
+          "title": "Social Media Focus",
+          "items": [
+            "Instagram",
+            "Facebook",
+            "YouTube",
+            "Twitter",
+            "Reddit",
+            "TikTok"
+          ]
+        },
+        "advertising": {
+          "title": "Paid Advertising",
+          "items": [
+            "Meta Ads",
+            "Google Ads (Search + YouTube)",
+            "Amazon Advertising",
+            "Spotify Audio Ads"
+          ]
+        },
+        "contentMarketing": {
+          "title": "Content Strategy Highlights",
+          "items": [
+            "Long-form blog posts on genetic ethics",
+            "Audiograms from key scenes",
+            "Explainer infographics",
+            "Behind-the-scenes emails",
+            "Newsletter serials"
+          ]
+        }
+      },
+      "traditionalChannels": {
+        "title": "Offline Reach Extensions",
+        "printMedia": {
+          "title": "Print Media Opportunities",
+          "items": [
+            "SFX Magazine",
+            "New Scientist",
+            "The Guardian (Weekend Review)",
+            "BookBub print features"
+          ]
+        },
+        "events": {
+          "title": "Live + Virtual Event Strategy",
+          "items": [
+            "Book festival panels",
+            "Comic-Con booths",
+            "Virtual science talks",
+            "Author AMA livestreams"
+          ]
+        },
+        "partnerships": {
+          "title": "Strategic Collaborations",
+          "items": [
+            "Science museums",
+            "STEM podcasts",
+            "Natural history YouTubers",
+            "Technology educators"
+          ]
+        }
+      }
+    },
+    "messagingFramework": {
+      "title": "Strategic Messaging Architecture",
+      "primaryTagline": "The past isn’t dead…it’s engineered.",
+      "supportingMessages": [
+        "A high-tech park. Prehistoric predators. One chance to survive.",
+        "From the author of Jurassic legacy, a story reimagined for a new generation.",
+        "Thrill meets thought — science fiction with moral magnitude.",
+        "Nature finds a way — and it’s ready to reclaim control."
+      ],
+      "keyThemes": [
+        "Human hubris",
+        "Survival against nature",
+        "Science turned chaotic",
+        "Ethical boundaries of technology",
+        "Corporate overreach"
+      ],
+      "audienceSpecificMessaging": {
+        "romanceReaders": {
+          "title": "For Romance Readers",
+          "message": "A subtle undercurrent of romance blossoms amidst danger — proving love isn't extinct, even among dinosaurs."
+        },
+        "bookClubs": {
+          "title": "For Book Clubs",
+          "message": "Perfect for discussion: cutting-edge science, ethical what-ifs, and heart-pounding survival stakes make this a potent club pick."
+        },
+        "matureReaders": {
+          "title": "For Mature Readers",
+          "message": "A cerebral, high-concept science thriller that reflects on human arrogance and the consequences of progress unchecked."
+        },
+        "ruralReaders": {
+          "title": "For Rural Readers",
+          "message": "Nature isn't just a setting — it's a character. Dive into a wilderness reborn and a battle as old as time itself."
+        }
+      }
+    },
+    "sampleCopy": {
+      "title": "Sample Marketing Materials",
+      "backCoverBlurb": "An island built with ambition is now ruled by chaos. When the genetically engineered marvels of Jurassic Park escape their confines, the people intended to marvel now must fight to survive. In this pulse-quickening thriller, scientific ethics clash with corporate ambition while prehistoric predators roam free. 'Chaos Unleashed' is a jaw-dropping reinvention where mankind’s past mistakes are deadly…and not extinct.",
+      "socialMediaPosts": [
+        {
+          "emoji": "🦖",
+          "text": "Dinosaurs walk again. But this time, we’re not ready for the consequences. ‘Jurassic Park: Chaos Unleashed’ coming soon. #ChaosUnleashed #GeneticThriller"
+        },
+        {
+          "emoji": "🌋",
+          "text": "High-tech wonders, prehistoric power. When control slips, chaos reigns. Are you ready to survive Jurassic Park? 📘🧬"
+        },
+        {
+          "emoji": "🧬",
+          "text": "Science created them. Nature will end them. Dive into the ethical storm of #ChaosUnleashed – pre-order now!"
+        }
+      ],
+      "emailSubjectLines": [
+        "What happens when science plays God?",
+        "Jurassic Park reopens — but chaos awaits 🦖",
+        "Pre-order the thriller that’s raising ancient survival stakes",
+        "Step into the island where nature fights back"
+      ],
+      "callToActionExamples": [
+        "Pre-order now before chaos escapes",
+        "Read the first chapter – free",
+        "Join the resistance against nature unleashed",
+        "Get exclusive bonus content when you buy now"
+      ],
+      "videoCreativeScripts": [
+        {
+          "script": "SFX: Distant dino roars. Fade in—lush green forest. VO: 'In a world where extinction was only the beginning...' ⚡ Cut to flashing alarms, raptors charging, people running in terror. VO: 'Experience the thriller where science unravels and survival becomes the only law.' Title card: 'Jurassic Park: Chaos Unleashed – Pre-order Now'",
+          "soraPrompt": "cinematic trailer showing lush island, lab scenes, thunderstorm, malfunctioning electric barriers, and dinosaurs breaking free — dramatic thriller tone"
+        }
+      ]
+    }
+  }
+}

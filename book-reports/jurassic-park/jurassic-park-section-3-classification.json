@@ -1,0 +1,221 @@
+{
+  "description": "Template for the Classification section of the book report. This section provides genre classification, competitive analysis, and market positioning.",
+  "classification": {
+    "positioning": {
+      "title": "High-Stakes Scientific Thriller",
+      "subtitle": "An adrenaline-fueled science fiction narrative exploring the perils of playing God with nature",
+      "description": "Jurassic Park: Chaos Unleashed is positioned as a high-concept thriller combining cutting-edge science fiction with intense survivalist adventure. Set on a remote tropical island where cloned dinosaurs roam free after a catastrophic systems failure, the story blends intellectual themes with gripping action. Its core appeal lies in the dramatic conflict between unchecked scientific ambition and the raw, uncontrollable power of nature. With its blend of suspenseful pacing, ethical dilemmas, and blockbuster-level action, the book targets a mass-market adult readership that craves high-stakes fiction grounded in real-world science."
+    },
+    "moodAndTone": {
+      "title": "Tense and Thought-Provoking",
+      "subtitle": "A gripping combination of suspense, terror, and wonder",
+      "description": "The mood throughout the narrative is atmospheric and tense, driven by relentless danger and thematic depth. Readers experience fear and awe as characters confront prehistoric predators and grapple with complex ethical dilemmas around cloning and human hubris. The tone remains cinematic and immersive, alternating between moments of scientific awe and visceral horror. This duality—of wonder turned to terror—creates an emotionally engaging, high-stakes experience that leaves readers exhilarated yet contemplative."
+    },
+    "competitiveAnalysis": {
+      "title": "Genre-Leading Comparatives and Positioning",
+      "competitors": [
+        {
+          "title": "Jurassic Park",
+          "author": "Michael Crichton",
+          "coverImage": "https://images-na.ssl-images-amazon.com/images/I/81t2CVWEsUL.jpg",
+          "description": "The core comparative benchmark—both explore the catastrophic consequences of reviving dinosaurs through genetic engineering.",
+          "similarities": [
+            "Dinosaurs revived through cloning",
+            "Ethical dilemmas of scientific advancement",
+            "High-concept science thriller",
+            "Island-based chaos"
+          ],
+          "differences": [
+            "This version adds depth to dinosaur characterization and integrates updated ethical discourses on biotechnology"
+          ]
+        },
+        {
+          "title": "The Andromeda Strain",
+          "author": "Michael Crichton",
+          "coverImage": "https://images-na.ssl-images-amazon.com/images/I/71CelsZiURL.jpg",
+          "description": "Another Crichton classic where scientific missteps have catastrophic consequences—more focused on disease containment than on fauna re-creation.",
+          "similarities": [
+            "Science-driven narrative",
+            "Catastrophic consequences of innovation",
+            "Tense, procedural storytelling"
+          ],
+          "differences": [
+            "Focuses on a microbiological threat rather than large predatory creatures"
+          ]
+        },
+        {
+          "title": "Frankenstein",
+          "author": "Mary Shelley",
+          "coverImage": "https://images-na.ssl-images-amazon.com/images/I/81+OEh7HNhL.jpg",
+          "description": "A pioneer narrative exploring human overreach in science and its tragic consequences.",
+          "similarities": [
+            "Themes of playing God",
+            "Moral and ethical complications of creation",
+            "Creature vs. creator dynamic"
+          ],
+          "differences": [
+            "More internal and philosophical; Jurassic Park: Chaos Unleashed leans toward corporate-scale recklessness and external action"
+          ]
+        }
+      ],
+      "indirectCompetitors": [
+        {
+          "title": "Sphere",
+          "author": "Michael Crichton",
+          "coverImage": "https://images-na.ssl-images-amazon.com/images/I/81i6ul-10jL.jpg",
+          "description": "Also a high-stakes science thriller involving discovery, isolation, and psychological suspense in confined environments.",
+          "similarities": [
+            "Claustrophobic setting",
+            "Science and survival tension",
+            "Corporate and psychological stakes"
+          ],
+          "differences": [
+            "Focuses on alien technology and deep-sea setting versus prehistoric threats and island landscapes"
+          ]
+        },
+        {
+          "title": "Annihilation",
+          "author": "Jeff VanderMeer",
+          "coverImage": "https://images-na.ssl-images-amazon.com/images/I/81h2gWPTYJL.jpg",
+          "description": "A surreal and unsettling journey through a genetically distorted landscape, appealing to readers drawn to speculative science.",
+          "similarities": [
+            "Exploration of evolutionary anomalies",
+            "Themes of nature's unpredictability",
+            "Unseen scientific boundaries"
+          ],
+          "differences": [
+            "More abstract and cerebral, whereas Jurassic Park is more grounded in action and realism"
+          ]
+        }
+      ],
+      "brandPositioning": {
+        "uniqueValueProposition": "Combines pulse-pounding dinosaur-driven thrills with profound meditations on bioethics, corporate greed, and environmental disruption.",
+        "targetReaderIdentity": "Science fiction and thriller fans who enjoy high-concept premises, action-oriented storytelling, and ethical quandaries.",
+        "emotionalAppeal": "Thrills readers with edge-of-the-seat suspense while provoking reflection on our responsibility in technological advancement.",
+        "marketDifferentiation": "Blends blockbuster-style dinosaur action with cerebral science fiction, elevating the genre with plausible biogenetic frameworks and rich philosophical inquiry."
+      },
+      "marketPositioning": {
+        "title": "Mass-Market Science Thriller Appeal",
+        "primaryCategory": "Science Fiction / Thriller",
+        "secondaryCategories": [
+          "Adventure",
+          "Eco-Terror",
+          "Ethical Science Fiction",
+          "BioTech Thriller",
+          "Survival Thriller"
+        ],
+        "targetShelfPlacement": [
+          "Science Fiction",
+          "Thrillers",
+          "Action & Adventure",
+          "Popular Science Tie-Ins"
+        ],
+        "pricePositioning": "Mass-market paperback pricing with premium digital and audio editions",
+        "seasonalStrategy": "Ideal for summer blockbuster release, with peak performance expected near holiday release windows and cross-media promotions"
+      },
+      "uniquePositioning": {
+        "title": "Scientific Ethics Meets Action-Adrenaline",
+        "description": "A unique fusion of action-adventure and philosophical introspection set against the natural horror of prehistoric predators.",
+        "elements": [
+          "Depiction of dinosaurs as intelligent beings, not just threats",
+          "Integration of chaos theory and predictive failure modeling",
+          "Thematic spotlight on corporate vs. scientific responsibility",
+          "Strong intergenerational character dynamics"
+        ]
+      },
+      "subgenreClassification": {
+        "title": "Subgenre Classification Map",
+        "subtitle": "Dominant exploratory and survivalist speculative fiction components",
+        "subgenres": [
+          {
+            "label": "Jungle Adventure",
+            "score": 1
+          },
+          {
+            "label": "Lost World Adventure",
+            "score": 0.982
+          },
+          {
+            "label": "Children's Animal Fantasy",
+            "score": 0.97
+          },
+          {
+            "label": "Pandemic Fiction",
+            "score": 0.965
+          },
+          {
+            "label": "Medical Thriller",
+            "score": 0.959
+          },
+          {
+            "label": "Digital Nomad Fiction",
+            "score": 0.957
+          },
+          {
+            "label": "Alien Contact Fiction",
+            "score": 0.954
+          },
+          {
+            "label": "Pandemic-Era Fiction",
+            "score": 0.951
+          },
+          {
+            "label": "Eco-Horror",
+            "score": 0.948
+          },
+          {
+            "label": "Survivalist Adventure",
+            "score": 0.948
+          },
+          {
+            "label": "Medical Conspiracy Thriller",
+            "score": 0.948
+          },
+          {
+            "label": "Chronic Illness / Invisible Disability Fiction",
+            "score": 0.945
+          },
+          {
+            "label": "Desert Adventure",
+            "score": 0.945
+          },
+          {
+            "label": "Animal Companion Fantasy",
+            "score": 0.938
+          },
+          {
+            "label": "Mental Health Fiction",
+            "score": 0.937
+          }
+        ]
+      }
+    },
+    "marketGaps": {
+      "title": "Market Gaps and Untapped Opportunities",
+      "opportunities": [
+        {
+          "opportunity": "High-concept science fiction with credible bioethics and real-world implications",
+          "rationale": "Most science thrillers rely on speculative or exaggerated technologies without rooting them in active academic discourse.",
+          "potentialImpact": "Appeals to a growing educated audience interested in climate change, genetics, and technological responsibility—bridging mass-market and science-savvy demographics."
+        },
+        {
+          "opportunity": "Modernized dinosaur fiction beyond action tropes",
+          "rationale": "Dinosaur narratives are often relegated to youth or pure action settings without pushing philosophical or thematic boundaries.",
+          "potentialImpact": "Establishes authority and originality in a niche with nostalgic appeal but little recent literary innovation."
+        }
+      ],
+      "underservedAudiences": [
+        {
+          "audience": "Adult sci-fi readers seeking grounded thrillers with philosophical themes",
+          "whyUnderserved": "Mainstream sci-fi tends toward space or cyber themes—biology-based or evolution-centered thrillers are rarer.",
+          "potential": "High—combines mass-market appetite for suspense with the intellectual interest of speculative non-space-based readers."
+        },
+        {
+          "audience": "STEM-interested general readers",
+          "whyUnderserved": "Few fiction titles responsibly portray the complexity of science without veering into unrealism or technobabble.",
+          "potential": "Moderate to high—builds credibility among educators, students, and curious lay readers craving intelligent entertainment."
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,730 @@
+{
+  "book": {
+    "title": "A Gift of Serenity",
+    "author": "John Ellis",
+    "subtitle": "A Literary Psychological Thriller of Memory and Redemption",
+    "description": "On a remote English island, a man haunted by memory loss and guilt sets out on a walking pilgrimage, hoping to find peace while the past stalks close behind. Caught between psychological suspense, romance, and the search for healing, his journey weaves locked-room mystery tension with the intimate pulse of redemption and love. Both a gripping thriller and a layered meditation on grief, resilience, and second chances, this is a story for readers who crave suspense laced with emotional depth.",
+    "coverImage": "gift-of-serenity-cover.jpg"
+  },
+  "audienceMatch": {
+    "title": "Audience Match",
+    "bisac": {
+      "primary": "Fiction / Thrillers / Psychological",
+      "secondary": "Fiction / Literary",
+      "additional": "Fiction / Romance / Suspense"
+    },
+    "keyCharacteristics": "Readers seek psychological intensity, redemption arcs, and morally complex protagonists; audio and digital uptake is strong, supported by book-club adoption."
+  },
+  "analysisOverview": {
+    "title": "Analysis Overview",
+    "readership": "The book attracts a broad yet focused readership: younger adults drawn in by themes of influencer burnout and contemporary pressures, and mature audiences resonating with grief, therapy, and redemption. Its appeal lies in crossing boundaries—thriller fans gain psychological depth, literary readers find a page-turning plot, and romance audiences connect with love-after-loss tropes. Engagement is amplified by BookTok, book clubs, and audiobook consumption, ensuring strong reach across both niche and mainstream channels.",
+    "classification": "Positioned as a literary psychological thriller, the book is mapped through a bespoke subgenre taxonomy, highlighting its strong placement in Locked Island Thrillers, Therapy Journey Fiction, and Memory Loss Mysteries. This tailored classification confirms its hybrid appeal: suspenseful, morally complex, and emotionally resonant.",
+    "personas": "Two personas bring the audience to life: The Reflective Seeker, embodying mature, spiritually minded readers seeking catharsis, and The Dark Aesthete, representing younger, creative urban readers drawn to psychological intensity and stylish transgression. The primary persona—the Reflective Seeker—reveals that the book's core strength lies in offering meaning, depth, and redemption.",
+    "marketingGuidance": "Marketing insights emphasise suspense-driven hooks and healing-centred messages, allowing campaigns to balance mystery with emotional payoff. This first report provides foundational guidance for copy and creative, while future iterations will expand into a dedicated marketing product with richer assets and tested playbooks."
+  },
+  "moodAndTone": {
+    "subtitle": "Atmospheric layers of suspense, grief, and resilience",
+    "moodTags": [
+      {
+        "tag": "Psychological Suspense",
+        "description": "Tense, interior-driven narratives with moral ambiguity and memory distortion."
+      },
+      {
+        "tag": "Redemptive",
+        "description": "Undercurrent of healing and grace through a difficult personal journey."
+      },
+      {
+        "tag": "Romantic Undercurrents",
+        "description": "Subtle but powerful exploration of intimacy, loss, and reconnection."
+      },
+      {
+        "tag": "Atmospheric Rural England",
+        "description": "Moody coastal landscapes, village rituals, and ecclesiastical echoes."
+      },
+      {
+        "tag": "Book-Club Depth",
+        "description": "Layered themes designed to spark reflection and group discussion."
+      }
+    ]
+  },
+  "positioningConfidence": {
+    "title": "Positioning Confidence",
+    "subtitle": "Genre classification confidence metrics",
+    "categories": [
+      {
+        "label": "Literary Psychological Thriller",
+        "score": 0.95
+      },
+      {
+        "label": "Memory Loss Mystery",
+        "score": 0.92
+      },
+      {
+        "label": "Therapy Journey Fiction",
+        "score": 0.88
+      },
+      {
+        "label": "Locked Island Thriller",
+        "score": 0.85
+      },
+      {
+        "label": "Romantic Suspense",
+        "score": 0.83
+      },
+      {
+        "label": "Redemption Arc Fiction",
+        "score": 0.9
+      }
+    ]
+  },
+  "demographics": {
+    "title": "Audience Analysis",
+    "primaryAudience": {
+      "title": "Primary Audience",
+      "subtitle": "Literary-leaning psychological suspense readers with romance and redemption themes",
+      "summary": {
+        "ageRange": "25–44 core, with strong spillover to 45–54",
+        "genderSplit": "Slight female skew due to romance and therapy-journey threads; thriller and noir elements broaden male uptake",
+        "incomeRange": "Middle to upper-middle income; white-collar and creative professions",
+        "marketSize": "Large crossover segment at the junction of psychological thrillers, literary fiction, and contemporary romance"
+      },
+      "genderDistribution": {
+        "female": 52,
+        "male": 41,
+        "nonBinary": 5,
+        "preferNotToSay": 2
+      },
+      "ageDistribution": {
+        "18-24": 8,
+        "25-34": 32,
+        "35-44": 30,
+        "45-54": 18,
+        "55-64": 9,
+        "65+": 3
+      },
+      "geographicDistribution": {
+        "urban": 48,
+        "suburban": 38,
+        "rural": 14
+      },
+      "preferredFormats": {
+        "hardcover": 9,
+        "tradePaperbacks": 31,
+        "massMarket": 3,
+        "audiobooks": 27,
+        "ebooks": 30
+      },
+      "topProfessions": [
+        "Marketing and communications",
+        "Healthcare and therapy",
+        "Education and academia",
+        "Technology and product",
+        "Arts and media"
+      ],
+      "discoveryPathways": [
+        "Bookstagram and BookTok psychological-thriller and 'sad girl lit' lanes",
+        "Crime and mystery newsletters and podcasts",
+        "Goodreads lists for amnesia, island, and manhunt thrillers",
+        "Romance communities for widowhood, small-town, and reunited lovers tropes",
+        "Retail carousels for literary thrillers and contemporary psychological fiction"
+      ],
+      "interestProfile": {
+        "tvShows": [
+          "Sharp Objects",
+          "Broadchurch",
+          "The Affair",
+          "Mare of Easttown",
+          "You"
+        ],
+        "films": [
+          "Shutter Island",
+          "Memento",
+          "Gone Girl",
+          "The Talented Mr Ripley",
+          "The Wife"
+        ],
+        "music": [
+          "Alt-pop and indie folk with melancholic tones",
+          "Cinematic ambient playlists",
+          "Modern classical for focus and reflection"
+        ],
+        "art": [
+          "Symbolist and surrealist imagery",
+          "Moody coastal photography",
+          "Contemporary figurative painting"
+        ],
+        "hobbies": [
+          "True-crime podcasts",
+          "Mindfulness and journalling",
+          "Walking and coastal travel",
+          "Book clubs with literary-suspense focus"
+        ]
+      },
+      "marketReach": {
+        "tam": {
+          "title": "Total Addressable Market",
+          "subtitle": "Global adult readers of psychological thrillers, literary fiction, and contemporary romance",
+          "value": "High tens of millions worldwide",
+          "description": "Large multi-genre crossover spanning crime, literary, and romance shelves in English-language markets and translations."
+        },
+        "sam": {
+          "title": "Serviceable Available Market",
+          "subtitle": "English-language readers engaging specifically with locked-island, memory-loss, therapy-journey, and small-town tropes",
+          "value": "Low-to-mid millions",
+          "description": "Active purchasers of comparable titles in retail and subscription ecosystems, including audio-centric segments."
+        },
+        "som": {
+          "title": "Serviceable Obtainable Market",
+          "subtitle": "Early adopter niches reachable with targeted campaigns",
+          "value": "Hundreds of thousands",
+          "description": "Psych-thriller and book-club communities on social platforms, plus romance sub-tropes like widow/widower and reunited lovers."
+        }
+      },
+      "summaryText": "The highest-scoring signals foreground a locked island thriller frame with amnesia and manhunt threads, layered with therapy-journey, influencer burnout, widowhood, and small-town romance motifs. This mix attracts literary-suspense readers seeking moral ambiguity and psychological depth, while romance tropes broaden appeal among female-led book clubs. Audio consumption is strong for this category; paperbacks and e-books remain evenly competitive."
+    },
+    "secondaryAudience": {
+      "title": "Secondary Audience",
+      "subtitle": "Mature literary readers and romance-forward segments",
+      "summary": {
+        "ageRange": "45–64 secondary, with selective 18–24 engagement via influencer-burnout angles",
+        "genderSplit": "Female-led with notable male interest from noir and manhunt components",
+        "incomeRange": "Stable mid-income; strong library borrowers and audiobook subscribers",
+        "marketSize": "Moderate to large, driven by book-club adoption and library circulation"
+      },
+      "genderDistribution": {
+        "female": 65,
+        "male": 30,
+        "other": 5
+      },
+      "ageDistribution": {
+        "35-44": 15,
+        "45-54": 35,
+        "55-64": 35,
+        "65+": 15
+      },
+      "geographicDistribution": {
+        "unitedKingdom": 45,
+        "unitedStates": 30,
+        "canada": 15,
+        "australia": 10
+      },
+      "preferredFormats": {
+        "tradePaperbacks": 40,
+        "audiobooks": 30,
+        "ebooks": 20,
+        "libraryLoans": 10
+      },
+      "topProfessions": [
+        "Public sector and education",
+        "Healthcare and social care",
+        "Publishing and cultural sectors",
+        "Consulting and finance",
+        "Non-profit and community work"
+      ],
+      "discoveryPathways": [
+        "Library recommendations and OverDrive/Libby",
+        "Retail staff picks and book-club tables",
+        "Author interviews and crime-or-romance podcasts",
+        "Facebook reader groups and newsletter swaps"
+      ],
+      "summaryText": "Themes of grief, care work and ageing, redemption, and urban alienation resonate with mature literary readers and book clubs. Romance subgenres such as reunited lovers and small-town arcs provide emotional catharsis, while the mystery-thriller chassis keeps engagement high for plot-first readers."
+    }
+  },
+  "classification": {
+    "title": "Classification",
+    "positioning": {
+      "title": "Market positioning",
+      "subtitle": "Data-led category fit",
+      "categories": [
+        {
+          "label": "Thriller",
+          "score": 0.874
+        },
+        {
+          "label": "Mystery",
+          "score": 0.805
+        },
+        {
+          "label": "Romance",
+          "score": 0.763
+        },
+        {
+          "label": "Fiction/Literary",
+          "score": 0.771
+        },
+        {
+          "label": "Psychological",
+          "score": 0.802
+        },
+        {
+          "label": "Folklore/Occult",
+          "score": 0.0
+        }
+      ]
+    },
+    "competitiveAnalysis": {
+      "title": "Competitive analysis",
+      "subtitle": "Nearest benchmarks from exec summary and sub-genre signals",
+      "competitors": [
+        {
+          "title": "The Goldfinch",
+          "author": "Donna Tartt",
+          "coverImage": "the-goldfinch-tartt.jpg",
+          "marketPosition": "Literary bestseller with morally compromised protagonist and art-crime undertow",
+          "similarities": [
+            "morally grey lead",
+            "grief and guilt through literary prose",
+            "slow-burn psychological momentum"
+          ],
+          "differences": [
+            "urban U.S. milieu not rural England",
+            "art heist plot rather than murder secret",
+            "youth-to-adult arc vs midlife reckoning"
+          ]
+        },
+        {
+          "title": "Asylum",
+          "author": "Patrick McGrath",
+          "coverImage": "asylum-mcgrath.jpg",
+          "marketPosition": "Gothic psychological literary novel",
+          "similarities": [
+            "obsession and transgression",
+            "unreliable interiority",
+            "dark romantic charge"
+          ],
+          "differences": [
+            "institutional setting not pilgrimage",
+            "no rural folk-spiritual layer",
+            "narrower external stakes"
+          ]
+        },
+        {
+          "title": "The Loney",
+          "author": "Andrew Michael Hurley",
+          "coverImage": "the-loney-hurley.jpg",
+          "marketPosition": "Quiet folk-horror with coastal English austerity",
+          "similarities": [
+            "English rural unease",
+            "ritual and moral panic",
+            "outsider confronting a closed community"
+          ],
+          "differences": [
+            "overt horror elements vs psychological thriller",
+            "different religious backdrop",
+            "more supernatural elements"
+          ]
+        }
+      ],
+      "indirectCompetitors": [
+        {
+          "title": "Reservoir 13",
+          "author": "Jon McGregor",
+          "coverImage": "reservoir-13-mcgregor.jpg",
+          "marketPosition": "Literary village chorus novel about loss and landscape",
+          "similarities": [
+            "Literary fiction focus",
+            "Rural English setting",
+            "Themes of loss and landscape"
+          ],
+          "differences": [
+            "Different narrative structure",
+            "No thriller elements",
+            "More experimental prose style"
+          ]
+        },
+        {
+          "title": "Ritual",
+          "author": "David Pinner",
+          "coverImage": "ritual-pinner-correct.jpg",
+          "marketPosition": "Folk dread template that inspired The Wicker Man",
+          "similarities": [
+            "English rural unease",
+            "Ritual and moral panic",
+            "Outsider confronting a closed community"
+          ],
+          "differences": [
+            "Police investigation frame vs personal redemption walk",
+            "Pagan cult focus over intimate guilt",
+            "Plot-led folk horror vs literary introspection"
+          ]
+        }
+      ],
+      "marketGaps": {
+        "title": "Underserved niches",
+        "opportunities": [
+          "Literary thriller centred on a 50-something male antihero undertaking a rural walking pilgrimage",
+          "Therapy-journey frame blended with crime past and redemption arc",
+          "English ecclesiastical settings with cat-and-mouse psychological texture rather than overt horror",
+          "Modern work-life motifs (influencer burnout, remote work, lifestyle migration) used as moral backdrop"
+        ]
+      },
+      "uniquePositioning": {
+        "title": "Why it stands apart",
+        "description": "A literary psychological thriller that treats redemption as a journey on foot through rural England, fusing cat-and-mouse tension with therapy-journey texture and restrained folk-spiritual notes.",
+        "elements": [
+          "Locked-group tension reframed as isolated-pilgrim vulnerability",
+          "Memory loss and moral stain driving motive rather than twist gimmick",
+          "English villages, clergy, and ritual as ambience not monster",
+          "Midlife male perspective with romantic and bereavement threads",
+          "Book-club friendly themes without sacrificing suspense"
+        ]
+      },
+      "subgenreClassification": {
+        "title": "High-signal sub-genres",
+        "subgenres": [
+          {
+            "label": "Locked Island Thriller",
+            "score": 1.0
+          },
+          {
+            "label": "Therapy Journey Fiction",
+            "score": 0.86
+          },
+          {
+            "label": "Memory Loss Mystery",
+            "score": 0.835
+          },
+          {
+            "label": "Influencer Burnout Fiction",
+            "score": 0.813
+          },
+          {
+            "label": "Widow / Widower Romance",
+            "score": 0.799
+          },
+          {
+            "label": "Psychological Cat-and-Mouse",
+            "score": 0.759
+          },
+          {
+            "label": "Manhunt Thriller",
+            "score": 0.748
+          },
+          {
+            "label": "Small Town Romance",
+            "score": 0.729
+          },
+          {
+            "label": "Reunited Lovers Romance",
+            "score": 0.728
+          },
+          {
+            "label": "Care Work & Ageing Fiction",
+            "score": 0.727
+          }
+        ]
+      },
+      "marketPositioning": {
+        "primaryCategory": "Literary Thriller",
+        "secondaryCategories": [
+          "Psychological Fiction",
+          "Mystery",
+          "Romantic Suspense"
+        ],
+        "targetShelfPlacement": [
+          "Fiction > Literary",
+          "Crime, Thriller & Mystery",
+          "Book Club Picks"
+        ],
+        "pricePositioning": "Premium trade paperback and audiobook tier",
+        "seasonalStrategy": "Autumn and winter for darker literary fare; spring paperback for book-club adoption"
+      },
+      "brandPositioning": {
+        "coreMessage": "A morally stained man walks toward peace as the past hunts beside him.",
+        "keyDifferentiators": [
+          "Pilgrimage-structured thriller",
+          "Therapy-journey lens on crime and guilt",
+          "English folk-spiritual atmosphere without overt horror",
+          "Midlife antihero voice with intimate romance thread"
+        ],
+        "emotionalPromise": "Catharsis through confession, memory, and hard-won grace.",
+        "targetReaderIdentity": "Readers of literary thrillers who favour interiority, rural English settings, and morally complex leads"
+      }
+    }
+  },
+  "readerPersonas": {
+    "title": "Reader Personas",
+    "emoji": "📖",
+    "subtitle": "Profiles of two key reader segments most aligned with the book's themes, style, and narrative appeal.",
+    "personas": [
+      {
+        "name": "The Reflective Seeker",
+        "badge": {
+          "text": "Spiritual Pilgrim",
+          "color": "#5B8C5A"
+        },
+        "image": "reflective-seeker-persona.jpg",
+        "demographics": {
+          "location": "UK, Western Europe, North America",
+          "age": "45-65",
+          "job": "Academic, Therapist, Retired Professional",
+          "salary": "£40,000–£80,000",
+          "education": "Postgraduate degree or professional qualification",
+          "status": "Married or divorced",
+          "children": "Adult children or none"
+        },
+        "coreNeeds": "Meaningful engagement with stories exploring guilt, mortality, and redemption.",
+        "fears": "Emotional shallowness, lack of purpose, estrangement from family or spirituality.",
+        "values": "Depth, authenticity, cultural tradition, and personal growth.",
+        "psychologicalMotivations": "Seeks narratives that echo inner conflicts and offer catharsis or transcendence.",
+        "readingBehavior": {
+          "socialStyle": "Quiet, reflective, prefers solitary reading but enjoys book clubs for intellectual discussion.",
+          "readingTimes": "Evenings, weekends, retreats.",
+          "likelihoodToRecommend": "High to like-minded peers seeking literary or spiritual resonance.",
+          "tracking": "Uses Goodreads or annotated journals."
+        },
+        "readingHabits": {
+          "discoveryMethods": ["Book clubs", "Literary prize lists", "Podcasts", "Independent bookshops"],
+          "quote": "I read to find echoes of my own questions about life, death, and legacy.",
+          "quoteAuthor": "The Reflective Seeker"
+        },
+        "booksThisPersonaLoves": [
+          {
+            "title": "The Goldfinch",
+            "author": "Donna Tartt",
+            "description": "A layered psychological novel exploring grief, art, and moral ambiguity.",
+            "image": "the-goldfinch-tartt.jpg"
+          },
+          {
+            "title": "The Secret History",
+            "author": "Donna Tartt",
+            "description": "A psychological thriller about academic obsession and moral corruption.",
+            "image": "secret-history-tartt.jpg"
+          }
+        ],
+        "interestProfile": {
+          "films": ["The Wicker Man", "Silence", "The Seventh Seal"],
+          "tvShows": ["The Third Day", "The OA"],
+          "music": ["Nick Cave", "Arvo Pärt", "Leonard Cohen"],
+          "art": ["Symbolist painting", "Folkloric woodcuts"],
+          "hobbies": ["Pilgrimage walks", "Meditation", "Visiting historical sites"]
+        }
+      },
+      {
+        "name": "The Dark Aesthete",
+        "badge": {
+          "text": "Cult Thriller Enthusiast",
+          "color": "#2C3E50"
+        },
+        "image": "dark-aesthete-persona.jpg",
+        "demographics": {
+          "location": "Global cities (London, New York, Berlin)",
+          "age": "30-50",
+          "job": "Creative professional, Editor, Influencer",
+          "salary": "£35,000–£70,000",
+          "education": "Undergraduate or postgraduate degree, often in arts/humanities",
+          "status": "Single or in non-traditional relationships",
+          "children": "None"
+        },
+        "coreNeeds": "Psychological complexity and stylish, transgressive narratives that blur morality.",
+        "fears": "Mediocrity, cliché, or sentimentality in storytelling.",
+        "values": "Aesthetic intensity, intellectual challenge, subversive themes.",
+        "psychologicalMotivations": "Drawn to characters confronting darkness, secrecy, and forbidden desire.",
+        "readingBehavior": {
+          "socialStyle": "Active online reviewer, enjoys sharing passages and analysis.",
+          "readingTimes": "Late nights, commutes, travel.",
+          "likelihoodToRecommend": "Moderate to high among peers interested in edgy, cerebral fiction.",
+          "tracking": "Uses Instagram, TikTok, and Goodreads."
+        },
+        "readingHabits": {
+          "discoveryMethods": ["Social media", "Indie press catalogues", "Festival panels", "Critic reviews"],
+          "quote": "I want books that seduce and unsettle me in equal measure.",
+          "quoteAuthor": "The Dark Aesthete"
+        },
+        "booksThisPersonaLoves": [
+          {
+            "title": "Asylum",
+            "author": "Patrick McGrath",
+            "description": "A gothic psychological tale of forbidden love and mental fragility.",
+            "image": "asylum-mcgrath.jpg"
+          },
+          {
+            "title": "The Wasp Factory",
+            "author": "Iain Banks",
+            "description": "A disturbing psychological thriller about isolation and madness.",
+            "image": "wasp-factory-banks.jpg"
+          }
+        ],
+        "interestProfile": {
+          "films": ["Eyes Wide Shut", "Under the Skin", "The Lighthouse"],
+          "tvShows": ["True Detective (Season 1)", "Penny Dreadful"],
+          "music": ["PJ Harvey", "Massive Attack", "Chelsea Wolfe"],
+          "art": ["Contemporary performance art", "Esoteric symbolism"],
+          "hobbies": ["Dark photography", "Underground theatre", "Collecting rare editions"]
+        }
+      }
+    ]
+  },
+  "marketing": {
+    "title": "Stage 1 Marketing Plan",
+    "subtitle": "Comprehensive campaign framework for launch",
+    "objective": "Position the book as a compelling cross-genre read that blends emotional depth with suspense, appealing to both mainstream and niche audiences.",
+    "keyInsight": "Readers are drawn to stories that merge therapeutic journeys and mystery-driven tension with universal themes of resilience, memory, and healing.",
+    "howToUse": [
+      "Deploy this plan as a structured roadmap for the first 90 days of promotion.",
+      "Use insights for copy development, audience targeting, and budget allocation.",
+      "Iterate messaging and creative based on early campaign performance."
+    ],
+    "primaryKPIs": [
+      "Pre-orders and launch week sales",
+      "Email subscriber growth",
+      "Social media engagement rates",
+      "Ad click-through rate and cost per acquisition",
+      "Book club and community partnerships secured"
+    ],
+    "campaignStructure": {
+      "title": "Campaign Structure",
+      "funnels": [
+        {
+          "name": "Awareness",
+          "description": "Introduce the book to wide audiences with emotional hooks and thematic intrigue.",
+          "formats": "Video teasers, carousel ads, short-form TikTok/Instagram reels",
+          "optimisation": "Maximise reach and engagement through interest-based targeting."
+        },
+        {
+          "name": "Consideration",
+          "description": "Encourage deeper exploration of the book's themes and author brand.",
+          "formats": "Long-form Facebook ads, Instagram stories, author interviews, podcast guest spots",
+          "optimisation": "Retarget engaged audiences with layered creative assets."
+        },
+        {
+          "name": "Conversion",
+          "description": "Drive direct sales through strong calls to action and urgency messaging.",
+          "formats": "Amazon sponsored product ads, BookBub placements, email sequences",
+          "optimisation": "Prioritise low-cost, high-ROI conversions and pre-order pushes."
+        }
+      ],
+      "budgetAllocation": {
+        "title": "Budget Allocation",
+        "breakdown": "40% awareness ads, 35% retargeting/consideration, 15% conversion ads, 10% content and PR."
+      },
+      "flightSchedule": {
+        "title": "Flight Schedule",
+        "timeline": "Month 1: Awareness launch, Month 2: Retargeting build, Month 3: Conversion push."
+      }
+    },
+    "metaTargeting": {
+      "title": "Meta Targeting",
+      "geolocation": ["United States", "Canada", "United Kingdom", "Australia"],
+      "ageRange": "25-55",
+      "gender": "All genders with emphasis on female-majority readership",
+      "householdIncome": "Middle to upper-middle income households",
+      "professions": ["Educators", "Healthcare professionals", "Writers", "Therapists"],
+      "languages": ["English"],
+      "interests": [
+        "Psychological fiction",
+        "Mystery and thrillers",
+        "Book clubs",
+        "Mental health awareness",
+        "Romance novels"
+      ],
+      "behaviours": [
+        "Frequent eBook buyers",
+        "Online book club participants",
+        "Audiobook listeners"
+      ],
+      "placements": ["Facebook feed", "Instagram reels", "Instagram stories", "Audience Network"],
+      "devices": "Mobile-first with cross-device optimisation",
+      "exclusions": "Exclude existing purchasers and low-engagement segments."
+    },
+    "lookaalikeAudiences": {
+      "title": "Lookalike Audiences",
+      "seedEvents": ["Website traffic", "Email subscribers", "Early pre-orders"],
+      "sizes": ["1%", "3%", "5%"],
+      "regions": ["United States", "Canada"],
+      "refreshCadence": "Monthly refresh based on new sales and engagement data",
+      "prioritisationRules": ["Prioritise high-engagement lookalikes", "Exclude overlaps with core interest audiences"]
+    },
+    "targetChannels": {
+      "title": "Target Channels",
+      "digitalChannels": {
+        "title": "Digital Channels",
+        "socialMedia": {
+          "title": "Social Media",
+          "items": ["Facebook", "Instagram", "TikTok", "Twitter/X", "Pinterest"]
+        },
+        "advertising": {
+          "title": "Advertising",
+          "items": ["Meta Ads Manager", "Amazon Ads", "BookBub Ads", "Google Display Network"]
+        },
+        "contentMarketing": {
+          "title": "Content Marketing",
+          "items": ["Author blog", "Medium articles", "Podcast appearances", "Newsletter features"]
+        }
+      },
+      "traditionalChannels": {
+        "title": "Traditional Channels",
+        "printMedia": {
+          "title": "Print Media",
+          "items": ["Local newspapers", "Genre-specific magazines", "Literary journals"]
+        },
+        "events": {
+          "title": "Events",
+          "items": ["Book fairs", "Library talks", "Local bookstore signings", "Virtual author Q&A"]
+        },
+        "partnerships": {
+          "title": "Partnerships",
+          "items": ["Mental health organisations", "Book clubs", "Therapist associations"]
+        }
+      }
+    },
+    "messagingFramework": {
+      "title": "Messaging Framework",
+      "primaryTagline": "A journey of memory, healing, and suspense that keeps you turning the pages.",
+      "supportingMessages": [
+        "What if your past held the key to your future?",
+        "A story for anyone who has ever sought healing through resilience.",
+        "Suspense and heart woven into one unforgettable narrative."
+      ],
+      "keyThemes": ["Healing", "Resilience", "Mystery", "Emotional growth", "Love after loss"],
+      "audienceSpecificMessaging": {
+        "romanceReaders": {
+          "title": "Romance Readers",
+          "message": "A tender exploration of love and connection, even after deep loss."
+        },
+        "bookClubs": {
+          "title": "Book Clubs",
+          "message": "Packed with layered themes that invite thoughtful discussion and debate."
+        },
+        "matureReaders": {
+          "title": "Mature Readers",
+          "message": "A nuanced portrayal of grief, healing, and memory that resonates deeply."
+        },
+        "ruralReaders": {
+          "title": "Rural Readers",
+          "message": "Themes of isolation and close-knit community dynamics provide a relatable backdrop."
+        }
+      }
+    },
+    "sampleCopy": {
+      "title": "Sample Copy",
+      "backCoverBlurb": "In a world where memory can betray and healing is never straightforward, one journey becomes a search for both truth and peace. Blending psychological suspense with heartfelt emotion, this book takes readers into the fragile space between loss and resilience. For fans of mystery, romance, and stories of the human spirit.",
+      "socialMediaPosts": [
+        {
+          "emoji": "🌀",
+          "text": "What if the truth you're searching for has been hidden within you all along? #NewRelease #PsychFiction"
+        },
+        {
+          "emoji": "📚",
+          "text": "A book club must-read: suspense, memory, and healing collide in this unforgettable story."
+        }
+      ],
+      "emailSubjectLines": [
+        "Uncover the mystery within",
+        "A journey of healing, love, and suspense awaits",
+        "This story will stay with you long after the last page"
+      ],
+      "callToActionExamples": [
+        "Pre-order now and be among the first to uncover the truth",
+        "Join thousands of readers discovering the power of resilience",
+        "Get your copy today and dive into the mystery"
+      ],
+      "videoCreativeScripts": [
+        {
+          "script": "Opening shot: A misty island shoreline. Voiceover: 'When memory fades, what remains?' Quick cuts of therapy sessions, whispered secrets, and a tender romance. Closing text: 'Gift of Serenity – Available now.'",
+          "soraPrompt": "Cinematic trailer of an isolated island with suspenseful cuts between therapy, mystery, and romance."
+        }
+      ]
+    }
+  }
+}

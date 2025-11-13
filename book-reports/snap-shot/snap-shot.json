@@ -1,0 +1,931 @@
+{
+  "book": {
+    "title": "Snap Shot",
+    "author": "Wren Valentino",
+    "emoji": "\ud83c\udf32",
+    "subtitle": "A Summer of Friendship, Nostalgia, and Second Chances",
+    "description": "When Deanna Sherman returns to Moon Lake Summer Camp, she faces more than just the ghosts of summers past. Childhood friends are waiting, old bonds spark back to life, and a first love she thought was lost resurfaces in ways she never expected. Set against the backdrop of lakeside bonfires and sun-soaked days, this heartfelt romance blends laughter, nostalgia, and second chances in a story about choosing love, friendship, and self-discovery.",
+    "coverImage": "moon-lake-summer-camp.jpg"
+  },
+  "audienceMatch": {
+    "title": "Audience Insights",
+    "emoji": "\ud83c\udfaf",
+    "bisac": {
+      "primary": "Fiction > Romance > Contemporary > New Adult",
+      "secondary": "Romance > Second Chance",
+      "additional": "Romance > Friends to Lovers; Fiction > Coming-of-Age"
+    },
+    "keyCharacteristics": "Young, predominantly female readership who value stories of love, belonging, and nostalgia; strong engagement with digital-first formats."
+  },
+  "analysisOverview": {
+    "title": "Integrated Analysis Overview",
+    "emoji": "\ud83d\udcdd",
+    "readership": "This book aligns closely with readers of contemporary and New Adult romance, especially those drawn to second-chance and friends-to-lovers tropes. Engagement is strongest among 18\u201334 year olds, with a female skew but meaningful inclusivity across genders. Discovery pathways include BookTok, Instagram, and romance-focused newsletters, while ebook and audiobook preferences ensure high accessibility and shareability. Thematically, the summer camp backdrop and ensemble friendships tap into under-served niches, expanding reach beyond core romance circles.",
+    "classification": "Within a bespoke taxonomy of romance subgenres, the novel positions itself at the intersection of second-chance and friends-to-lovers romance, framed through a nostalgic summer-camp setting. This hybrid classification creates distinctiveness in a crowded market while remaining familiar to fans of bestselling comparables like Emily Henry and Carley Fortune.",
+    "personas": "The primary persona, Samantha the YA Romance Enthusiast, highlights the book's resonance with younger readers who see their own coming-of-age transitions reflected in the narrative. Marcus, the New Adult Escapist, represents a secondary audience of slightly older readers who value stories of healing and emotional resilience, broadening the book's demographic reach.",
+    "marketingGuidance": "The marketing insights provide actionable direction for early campaigns, suggesting hooks around camp nostalgia, second chances, and ensemble friendship arcs. Copy can emphasize warmth, discovery, and heartfelt intimacy, while creative assets should highlight seasonal settings and emotional stakes. These foundations will later expand into a standalone marketing product, but for now serve as a strategic toolkit to drive launch momentum."
+  },
+  "moodAndTone": {
+    "title": "Mood and Tone",
+    "emoji": "\ud83c\udf05",
+    "subtitle": "Nostalgic, heartfelt, and hopeful",
+    "moodTags": [
+      {
+        "tag": "Nostalgic",
+        "description": "Captures the warmth of summer memories, past friendships, and the bittersweet pull of returning to a familiar place."
+      },
+      {
+        "tag": "Romantic",
+        "description": "Centers on rekindled love and slow-burn intimacy, layered with tenderness and emotional vulnerability."
+      },
+      {
+        "tag": "Uplifting",
+        "description": "Offers readers optimism, laughter, and the reassurance that love and friendship can heal old wounds."
+      },
+      {
+        "tag": "Playful",
+        "description": "Infused with humor, witty dialogue, and the joy of communal camp rituals and activities."
+      },
+      {
+        "tag": "Reflective",
+        "description": "Balances lightness with moments of emotional depth, asking questions about identity, belonging, and what it means to choose love."
+      }
+    ]
+  },
+  "demographics": {
+    "title": "Audience Analysis",
+    "primaryAudience": {
+      "title": "Core Readers",
+      "subtitle": "US contemporary romance and New Adult fans",
+      "summary": {
+        "ageRange": "18\u201334",
+        "genderSplit": "Skew female with meaningful male and non-binary segment",
+        "incomeRange": "Lower- to mid-income; students to early-career professionals",
+        "marketSize": "Large US cohort within contemporary romance; strong global spillover"
+      },
+      "genderDistribution": {
+        "female": 75,
+        "male": 20,
+        "nonBinary": 3,
+        "preferNotToSay": 2
+      },
+      "ageDistribution": {
+        "18-24": 20,
+        "25-34": 35,
+        "35-44": 25,
+        "45-54": 12,
+        "55-64": 6,
+        "65+": 2
+      },
+      "geographicDistribution": {
+        "urban": 55,
+        "suburban": 35,
+        "rural": 10
+      },
+      "preferredFormats": {
+        "hardcover": 5,
+        "tradePaperbacks": 25,
+        "massMarket": 5,
+        "audiobooks": 20,
+        "ebooks": 45
+      },
+      "topProfessions": [
+        "Students",
+        "Teachers and teaching assistants",
+        "Retail and hospitality staff",
+        "Healthcare support (e.g., nurses, CNAs)",
+        "Marketing and creative assistants",
+        "Administrative coordinators"
+      ],
+      "discoveryPathways": [
+        "TikTok #BookTok",
+        "Instagram Reels",
+        "Goodreads lists",
+        "Kindle and Audible recommendations",
+        "Friends\u2019 word-of-mouth",
+        "Library and campus bookstore displays",
+        "Romance podcasts and newsletters"
+      ],
+      "interestProfile": {
+        "tvShows": [
+          "The Summer I Turned Pretty",
+          "Never Have I Ever",
+          "Heartstopper",
+          "Love Island USA"
+        ],
+        "films": [
+          "To All the Boys I\u2019ve Loved Before",
+          "The Kissing Booth",
+          "Set It Up",
+          "Love, Simon"
+        ],
+        "music": [
+          "Taylor Swift",
+          "Olivia Rodrigo",
+          "Sabrina Carpenter",
+          "Halsey"
+        ],
+        "art": [
+          "Contemporary illustration",
+          "Minimalist cover design",
+          "Indie zine aesthetics"
+        ],
+        "hobbies": [
+          "Beach and poolside reading",
+          "Journaling and scrapbooking",
+          "Summer camp volunteering",
+          "Hiking and lake days",
+          "Open-mic nights and small gigs"
+        ]
+      },
+      "marketReach": {
+        "tam": {
+          "title": "Total Addressable Market",
+          "subtitle": "US readers of contemporary and New Adult romance",
+          "value": "Tens of millions of readers",
+          "description": "Broad US romance readership with strong interest in friends-to-lovers, second-chance, small-town, and summer-romance tropes."
+        },
+        "sam": {
+          "title": "Serviceable Available Market",
+          "subtitle": "Readers of second-chance, friends-to-lovers, camp/summer settings",
+          "value": "Low single-digit millions",
+          "description": "Active buyers of contemporary romance featuring reunion, opposites-attract, grumpy/sunshine, and forced-proximity dynamics."
+        },
+        "som": {
+          "title": "Serviceable Obtainable Market",
+          "subtitle": "Reachable Year-1 audience via paid + organic",
+          "value": "100k\u2013300k prospects; 10k\u201330k likely readers",
+          "description": "Achievable through BookTok creators, targeted Meta/TikTok ads, KU discovery, newsletters, and library placement."
+        }
+      }
+    },
+    "secondaryAudience": {
+      "title": "Secondary Readers",
+      "subtitle": "Broader contemporary romance cohort",
+      "genderSplit": {
+        "female": 75,
+        "male": 22,
+        "other": 3
+      },
+      "ageRange": "25\u201344 with spillover to 45\u201354",
+      "summary": {
+        "ageRange": "25\u201344 with spillover to 45\u201354",
+        "genderSplit": "75% female, 22% male, 3% other",
+        "incomeRange": "Mid-income; established early- to mid-career",
+        "marketSize": "Meaningful US segment with global reach via ebooks and audio"
+      },
+      "genderDistribution": {
+        "female": 75,
+        "male": 22,
+        "other": 3
+      },
+      "ageDistribution": {
+        "25-29": 25,
+        "30-34": 30,
+        "35-39": 20,
+        "40-44": 15,
+        "45-54": 10
+      },
+      "geographicDistribution": {
+        "unitedStates": 70,
+        "unitedKingdom": 15,
+        "canada": 10,
+        "australia": 5
+      },
+      "preferredFormats": {
+        "tradePaperbacks": 35,
+        "ebooks": 40,
+        "audiobooks": 20,
+        "libraryLoans": 5
+      },
+      "topProfessions": [
+        "Healthcare professionals",
+        "Educators",
+        "Project and operations managers",
+        "IT and creative professionals",
+        "Military spouses and caregivers"
+      ],
+      "educationLevel": "University educated with mix of professional and technical backgrounds",
+      "homeOwnership": "Mix of renters and homeowners, urban and suburban",
+      "salary": "$35,000-$75,000 USD",
+      "status": "Mix of single and married readers, some with young children",
+      "children": "Some have young children or are planning families",
+      "topLocations": {
+        "unitedStates": "Suburban and urban areas across all regions",
+        "unitedKingdom": "London, Manchester, Birmingham metropolitan areas",
+        "canada": "Toronto, Vancouver, Montreal metropolitan areas",
+        "australia": "Sydney, Melbourne, Brisbane metropolitan areas"
+      },
+      "discoveryPathways": [
+        "Facebook romance groups",
+        "Author newsletters and promos",
+        "Kindle Unlimited and Amazon charts",
+        "Goodreads recommendations",
+        "Local library and indie bookstore features"
+      ],
+      "interestProfile": {
+        "films": [
+          "The Big Sick",
+          "Crazy Rich Asians",
+          "To All the Boys I've Loved Before"
+        ],
+        "tvShows": [
+          "This Is Us",
+          "Virgin River",
+          "Sweet Magnolias"
+        ],
+        "music": [
+          "Taylor Swift",
+          "Ed Sheeran",
+          "Adele"
+        ],
+        "art": [
+          "Photography",
+          "Crafting",
+          "Interior design"
+        ],
+        "hobbies": [
+          "Book clubs",
+          "Cooking",
+          "Travel",
+          "Fitness classes"
+        ]
+      }
+    }
+  },
+  "readerPersonas": {
+    "description": "Personas tab - Reader persona profiles and details",
+    "title": "Reader Personas",
+    "emoji": "\ud83d\udcda",
+    "subtitle": "Profiles of key audience segments for the Moon Lake Summer Camp romance",
+    "personas": [
+      {
+        "name": "Samantha, the YA Romance Enthusiast",
+        "badge": {
+          "text": "Campfire Dreamer",
+          "color": "#FF9F1C"
+        },
+        "image": "persona_samantha.jpg",
+        "demographics": {
+          "location": "Austin, Texas",
+          "age": "22",
+          "job": "College Student (Education major)",
+          "salary": "$15,000\u2013$25,000 (part-time work)",
+          "education": "Undergraduate",
+          "status": "Single",
+          "children": "None"
+        },
+        "coreNeeds": "Craves stories of friendship and self-discovery that mirror her own transition to adulthood.",
+        "fears": "Fear of rejection in love and missing out on true connection.",
+        "values": "Friendship, authenticity, personal growth.",
+        "psychologicalMotivations": "Looks for reassurance that resilience and openness can lead to love and belonging.",
+        "readingBehavior": {
+          "socialStyle": "Engaged in online book communities and BookTok discussions.",
+          "readingTimes": "Late nights and weekends during school breaks.",
+          "likelihoodToRecommend": "Very high, especially among peer groups.",
+          "tracking": "Actively posts reviews on Goodreads and TikTok."
+        },
+        "readingHabits": {
+          "discoveryMethods": [
+            "BookTok",
+            "Campus book clubs",
+            "Instagram reels"
+          ],
+          "quote": "This book made me feel like I was right back at summer camp, navigating first loves and lifelong friendships.",
+          "quoteAuthor": "Samantha"
+        },
+        "booksThisPersonaLoves": [
+          {
+            "title": "Anna and the French Kiss",
+            "author": "Stephanie Perkins",
+            "description": "A light-hearted coming-of-age romance about young love and identity.",
+            "image": "anna_french_kiss.png"
+          }
+        ],
+        "interestProfile": {
+          "films": [
+            "To All the Boys I've Loved Before",
+            "The Kissing Booth"
+          ],
+          "tvShows": [
+            "Never Have I Ever",
+            "Glee"
+          ],
+          "music": [
+            "Olivia Rodrigo",
+            "Shawn Mendes"
+          ],
+          "art": [
+            "Journaling",
+            "Digital collages"
+          ],
+          "hobbies": [
+            "Volunteering at summer camps",
+            "Photography",
+            "Hiking"
+          ]
+        },
+        "moreBooks": [
+          "Better Than the Movies by Lynn Painter",
+          "Since You\u2019ve Been Gone by Morgan Matson",
+          "Field Notes on Love by Jennifer E. Smith"
+        ]
+      },
+      {
+        "name": "Marcus, the New Adult Escapist",
+        "badge": {
+          "text": "Second-Chance Explorer",
+          "color": "#2EC4B6"
+        },
+        "image": "persona_marcus.jpg",
+        "demographics": {
+          "location": "Brooklyn, New York",
+          "age": "28",
+          "job": "Junior Graphic Designer",
+          "salary": "$55,000\u2013$65,000",
+          "education": "Bachelor\u2019s in Fine Arts",
+          "status": "In a relationship",
+          "children": "None"
+        },
+        "coreNeeds": "Wants reassurance that relationships can evolve and heal even after setbacks.",
+        "fears": "Fears being stuck in unfulfilling patterns and missing out on deep, meaningful love.",
+        "values": "Creativity, honesty, resilience, community.",
+        "psychologicalMotivations": "Uses romance novels to escape work stress and to explore emotional journeys that reflect his own uncertainties.",
+        "readingBehavior": {
+          "socialStyle": "Occasional participant in online forums, shares casually with friends.",
+          "readingTimes": "During commutes and evenings after work.",
+          "likelihoodToRecommend": "Moderate to high, especially when a book resonates with themes of growth.",
+          "tracking": "Keeps a personal reading journal; uses Goodreads sparingly."
+        },
+        "readingHabits": {
+          "discoveryMethods": [
+            "Amazon Kindle recommendations",
+            "Bookstagram",
+            "Podcast reviews"
+          ],
+          "quote": "The love triangle and camp friendships reminded me of how messy but beautiful young adulthood can be.",
+          "quoteAuthor": "Marcus"
+        },
+        "booksThisPersonaLoves": [
+          {
+            "title": "People We Meet on Vacation",
+            "author": "Emily Henry",
+            "description": "A witty, heartfelt romance about friendship, second chances, and travel.",
+            "image": "people_we_meet.png"
+          }
+        ],
+        "interestProfile": {
+          "films": [
+            "500 Days of Summer",
+            "La La Land"
+          ],
+          "tvShows": [
+            "Normal People",
+            "Love, Victor"
+          ],
+          "music": [
+            "Hozier",
+            "Phoebe Bridgers"
+          ],
+          "art": [
+            "Sketching",
+            "Poster design"
+          ],
+          "hobbies": [
+            "Urban cycling",
+            "Visiting art galleries",
+            "Indie film nights"
+          ]
+        },
+        "moreBooks": [
+          "You Deserve Each Other by Sarah Hogle",
+          "Happy Place by Emily Henry",
+          "Love and Other Words by Christina Lauren"
+        ]
+      }
+    ]
+  },
+  "marketing": {
+    "description": "Marketing tab - Campaign strategy and promotional content",
+    "title": "Stage 1 Comprehensive Marketing Plan",
+    "subtitle": "Driving early awareness, engagement, and conversion",
+    "objective": "Position the book as a relatable, heartwarming contemporary romance built on nostalgia, friendship, and second-chance love.",
+    "keyInsight": "Audiences resonate with second-chance romance and summer nostalgia when paired with authentic characters and small-town charm.",
+    "howToUse": [
+      "Leverage summer camp nostalgia and rural setting in campaign visuals.",
+      "Highlight the emotional stakes of rekindled love and deep friendship.",
+      "Use serialized snippets and quotes for social sharing.",
+      "Align copy tone with warmth, self-discovery, and heartfelt intimacy."
+    ],
+    "primaryKPIs": [
+      "Click-through rate on social ads",
+      "Pre-order and first-month sales",
+      "Engagement on TikTok/Reels campaigns",
+      "Email sign-up conversions",
+      "Book club partnerships secured"
+    ],
+    "campaignStructure": {
+      "title": "Campaign Funnel Framework",
+      "funnels": [
+        {
+          "name": "Awareness",
+          "description": "Introduce readers to the nostalgic summer camp romance setting.",
+          "formats": "Short-form video teasers, social ads, influencer posts",
+          "optimisation": "Test different nostalgic hooks and tagline variations"
+        },
+        {
+          "name": "Consideration",
+          "description": "Deeper engagement via character spotlights, author Q&As, and free sample chapters.",
+          "formats": "Instagram stories, TikTok behind-the-scenes, email mini-series",
+          "optimisation": "Prioritise highest engagement segments, refine email subject lines"
+        },
+        {
+          "name": "Conversion",
+          "description": "Drive purchases and book club selections.",
+          "formats": "Amazon/Bookshop landing pages, retargeted ads, direct call-to-actions",
+          "optimisation": "A/B test purchase CTA wording and discount codes"
+        }
+      ],
+      "budgetAllocation": {
+        "title": "Budget Allocation",
+        "breakdown": "40% digital ads (Meta, TikTok), 25% influencer and content collaborations, 20% email and community outreach, 15% traditional and print."
+      },
+      "flightSchedule": {
+        "title": "Flight Schedule",
+        "timeline": "6-week pre-launch awareness, 4-week launch push, 8-week sustained engagement and retargeting."
+      }
+    },
+    "metaTargeting": {
+      "title": "Meta Targeting Parameters",
+      "geolocation": [
+        "United States",
+        "United Kingdom",
+        "Canada",
+        "Australia"
+      ],
+      "ageRange": "18-45",
+      "gender": "Primarily female, inclusive of all genders",
+      "householdIncome": "Middle to upper-middle income households",
+      "professions": [
+        "Teachers",
+        "Healthcare professionals",
+        "Writers",
+        "Students"
+      ],
+      "languages": [
+        "English"
+      ],
+      "interests": [
+        "Romance novels",
+        "Book clubs",
+        "Summer nostalgia",
+        "Contemporary fiction",
+        "Rom-com films",
+        "Small-town life"
+      ],
+      "behaviours": [
+        "Frequent online book buyers",
+        "Active book club participants",
+        "Romance TikTok/BookTok engagement"
+      ],
+      "placements": [
+        "Instagram Reels",
+        "TikTok",
+        "Facebook Feed",
+        "Amazon Ads"
+      ],
+      "devices": "Mobile first",
+      "exclusions": "Hard sci-fi readers, non-English language markets at this stage"
+    },
+    "lookaalikeAudiences": {
+      "title": "Lookalike Audiences",
+      "seedEvents": [
+        "Website visitors",
+        "Email subscribers",
+        "Pre-order purchasers"
+      ],
+      "sizes": [
+        "1%",
+        "2%",
+        "5%"
+      ],
+      "regions": [
+        "US",
+        "UK",
+        "Canada"
+      ],
+      "refreshCadence": "Every 30 days",
+      "prioritisationRules": [
+        "Prioritise engaged newsletter readers",
+        "Exclude one-time low-engagement clicks"
+      ]
+    },
+    "targetChannels": {
+      "title": "Target Channels",
+      "digitalChannels": {
+        "title": "Digital Activation",
+        "socialMedia": {
+          "title": "Social Media",
+          "items": [
+            "TikTok",
+            "Instagram",
+            "Facebook",
+            "Goodreads"
+          ]
+        },
+        "advertising": {
+          "title": "Advertising",
+          "items": [
+            "Meta Ads",
+            "Amazon Ads",
+            "BookBub Ads"
+          ]
+        },
+        "contentMarketing": {
+          "title": "Content Marketing",
+          "items": [
+            "Author blog posts",
+            "BookTok influencer collaborations",
+            "Serialized teaser emails"
+          ]
+        }
+      },
+      "traditionalChannels": {
+        "title": "Traditional Media",
+        "printMedia": {
+          "title": "Print Media",
+          "items": [
+            "Romance magazine ads",
+            "Regional newspaper book features"
+          ]
+        },
+        "events": {
+          "title": "Events",
+          "items": [
+            "Book club talks",
+            "Local library readings",
+            "Virtual launch event"
+          ]
+        },
+        "partnerships": {
+          "title": "Partnerships",
+          "items": [
+            "Romance podcasts",
+            "Small-town romance newsletters"
+          ]
+        }
+      }
+    },
+    "messagingFramework": {
+      "title": "Messaging Framework",
+      "primaryTagline": "A summer at Moon Lake changes everything.",
+      "supportingMessages": [
+        "Second chances at love feel even sweeter under the summer sun.",
+        "Friendship, nostalgia, and romance\u2014rediscover them all at camp.",
+        "For anyone who\u2019s ever wondered what if."
+      ],
+      "keyThemes": [
+        "Second-chance romance",
+        "Small-town summer nostalgia",
+        "Friendship and belonging",
+        "Self-discovery"
+      ],
+      "audienceSpecificMessaging": {
+        "romanceReaders": {
+          "title": "Romance Readers",
+          "message": "A heartfelt story that blends beloved tropes\u2014friends to lovers, summer romance, and second chances."
+        },
+        "bookClubs": {
+          "title": "Book Clubs",
+          "message": "Perfect for discussion: themes of love, growth, and the choices that shape our lives."
+        },
+        "matureReaders": {
+          "title": "Mature Readers",
+          "message": "Nostalgic storytelling set in a relatable rural community, infused with heart and depth."
+        },
+        "ruralReaders": {
+          "title": "Rural Readers",
+          "message": "Authentic small-town atmosphere with characters that reflect everyday struggles and joys."
+        }
+      }
+    },
+    "sampleCopy": {
+      "title": "Sample Marketing Copy",
+      "backCoverBlurb": "When Deanna Sherman returns to Moon Lake Summer Camp, she's searching for more than just sunshine. She's chasing old memories, rekindling lost friendships, and confronting a love that might finally come full circle. In this heartwarming tale of self-discovery, nostalgia, and romance, summer becomes the season of second chances.",
+      "socialMediaPosts": [
+        {
+          "emoji": "\ud83c\udf32\ud83d\udc96",
+          "text": "What if your summer fling had a second chance? Discover Deanna's journey back to Moon Lake. #SummerRomance #BookTok"
+        },
+        {
+          "emoji": "\ud83d\udcd6\u2728",
+          "text": "Friendship. Nostalgia. Love. This summer camp has it all. Pre-order your escape today. #RomanceReaders"
+        }
+      ],
+      "emailSubjectLines": [
+        "Your perfect summer romance awaits",
+        "Would you give love a second chance?",
+        "Escape to Moon Lake this summer"
+      ],
+      "callToActionExamples": [
+        "Pre-order now on Amazon",
+        "Join the Moon Lake Readers\u2019 Club",
+        "Download your first chapter free"
+      ],
+      "videoCreativeScripts": [
+        {
+          "script": "Opening shot of a serene lake at sunset. Cut to Deanna arriving at camp. Montage of laughter, friendship, and stolen glances. Text overlay: 'This summer, love finds its way back.'",
+          "soraPrompt": "A cinematic summer camp setting at golden hour, friends laughing around a bonfire, soft romantic tones."
+        }
+      ]
+    }
+  },
+  "classification": {
+    "description": "Classification tab - Market positioning and competitive analysis",
+    "positioning": {
+      "title": "Market Positioning",
+      "subtitle": "US Romance market with New Adult contemporary emphasis",
+      "categories": [
+        {
+          "label": "Second Chance at First Love",
+          "score": 1.0
+        },
+        {
+          "label": "Reunited Lovers Romance",
+          "score": 0.944
+        },
+        {
+          "label": "Second-Chance Romance",
+          "score": 0.911
+        },
+        {
+          "label": "Dating App Fiction",
+          "score": 0.91
+        },
+        {
+          "label": "Friends to Lovers",
+          "score": 0.888
+        },
+        {
+          "label": "Reunion Fiction",
+          "score": 0.886
+        },
+        {
+          "label": "Friendship Breakup Fiction",
+          "score": 0.884
+        },
+        {
+          "label": "Amnesia Romance",
+          "score": 0.884
+        }
+      ]
+    },
+    "competitiveAnalysis": {
+      "title": "Competitive Landscape",
+      "subtitle": "Contemporary and New Adult second-chance and friends-to-lovers comps",
+      "competitors": [
+        {
+          "title": "Every Summer After",
+          "author": "Carley Fortune",
+          "coverImage": "every-summer-after.jpg",
+          "marketPosition": "Breakout summer romance with second-chance arc; adult crossover appeal",
+          "similarities": [
+            "Second-chance romance",
+            "Summertime setting and nostalgia",
+            "Then/now emotional reveal structure"
+          ],
+          "differences": [
+            "Beach town vs summer camp setting",
+            "Older protagonists",
+            "Heavier melancholic tone"
+          ]
+        },
+        {
+          "title": "Love and Other Words",
+          "author": "Christina Lauren",
+          "coverImage": "love-and-other-words.jpg",
+          "marketPosition": "High-selling contemporary second-chance romance",
+          "similarities": [
+            "Past friends reconnecting",
+            "Warm, emotional first-person vibe",
+            "Slow-burn intimacy"
+          ],
+          "differences": [
+            "Dual-timeline structure more pronounced",
+            "More serious domestic themes",
+            "Suburban Bay Area milieu vs camp"
+          ]
+        },
+        {
+          "title": "Happy Place",
+          "author": "Emily Henry",
+          "coverImage": "happy-place.jpg",
+          "marketPosition": "Commercial romance with ensemble friend dynamics",
+          "similarities": [
+            "Friend group dynamics",
+            "Reunion-driven plot",
+            "Humorous yet heartfelt tone"
+          ],
+          "differences": [
+            "Fake-dating exes trope",
+            "Coastal cottage setting",
+            "Protagonists slightly older"
+          ]
+        },
+        {
+          "title": "The Summer I Turned Pretty",
+          "author": "Jenny Han",
+          "coverImage": "the-summer-i-turned-pretty.jpg",
+          "marketPosition": "YA summer romance with strong US market reach",
+          "similarities": [
+            "Seasonal romance energy",
+            "Love triangle tension",
+            "Youthful voice and optimism"
+          ],
+          "differences": [
+            "Younger YA audience",
+            "Beach house setting",
+            "Family-centric stakes"
+          ]
+        },
+        {
+          "title": "People We Meet on Vacation",
+          "author": "Emily Henry",
+          "coverImage": "people_we_meet.png",
+          "marketPosition": "Friends-to-lovers travel romance with broad mass-market reach",
+          "similarities": [
+            "Friends-to-lovers arc",
+            "Witty, conversational first-person voice",
+            "Lighthearted, feel-good promise"
+          ],
+          "differences": [
+            "Travel episodic structure",
+            "Adult protagonists in careers",
+            "No fixed summer-camp locus"
+          ]
+        }
+      ],
+      "indirectCompetitors": [
+        {
+          "title": "Normal People",
+          "author": "Sally Rooney",
+          "coverImage": "normal-people.jpg",
+          "marketPosition": "Literary coming-of-age romance read by crossover romance audience"
+        },
+        {
+          "title": "It Ends With Us",
+          "author": "Colleen Hoover",
+          "coverImage": "it-ends-with-us.jpg",
+          "marketPosition": "High-velocity BookTok romance with heavier themes; adjacent audience"
+        },
+        {
+          "title": "The Rest of the Story",
+          "author": "Sarah Dessen",
+          "coverImage": "the-rest-of-the-story.jpg",
+          "marketPosition": "YA summer romance with lake setting; adjacent younger demo"
+        }
+      ],
+      "marketGaps": {
+        "title": "Market Opportunities",
+        "opportunities": [
+          "Under-served summer-camp setting in contemporary New Adult romance",
+          "Blend of second-chance and friends-to-lovers with ensemble friendship arc",
+          "Upbeat, humorous tone suitable for PG-13 readers",
+          "Digital-age dating elements juxtaposed with offline camp immersion"
+        ]
+      },
+      "uniquePositioning": {
+        "title": "Unique Selling Proposition",
+        "description": "A feel-good New Adult summer-camp romance that fuses second-chance and friends-to-lovers dynamics with a tight ensemble cast and a witty, first-person voice.",
+        "elements": [
+          "Second-chance plus friends-to-lovers hybrid",
+          "Seasonal summer-camp micro-community",
+          "Ensemble friendship as parallel love story",
+          "Light, humorous, reflective tone",
+          "Contemporary dating app context meeting offline reset"
+        ]
+      },
+      "subgenreClassification": {
+        "title": "Top Subgenres by Similarity",
+        "subgenres": [
+          {
+            "label": "Second Chance at First Love",
+            "score": 1.0
+          },
+          {
+            "label": "Reunited Lovers Romance",
+            "score": 0.944
+          },
+          {
+            "label": "Second-Chance Romance",
+            "score": 0.911
+          },
+          {
+            "label": "Dating App Fiction",
+            "score": 0.91
+          },
+          {
+            "label": "Friends to Lovers",
+            "score": 0.888
+          },
+          {
+            "label": "Reunion Fiction",
+            "score": 0.886
+          },
+          {
+            "label": "Friendship Breakup Fiction",
+            "score": 0.884
+          },
+          {
+            "label": "Amnesia Romance",
+            "score": 0.884
+          },
+          {
+            "label": "Second Chances",
+            "score": 0.883
+          },
+          {
+            "label": "Small Town Romance",
+            "score": 0.853
+          },
+          {
+            "label": "Wholesome Romance",
+            "score": 0.85
+          },
+          {
+            "label": "Love Triangle Romance",
+            "score": 0.85
+          },
+          {
+            "label": "Workplace Romance",
+            "score": 0.834
+          },
+          {
+            "label": "Romantic Comedy",
+            "score": 0.831
+          },
+          {
+            "label": "Slow Burn Romance",
+            "score": 0.83
+          },
+          {
+            "label": "Contemporary Romance",
+            "score": 0.815
+          },
+          {
+            "label": "Dual Timeline Romance",
+            "score": 0.808
+          },
+          {
+            "label": "Influencer Burnout Fiction",
+            "score": 0.788
+          },
+          {
+            "label": "Celebrity / Fan Romance",
+            "score": 0.785
+          },
+          {
+            "label": "Rock Star / Musician Romance",
+            "score": 0.784
+          },
+          {
+            "label": "Enemies to Lovers",
+            "score": 0.778
+          },
+          {
+            "label": "Therapy Journey Fiction",
+            "score": 0.77
+          }
+        ]
+      },
+      "marketPositioning": {
+        "primaryCategory": "Fiction > Romance > Contemporary > New Adult",
+        "secondaryCategories": [
+          "Romance > Second Chance",
+          "Romance > Friends to Lovers",
+          "Romance > Small Town and Community",
+          "Fiction > Coming-of-Age"
+        ],
+        "targetShelfPlacement": [
+          "Bookstore: Romance > Contemporary",
+          "Bookstore: New Adult",
+          "Online: Kindle Store > Romance > Contemporary",
+          "Library: Fiction > Romance > Contemporary"
+        ],
+        "pricePositioning": "US ebook 5.99-6.99 USD; US trade paperback 15.99-17.99 USD",
+        "seasonalStrategy": "Launch late spring to early summer; align with summer-reading promotions"
+      },
+      "brandPositioning": {
+        "coreMessage": "Choose friendship, heal the past, and risk new love in one unforgettable summer.",
+        "keyDifferentiators": [
+          "Optimistic, PG-13 accessible tone",
+          "Second-chance plus friends-to-lovers fusion",
+          "Distinct summer-camp setting and rituals",
+          "Ensemble dynamics with strong best-friend bond"
+        ],
+        "emotionalPromise": "Readers finish smiling, seen, and hopeful about second chances.",
+        "targetReaderIdentity": "US readers 18-30 who enjoyed Emily Henry or Carley Fortune and want a lighter, camp-set twist"
+      }
+    }
+  }
+}

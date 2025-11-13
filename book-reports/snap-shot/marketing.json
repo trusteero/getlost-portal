@@ -1,0 +1,195 @@
+
+"marketing": {
+  "description": "Marketing tab - Campaign strategy and promotional content",
+  "fields": {
+    "title": "Stage 1 Comprehensive Marketing Plan",
+    "subtitle": "Driving early awareness, engagement, and conversion",
+    "objective": "Position the book as a relatable, heartwarming contemporary romance built on nostalgia, friendship, and second-chance love.",
+    "keyInsight": "Audiences resonate with second-chance romance and summer nostalgia when paired with authentic characters and small-town charm.",
+    "howToUse": [
+      "Leverage summer camp nostalgia and rural setting in campaign visuals.",
+      "Highlight the emotional stakes of rekindled love and deep friendship.",
+      "Use serialized snippets and quotes for social sharing.",
+      "Align copy tone with warmth, self-discovery, and heartfelt intimacy."
+    ],
+    "primaryKPIs": [
+      "Click-through rate on social ads",
+      "Pre-order and first-month sales",
+      "Engagement on TikTok/Reels campaigns",
+      "Email sign-up conversions",
+      "Book club partnerships secured"
+    ],
+    "campaignStructure": {
+      "title": "Campaign Funnel Framework",
+      "funnels": [
+        {
+          "name": "Awareness",
+          "description": "Introduce readers to the nostalgic summer camp romance setting.",
+          "formats": "Short-form video teasers, social ads, influencer posts",
+          "optimisation": "Test different nostalgic hooks and tagline variations"
+        },
+        {
+          "name": "Consideration",
+          "description": "Deeper engagement via character spotlights, author Q&As, and free sample chapters.",
+          "formats": "Instagram stories, TikTok behind-the-scenes, email mini-series",
+          "optimisation": "Prioritise highest engagement segments, refine email subject lines"
+        },
+        {
+          "name": "Conversion",
+          "description": "Drive purchases and book club selections.",
+          "formats": "Amazon/Bookshop landing pages, retargeted ads, direct call-to-actions",
+          "optimisation": "A/B test purchase CTA wording and discount codes"
+        }
+      ],
+      "budgetAllocation": {
+        "title": "Budget Allocation",
+        "breakdown": "40% digital ads (Meta, TikTok), 25% influencer and content collaborations, 20% email and community outreach, 15% traditional and print."
+      },
+      "flightSchedule": {
+        "title": "Flight Schedule",
+        "timeline": "6-week pre-launch awareness, 4-week launch push, 8-week sustained engagement and retargeting."
+      }
+    },
+    "metaTargeting": {
+      "title": "Meta Targeting Parameters",
+      "geolocation": ["United States", "United Kingdom", "Canada", "Australia"],
+      "ageRange": "18-45",
+      "gender": "Primarily female, inclusive of all genders",
+      "householdIncome": "Middle to upper-middle income households",
+      "professions": ["Teachers", "Healthcare professionals", "Writers", "Students"],
+      "languages": ["English"],
+      "interests": [
+        "Romance novels",
+        "Book clubs",
+        "Summer nostalgia",
+        "Contemporary fiction",
+        "Rom-com films",
+        "Small-town life"
+      ],
+      "behaviours": [
+        "Frequent online book buyers",
+        "Active book club participants",
+        "Romance TikTok/BookTok engagement"
+      ],
+      "placements": ["Instagram Reels", "TikTok", "Facebook Feed", "Amazon Ads"],
+      "devices": "Mobile first",
+      "exclusions": "Hard sci-fi readers, non-English language markets at this stage"
+    },
+    "lookaalikeAudiences": {
+      "title": "Lookalike Audiences",
+      "seedEvents": [
+        "Website visitors",
+        "Email subscribers",
+        "Pre-order purchasers"
+      ],
+      "sizes": ["1%", "2%", "5%"],
+      "regions": ["US", "UK", "Canada"],
+      "refreshCadence": "Every 30 days",
+      "prioritisationRules": [
+        "Prioritise engaged newsletter readers",
+        "Exclude one-time low-engagement clicks"
+      ]
+    },
+    "targetChannels": {
+      "title": "Target Channels",
+      "digitalChannels": {
+        "title": "Digital Activation",
+        "socialMedia": {
+          "title": "Social Media",
+          "items": ["TikTok", "Instagram", "Facebook", "Goodreads"]
+        },
+        "advertising": {
+          "title": "Advertising",
+          "items": ["Meta Ads", "Amazon Ads", "BookBub Ads"]
+        },
+        "contentMarketing": {
+          "title": "Content Marketing",
+          "items": [
+            "Author blog posts",
+            "BookTok influencer collaborations",
+            "Serialized teaser emails"
+          ]
+        }
+      },
+      "traditionalChannels": {
+        "title": "Traditional Media",
+        "printMedia": {
+          "title": "Print Media",
+          "items": ["Romance magazine ads", "Regional newspaper book features"]
+        },
+        "events": {
+          "title": "Events",
+          "items": ["Book club talks", "Local library readings", "Virtual launch event"]
+        },
+        "partnerships": {
+          "title": "Partnerships",
+          "items": ["Romance podcasts", "Small-town romance newsletters"]
+        }
+      }
+    },
+    "messagingFramework": {
+      "title": "Messaging Framework",
+      "primaryTagline": "A summer at Moon Lake changes everything.",
+      "supportingMessages": [
+        "Second chances at love feel even sweeter under the summer sun.",
+        "Friendship, nostalgia, and romance—rediscover them all at camp.",
+        "For anyone who’s ever wondered what if."
+      ],
+      "keyThemes": [
+        "Second-chance romance",
+        "Small-town summer nostalgia",
+        "Friendship and belonging",
+        "Self-discovery"
+      ],
+      "audienceSpecificMessaging": {
+        "romanceReaders": {
+          "title": "Romance Readers",
+          "message": "A heartfelt story that blends beloved tropes—friends to lovers, summer romance, and second chances."
+        },
+        "bookClubs": {
+          "title": "Book Clubs",
+          "message": "Perfect for discussion: themes of love, growth, and the choices that shape our lives."
+        },
+        "matureReaders": {
+          "title": "Mature Readers",
+          "message": "Nostalgic storytelling set in a relatable rural community, infused with heart and depth."
+        },
+        "ruralReaders": {
+          "title": "Rural Readers",
+          "message": "Authentic small-town atmosphere with characters that reflect everyday struggles and joys."
+        }
+      }
+    },
+    "sampleCopy": {
+      "title": "Sample Marketing Copy",
+      "backCoverBlurb": "When Deanna Sherman returns to Moon Lake Summer Camp, she’s searching for more than just sunshine. She’s chasing old memories, rekindling lost friendships, and confronting a love that might finally come full circle. In this heartwarming tale of self-discovery, nostalgia, and romance, summer becomes the season of second chances.",
+      "socialMediaPosts": [
+        {
+          "emoji": "🌲💖",
+          "text": "What if your summer fling had a second chance? Discover Deanna’s journey back to Moon Lake. #SummerRomance #BookTok"
+        },
+        {
+          "emoji": "📖✨",
+          "text": "Friendship. Nostalgia. Love. This summer camp has it all. Pre-order your escape today. #RomanceReaders"
+        }
+      ],
+      "emailSubjectLines": [
+        "Your perfect summer romance awaits",
+        "Would you give love a second chance?",
+        "Escape to Moon Lake this summer"
+      ],
+      "callToActionExamples": [
+        "Pre-order now on Amazon",
+        "Join the Moon Lake Readers’ Club",
+        "Download your first chapter free"
+      ],
+      "videoCreativeScripts": [
+        {
+          "script": "Opening shot of a serene lake at sunset. Cut to Deanna arriving at camp. Montage of laughter, friendship, and stolen glances. Text overlay: 'This summer, love finds its way back.'",
+          "soraPrompt": "A cinematic summer camp setting at golden hour, friends laughing around a bonfire, soft romantic tones."
+        }
+      ]
+    }
+  }
+	}
+	

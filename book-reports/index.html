@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Reports</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #f8f9fa;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        .report-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        .report-card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        .report-card p {
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .report-links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .report-links a {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: background-color 0.2s ease;
+        }
+        .report-links a:hover {
+            background-color: #2980b9;
+        }
+        .report-links a.final {
+            background-color: #e74c3c;
+        }
+        .report-links a.final:hover {
+            background-color: #c0392b;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 1px solid #ecf0f1;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📚 Book Reports</h1>
+        <p>Comprehensive analysis and insights for book marketing</p>
+    </div>
+    
+    <div class="reports-grid">
+        <div class="report-card">
+            <h3>Gift of Serenity</h3>
+            <img src="gift-of-serenity/gift-of-serenity-cover.jpg" alt="Gift of Serenity" style="width: 160px; height: 220px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
+            <div class="report-links" style="margin-top: 14px;">
+                <a href="gift-of-serenity/gift-of-serenity-final.html" class="final">Final Report</a>
+            </div>
+        </div>
+        
+        <div class="report-card">
+            <h3>Sacred Clown Trilogy</h3>
+            <img src="sacred-clown-trilogy/sacred-clown-cover_original.jpg" alt="Sacred Clown Trilogy" style="width: 160px; height: 220px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
+            <div class="report-links" style="margin-top: 14px;">
+                <a href="sacred-clown-trilogy/sacred-clown-trilogy-final.html" class="final">Final Report</a>
+            </div>
+        </div>
+        
+        <div class="report-card">
+            <h3>Snap Shot</h3>
+            <img src="snap-shot/moon-lake-summer-camp.jpg" alt="Snap Shot" style="width: 160px; height: 220px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
+            <div class="report-links" style="margin-top: 14px;">
+                <a href="snap-shot/snap-shot-final.html" class="final">Final Report</a>
+            </div>
+        </div>
+        
+        <div class="report-card">
+            <h3>The Everlasting Gift</h3>
+            <img src="the-everlasting-gift/everlastinggift_cover.jpg" alt="The Everlasting Gift" style="width: 160px; height: 220px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
+            <div class="report-links" style="margin-top: 14px;">
+                <a href="the-everlasting-gift/everlasting-gift-final.html" class="final">Final Report</a>
+            </div>
+        </div>
+        
+        <div class="report-card">
+            <h3>Tuesdays at Six</h3>
+            <img src="../book-reports/images/Get Lost Book Cover Placeholder.png" alt="Tuesdays at Six" style="width: 160px; height: 220px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
+            <div class="report-links" style="margin-top: 14px;">
+                <a href="tuesdays-at-six/tuesdays-at-six-final.html" class="final">Final Report</a>
+            </div>
+        </div>
+        
+        <div class="report-card">
+            <h3>The Broken Crown</h3>
+            <img src="the-broken-crown/the_broken_crown_cover.png" alt="The Broken Crown" style="width: 160px; height: 220px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
+            <div class="report-links" style="margin-top: 14px;">
+                <a href="the-broken-crown/the-broken-crown-final.html" class="final">Final Report</a>
+            </div>
+        </div>
+        
+        <div class="report-card">
+            <h3>Jurassic Park</h3>
+            <img src="jurassic-park/jurassic_park_chaos_unleashed_cover.jpg" alt="Jurassic Park" style="width: 160px; height: 220px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
+            <div class="report-links" style="margin-top: 14px;">
+                <a href="jurassic-park/jurassic-park-final.html" class="final">Final Report</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>Generated by Book Report Generator | Last updated: November 12, 2025</p>
+    </div>
+</body>
+</html>
