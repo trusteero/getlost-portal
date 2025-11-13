@@ -123,6 +123,12 @@ try {
   migrate(db, { migrationsFolder });
   sqlite.close();
   console.log('✅ Database migrations completed');
+  
+  // Ensure Better Auth tables exist (they should be in migrations, but double-check)
+  const sqlite2 = new Database(dbPath);
+  const tables = sqlite2.prepare(\"SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'getlostportal_%'\").all();
+  console.log('📋 Found', tables.length, 'getlostportal tables');
+  sqlite2.close();
 } catch (error) {
   console.error('⚠️  Migration error:', error.message);
   // Don't fail - migrations might already be applied
