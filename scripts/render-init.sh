@@ -31,12 +31,38 @@ if [ -f "/var/data/db.sqlite" ]; then
   
   # Check if database has data
   if command -v sqlite3 &> /dev/null; then
-    USER_COUNT=$(sqlite3 /var/data/db.sqlite "SELECT COUNT(*) FROM getlostportal_user;" 2>/dev/null || echo "0")
+    # Check Better Auth 'user' table (new schema)
+    USER_COUNT=$(sqlite3 /var/data/db.sqlite "SELECT COUNT(*) FROM user;" 2>/dev/null || echo "0")
+    # Check old 'getlostportal_user' table (legacy schema)
+    OLD_USER_COUNT=$(sqlite3 /var/data/db.sqlite "SELECT COUNT(*) FROM getlostportal_user;" 2>/dev/null || echo "0")
     BOOK_COUNT=$(sqlite3 /var/data/db.sqlite "SELECT COUNT(*) FROM getlostportal_book;" 2>/dev/null || echo "0")
-    echo "   Users: $USER_COUNT, Books: $BOOK_COUNT"
+    
+    TOTAL_USERS=$((USER_COUNT + OLD_USER_COUNT))
+    echo "   Users (Better Auth): $USER_COUNT"
+    if [ "$OLD_USER_COUNT" -gt 0 ]; then
+      echo "   Users (Legacy): $OLD_USER_COUNT"
+    fi
+    echo "   Total Users: $TOTAL_USERS, Books: $BOOK_COUNT"
+    
+    # Check for specific user if SUPER_ADMIN_EMAILS is set
+    if [ -n "$SUPER_ADMIN_EMAILS" ]; then
+      FIRST_EMAIL=$(echo "$SUPER_ADMIN_EMAILS" | cut -d',' -f1 | tr -d ' ')
+      if [ -n "$FIRST_EMAIL" ]; then
+        USER_EXISTS=$(sqlite3 /var/data/db.sqlite "SELECT COUNT(*) FROM user WHERE email='$FIRST_EMAIL';" 2>/dev/null || echo "0")
+        if [ "$USER_EXISTS" -eq 0 ]; then
+          OLD_USER_EXISTS=$(sqlite3 /var/data/db.sqlite "SELECT COUNT(*) FROM getlostportal_user WHERE email='$FIRST_EMAIL';" 2>/dev/null || echo "0")
+          if [ "$OLD_USER_EXISTS" -eq 0 ]; then
+            echo "   ⚠️  WARNING: User '$FIRST_EMAIL' not found in database!"
+            echo "   💡 Run: npm run create-user $FIRST_EMAIL <password> \"<name>\""
+          fi
+        fi
+      fi
+    fi
   fi
 else
   echo "📊 No existing database found - will be created on first run"
+  echo "   ⚠️  NOTE: If this is a redeploy, the database should already exist!"
+  echo "   💡 Check that the persistent disk is properly mounted at /var/data"
 fi
 
 # Create necessary directories on persistent disk
