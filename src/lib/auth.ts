@@ -8,6 +8,7 @@ import { trackUserActivity } from "@/server/services/analytics";
 import * as betterAuthSchema from "@/server/db/better-auth-schema";
 import { env } from "@/env";
 import { eq } from "drizzle-orm";
+import { user } from "@/server/db/better-auth-schema";
 
 // Run account table migration synchronously before Better Auth initializes
 // This ensures the schema is correct before Better Auth tries to use it
@@ -365,6 +366,63 @@ export const auth = betterAuth({
     cookiePrefix: "better-auth",
     database: {
       generateId: () => crypto.randomUUID(), // Provide custom ID generation function
+    },
+  },
+
+  // Hooks for super admin promotion
+  hooks: {
+    onSignIn: async ({ user: authUser }) => {
+      // Check if user should be super admin
+      const superAdminEmails = process.env.SUPER_ADMIN_EMAILS?.split(",").map(e => e.trim()) || [];
+      const isSuperAdmin = authUser.email && superAdminEmails.includes(authUser.email.toLowerCase());
+
+      if (isSuperAdmin && authUser.id) {
+        try {
+          // Check current role
+          const existingUser = await db
+            .select()
+            .from(user)
+            .where(eq(user.id, authUser.id))
+            .limit(1);
+
+          if (existingUser.length > 0 && existingUser[0]!.role !== "super_admin") {
+            // Promote to super_admin
+            await db
+              .update(user)
+              .set({
+                role: "super_admin",
+                updatedAt: new Date(),
+              })
+              .where(eq(user.id, authUser.id));
+            
+            console.log(`✅ [Better Auth] Promoted ${authUser.email} to super_admin`);
+          }
+        } catch (error) {
+          console.error("⚠️  [Better Auth] Failed to promote user to super_admin:", error);
+        }
+      }
+    },
+    onUserCreated: async ({ user: authUser }) => {
+      // Check if new user should be super admin
+      const superAdminEmails = process.env.SUPER_ADMIN_EMAILS?.split(",").map(e => e.trim()) || [];
+      const isSuperAdmin = authUser.email && superAdminEmails.includes(authUser.email.toLowerCase());
+
+      if (isSuperAdmin && authUser.id) {
+        try {
+          // Set role to super_admin for new users
+          await db
+            .update(user)
+            .set({
+              role: "super_admin",
+              updatedAt: new Date(),
+            })
+            .where(eq(user.id, authUser.id));
+          
+          console.log(`✅ [Better Auth] Created ${authUser.email} as super_admin`);
+        } catch (error) {
+          console.error("⚠️  [Better Auth] Failed to set super_admin role for new user:", error);
+        }
+      }
     },
   },
 });
