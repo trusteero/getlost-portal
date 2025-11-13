@@ -11,10 +11,112 @@ import { account, user } from "@/server/db/better-auth-schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
+import Database from "better-sqlite3";
+import { env } from "@/env";
+
+async function ensureBetterAuthTables() {
+	// Parse database path
+	let dbPath = env.DATABASE_URL || "./dev.db";
+	if (dbPath.startsWith('file://')) {
+		dbPath = dbPath.replace(/^file:\/\//, '');
+	} else if (dbPath.startsWith('file:')) {
+		dbPath = dbPath.replace(/^file:/, '');
+	}
+
+	const sqlite = new Database(dbPath);
+	
+	try {
+		// Check if Better Auth tables exist (with getlostportal_ prefix)
+		const tables = sqlite.prepare(`
+			SELECT name FROM sqlite_master 
+			WHERE type='table' AND name IN ('getlostportal_user', 'getlostportal_account', 'getlostportal_session', 'getlostportal_verification')
+		`).all() as Array<{ name: string }>;
+		
+		const existingTableNames = tables.map(t => t.name);
+		
+		// Create user table if it doesn't exist
+		if (!existingTableNames.includes('getlostportal_user')) {
+			console.log("📦 Creating Better Auth 'user' table...");
+			sqlite.exec(`
+				CREATE TABLE IF NOT EXISTS getlostportal_user (
+					id TEXT PRIMARY KEY,
+					name TEXT,
+					email TEXT NOT NULL UNIQUE,
+					emailVerified INTEGER DEFAULT 0,
+					image TEXT,
+					role TEXT DEFAULT 'user' NOT NULL,
+					createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
+					updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
+				)
+			`);
+		}
+		
+		// Create account table if it doesn't exist
+		if (!existingTableNames.includes('getlostportal_account')) {
+			console.log("📦 Creating Better Auth 'account' table...");
+			sqlite.exec(`
+				CREATE TABLE IF NOT EXISTS getlostportal_account (
+					id TEXT PRIMARY KEY,
+					account_id TEXT NOT NULL,
+					provider_id TEXT NOT NULL,
+					user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE,
+					access_token TEXT,
+					refresh_token TEXT,
+					id_token TEXT,
+					access_token_expires_at INTEGER,
+					refresh_token_expires_at INTEGER,
+					scope TEXT,
+					password TEXT,
+					created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+					updated_at INTEGER DEFAULT (unixepoch()) NOT NULL
+				)
+			`);
+		}
+		
+		// Create session table if it doesn't exist
+		if (!existingTableNames.includes('getlostportal_session')) {
+			console.log("📦 Creating Better Auth 'session' table...");
+			sqlite.exec(`
+				CREATE TABLE IF NOT EXISTS getlostportal_session (
+					id TEXT PRIMARY KEY,
+					expires_at INTEGER NOT NULL,
+					token TEXT NOT NULL UNIQUE,
+					created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+					updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+					ip_address TEXT,
+					user_agent TEXT,
+					user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
+				)
+			`);
+		}
+		
+		// Create verification table if it doesn't exist
+		if (!existingTableNames.includes('getlostportal_verification')) {
+			console.log("📦 Creating Better Auth 'verification' table...");
+			sqlite.exec(`
+				CREATE TABLE IF NOT EXISTS getlostportal_verification (
+					id TEXT PRIMARY KEY,
+					identifier TEXT NOT NULL,
+					value TEXT NOT NULL,
+					expires_at INTEGER NOT NULL,
+					created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+					updated_at INTEGER DEFAULT (unixepoch()) NOT NULL
+				)
+			`);
+		}
+		
+		console.log("✅ Better Auth tables ready");
+	} finally {
+		sqlite.close();
+	}
+}
 
 async function createUser(email: string, password: string, name: string) {
 	try {
 		console.log(`Creating user account for: ${email}`);
+		
+		// Ensure Better Auth tables exist
+		await ensureBetterAuthTables();
 
 		// Check if user already exists (Better Auth uses 'user' table)
 		const existingUser = await db
