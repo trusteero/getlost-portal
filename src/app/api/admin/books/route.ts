@@ -5,6 +5,8 @@ import { books, bookVersions, users, digestJobs, reports } from "@/server/db/sch
 import { desc, eq } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const fetchCache = 'force-no-store';
 
 export async function GET(request: NextRequest) {
   const isAdmin = await isAdminFromRequest(request);
