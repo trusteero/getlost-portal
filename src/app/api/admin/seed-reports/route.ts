@@ -5,6 +5,8 @@ import { promisify } from "util";
 
 const execAsync = promisify(exec);
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/admin/seed-reports
  * Run the seed-reports-only.js script to create system book and seed reports

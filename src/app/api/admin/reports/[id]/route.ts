@@ -4,6 +4,8 @@ import { db } from "@/server/db";
 import { reports } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * DELETE /api/admin/reports/[id]
  * Delete a report

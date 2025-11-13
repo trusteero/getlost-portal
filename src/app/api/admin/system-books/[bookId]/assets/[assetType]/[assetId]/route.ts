@@ -4,6 +4,8 @@ import { db } from "@/server/db";
 import { marketingAssets, bookCovers, landingPages } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * DELETE /api/admin/system-books/[bookId]/assets/[assetType]/[assetId]
  * Delete an asset

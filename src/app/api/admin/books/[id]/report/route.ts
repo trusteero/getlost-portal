@@ -7,6 +7,8 @@ import { promises as fs } from "fs";
 import path from "path";
 import { bundleReportHtmlFromContent } from "@/server/utils/bundle-report-html";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

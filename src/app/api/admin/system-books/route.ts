@@ -4,6 +4,8 @@ import { db } from "@/server/db";
 import { books, bookVersions, reports, marketingAssets, bookCovers, landingPages } from "@/server/db/schema";
 import { eq, desc } from "drizzle-orm";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/admin/system-books
  * Get all system books (seeded reports) with their reports and assets
