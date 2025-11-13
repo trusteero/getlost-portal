@@ -1,0 +1,779 @@
+{
+  "book": {
+    "title": "Tuesdays at Six",
+    "author": "Lilli North",
+    "emoji": "🐴",
+    "subtitle": "A second-chance, high-heat rural romance",
+    "description": "Emma Jacobs never expected to return to her family’s horse farm in northern England. Drawn home by grief, she reconnects with Luke Carter, her childhood best friend and first love. Bound by a weekly Tuesday ritual, they navigate loss, memory, and longing in a story of second chances, slow-burn intimacy, and small-town ties that refuses to let go."
+  },
+  "audienceMatch": {
+    "title": "Audience Match",
+    "emoji": "🎯",
+    "bisac": {
+      "primary": "Fiction > Romance > Contemporary",
+      "secondary": "Fiction > Romance > Small Town",
+      "additional": "Fiction > Romance > Erotica / High Heat"
+    },
+    "engagement": "Strong global digital-first romance audience with crossover into women’s fiction",
+    "keyCharacteristics": "Digital-first, female-led readership with strong audio/ebook preference; highly engaged in online romance communities",
+    "detailedAnalysis": "The readership is anchored by women aged 25–44 who actively engage in BookTok, Bookstagram, and audiobook platforms. They favour emotionally authentic romances that blend grief and healing with high-heat intimacy, especially within small-town or rural settings. Secondary audiences from women’s fiction and mature drama add further breadth, discovering the book through libraries, drama tie-ins, and traditional outlets."
+  },
+  "analysisOverview": {
+    "title": "Analysis Overview",
+    "emoji": "🔎",
+    "readership": "The book connects strongly with a digitally fluent, romance-driven readership who consume through ebooks and audiobooks and value narratives of love rediscovered after loss.",
+    "classification": "Using a bespoke sub-genre taxonomy, the work positions itself as a high-heat second-chance contemporary romance that intersects with small-town life, grief-and-healing arcs, and friends-to-lovers tropes, filling a gap in UK-set rural romance.",
+    "personas": "The primary persona, Sarah the Nostalgic Romantic, embodies the heart of the readership: digitally active, socially connected, and seeking affirmation of enduring love. The secondary persona, David the Reflective Widower, highlights male crossover interest and a desire for emotionally resonant stories of renewal.",
+    "marketingGuidance": "Marketing insights provide clear direction for early-stage campaigns, suggesting creative hooks rooted in ritual, grief-to-love arcs, and rural texture. These can shape copy, video teasers, and book club positioning. While currently delivered within this report, future iterations will expand into a standalone marketing toolkit."
+  },
+  "moodAndTone": {
+    "title": "Mood and Tone",
+    "emoji": "🎭",
+    "subtitle": "An emotional palette of grief, longing, and rediscovery",
+    "moodTags": [
+      {
+        "tag": "Slow-Burn Desire",
+        "description": "A careful build of tension and intimacy that rewards patience."
+      },
+      {
+        "tag": "Grief and Healing",
+        "description": "Emotional authenticity around loss, recovery, and renewal."
+      },
+      {
+        "tag": "Rural Nostalgia",
+        "description": "Evocative depictions of English countryside and village life."
+      },
+      {
+        "tag": "Second Chances",
+        "description": "Romance that affirms love can reignite even after heartbreak."
+      },
+      {
+        "tag": "Community Belonging",
+        "description": "A sense of family, friendship, and shared tradition shaping choices."
+      }
+    ]
+  },
+  "demographics": {
+    "title": "Audience Analysis",
+    "primaryAudience": {
+      "title": "Primary audience",
+      "subtitle": "Contemporary high-heat, slow-burn second-chance romance readers",
+      "summary": {
+        "ageRange": "Core 25–44 with spillover to 45–54",
+        "genderSplit": "Female-led readership with meaningful male and non-binary segments",
+        "incomeRange": "Lower-middle to upper-middle income; discretionary spend on digital formats and subscriptions",
+        "marketSize": "Large, global English-language romance market with strong digital penetration"
+      },
+      "genderDistribution": {
+        "female": 72,
+        "male": 20,
+        "nonBinary": 6,
+        "preferNotToSay": 2
+      },
+      "ageDistribution": {
+        "18-24": 12,
+        "25-34": 34,
+        "35-44": 30,
+        "45-54": 16,
+        "55-64": 6,
+        "65+": 2
+      },
+      "geographicDistribution": {
+        "urban": 54,
+        "suburban": 36,
+        "rural": 10
+      },
+      "preferredFormats": {
+        "hardcover": 6,
+        "tradePaperbacks": 22,
+        "massMarket": 8,
+        "audiobooks": 26,
+        "ebooks": 38
+      },
+      "topProfessions": [
+        "Marketing and communications",
+        "Healthcare professionals",
+        "Education professionals",
+        "STEM and tech roles",
+        "Creative industries and freelancers",
+        "Administrative and operations"
+      ],
+      "discoveryPathways": [
+        "BookTok and Bookstagram romance communities",
+        "Kindle and Apple Books store recommendations",
+        "Romance subreddits and Goodreads lists",
+        "Author newsletters and TikTok live reads",
+        "Podcast interviews and influencer buddy-reads",
+        "Library apps (Libby/OverDrive) and Audible editor picks"
+      ],
+      "interestProfile": {
+        "tvShows": [
+          "Virgin River",
+          "This Is Us",
+          "Outlander",
+          "Normal People",
+          "Firefly Lane"
+        ],
+        "films": [
+          "One Day",
+          "The Notebook",
+          "A Star Is Born",
+          "P.S. I Love You",
+          "Brooklyn"
+        ],
+        "music": [
+          "Taylor Swift",
+          "Adele",
+          "Ed Sheeran",
+          "Hozier",
+          "Sam Smith"
+        ],
+        "art": [
+          "Contemporary portrait photography",
+          "Rural landscape photography",
+          "Figurative painting with romantic themes"
+        ],
+        "hobbies": [
+          "Reading romance and women’s fiction",
+          "Audiobook listening during commute",
+          "Horse and country pursuits",
+          "Gardening and farmers’ markets",
+          "Journalling and creative writing"
+        ]
+      },
+      "marketReach": {
+        "tam": {
+          "title": "Total Addressable Market",
+          "subtitle": "Global adult romance readership",
+          "value": "12.5 million ",
+          "description": "Wide, digitally accessible market across US, UK, Canada, Australia, Ireland, South Africa, India, and EU."
+        },
+        "sam": {
+          "title": "Serviceable Available Market",
+          "subtitle": "Contemporary second-chance and small-town romance",
+          "value": "1.9 - 2.3 million",
+          "description": "Readers actively engaging with small-town, grief-and-healing, high-heat slow-burn themes."
+        },
+        "som": {
+          "title": "Serviceable Obtainable Market",
+          "subtitle": "Early-stage reach via digital and influencer channels",
+          "value": "45,000 - 120,000",
+          "description": "Practical near-term capture through targeted social, retailer placement, and audio discovery."
+        }
+      }
+    },
+    "secondaryAudience": {
+      "title": "Secondary audience",
+      "subtitle": "Women’s fiction and small-town drama readers; crossover men seeking character-driven romance",
+      "summary": {
+        "ageRange": "30–59",
+        "genderSplit": "Majority female with smaller male and non-binary cohorts",
+        "incomeRange": "Middle income; higher audiobook adoption",
+        "marketSize": "Moderate crossover from women’s fiction and rural UK drama fans"
+      },
+      "topProfessions": [
+        "Managers and team leads",
+        "Public sector and education",
+        "Skilled trades and veterinary/animal care",
+        "Design and media",
+        "Non-profit and community roles"
+      ],
+      "discoveryPathways": [
+        "BBC/ITV drama audiences cross-promoted via streaming",
+        "Waterstones and indie bookseller staff picks",
+        "Library displays themed around grief, healing, and small-town life",
+        "Facebook reading groups and newsletter swaps",
+        "UK country-life influencers and podcast features"
+      ]
+    }
+  },
+  "readerPersonas": {
+    "title": "Reader Personas",
+    "emoji": "📖",
+    "subtitle": "Core audience profiles for 'Tuesdays at Six'",
+    "personas": [
+      {
+        "name": "Sarah the Nostalgic Romantic",
+        "badge": {
+          "text": "Book Club Connector",
+          "color": "#E07A5F"
+        },
+        "image": "persona_sarah.jpg",
+        "demographics": {
+          "location": "Northern England / UK suburbs",
+          "age": "34",
+          "job": "Secondary school teacher",
+          "salary": "£25k–35k",
+          "education": "Undergraduate degree in Education",
+          "status": "Married",
+          "children": "Two primary-school children"
+        },
+        "coreNeeds": "Stories that affirm the endurance of love and family bonds while offering escapism into relatable rural settings.",
+        "fears": "Being stuck in routine, missing out on personal fulfilment, or never rekindling passion.",
+        "values": "Commitment, loyalty, shared history, tradition, and honesty.",
+        "psychologicalMotivations": "Seeks reassurance that second chances exist in life and love, and enjoys narratives that mirror her own balancing of duty and desire.",
+        "readingBehavior": {
+          "socialStyle": "Active in book clubs and online reader communities",
+          "readingTimes": "Evenings after children are asleep",
+          "likelihoodToRecommend": "Very likely, particularly to friends facing similar life phases",
+          "tracking": "Uses Goodreads to log progress and reviews"
+        },
+        "readingHabits": {
+          "discoveryMethods": [
+            "Book clubs",
+            "Recommendations from friends",
+            "Online articles",
+            "Social media groups"
+          ],
+          "quote": "‘This story reminds me that love can be rediscovered, no matter the years apart.’",
+          "quoteAuthor": "Sarah"
+        },
+        "booksThisPersonaLoves": [
+          {
+            "title": "The Return",
+            "author": "Nicholas Sparks",
+            "description": "A heart-wrenching story of grief, love, and small-town ties.",
+            "image": "the_return_sparks.png"
+          },
+          {
+            "title": "One Night on the Island",
+            "author": "Josie Silver",
+            "description": "Romance set in an isolated location with themes of self-discovery and renewal.",
+            "image": "one_night_on_the_island__josie_silver.png"
+          },
+          {
+            "title": "Me Before You",
+            "author": "Jojo Moyes",
+            "description": "",
+            "image": "me_before_you.jpg"
+          }
+        ],
+        "interestProfile": {
+          "films": [
+            "The Notebook",
+            "One Day"
+          ],
+          "tvShows": [
+            "This Is Us",
+            "Call the Midwife"
+          ],
+          "music": [
+            "Adele",
+            "Norah Jones"
+          ],
+          "art": [
+            "Scrapbooking family albums"
+          ],
+          "hobbies": [
+            "Book clubs",
+            "Gardening",
+            "Community volunteering"
+          ]
+        }
+      },
+      {
+        "name": "David the Reflective Widower",
+        "badge": {
+          "text": "Quiet Seeker",
+          "color": "#3D405B"
+        },
+        "image": "persona_david.jpg",
+        "demographics": {
+          "location": "Rural US / Western Europe",
+          "age": "48",
+          "job": "Civil engineer",
+          "salary": "$60k–80k / €55k–70k",
+          "education": "Engineering degree",
+          "status": "Widowed",
+          "children": "One teenager at home"
+        },
+        "coreNeeds": "Fiction that validates grief while offering a path towards renewal and emotional connection.",
+        "fears": "Remaining emotionally stuck and alone; being unable to rebuild intimacy.",
+        "values": "Family, resilience, tradition, and steady routines.",
+        "psychologicalMotivations": "Turns to books to process grief and imagine new beginnings through emotionally authentic narratives.",
+        "readingBehavior": {
+          "socialStyle": "Reserved, occasionally shares reviews online",
+          "readingTimes": "Weekends and quiet evenings",
+          "likelihoodToRecommend": "Selectively, to close friends or support groups",
+          "tracking": "Occasional use of Kindle highlights"
+        },
+        "readingHabits": {
+          "discoveryMethods": [
+            "Audiobooks",
+            "Online bookstore recommendations",
+            "Podcasts on grief and resilience"
+          ],
+          "quote": "‘This book gave me hope that love is possible again after loss.’",
+          "quoteAuthor": "David"
+        },
+        "booksThisPersonaLoves": [
+          {
+            "title": "One Night on the Island",
+            "author": "Josie Silver",
+            "description": "Romance set in an isolated location with themes of self-discovery and renewal.",
+            "image": "one_night_on_the_island__josie_silver.png"
+          },
+          {
+            "title": "The Light We Lost",
+            "author": "Jill Santopolo",
+            "description": "An epic love story about the heartrending decision that one woman must make",
+            "image": "the_light_we_lost.jpg"
+          },
+          {
+            "title": "The Last Letter from Your Lover",
+            "author": "Jojo Moyes",
+            "description": "",
+            "image": "the_last_letter_from_your_lover.jpg"
+          }
+        ],
+        "interestProfile": {
+          "films": [
+            "Manchester by the Sea",
+            "Up"
+          ],
+          "tvShows": [
+            "A Place to Call Home",
+            "Virgin River"
+          ],
+          "music": [
+            "Bruce Springsteen",
+            "Damien Rice"
+          ],
+          "art": [
+            "Photography"
+          ],
+          "hobbies": [
+            "Walking in nature",
+            "Local history groups"
+          ]
+        }
+      }
+    ]
+  },
+  "classification": {
+    "title": "Classification",
+    "positioning": {
+      "title": "Market positioning",
+      "subtitle": "High-heat slow-burn second-chance contemporary romance set on a working horse farm in northern England",
+      "categories": [
+        {
+          "label": "Virgin Romance",
+          "score": 1.0
+        },
+        {
+          "label": "Forced Proximity Romance",
+          "score": 0.977
+        },
+        {
+          "label": "Slow Burn Romance",
+          "score": 0.96
+        },
+        {
+          "label": "High-Heat / Erotic Romance",
+          "score": 0.94
+        },
+        {
+          "label": "Erotic Romance (High Heat)",
+          "score": 0.94
+        },
+        {
+          "label": "Friends to Lovers",
+          "score": 0.939
+        },
+        {
+          "label": "Reunited Lovers Romance",
+          "score": 0.938
+        },
+        {
+          "label": "Alpha/Omega (Omegaverse)",
+          "score": 0.936
+        },
+        {
+          "label": "Friends With Benefits Romance",
+          "score": 0.926
+        },
+        {
+          "label": "Opposing Personalities Romance",
+          "score": 0.916
+        }
+      ]
+    },
+    "competitiveAnalysis": {
+      "title": "Competitive analysis",
+      "subtitle": "Direct and adjacent comps from executive summary signals",
+      "competitors": [
+        {
+          "title": "The Return",
+          "author": "Nicholas Sparks",
+          "coverImage": "the_return_sparks.png",
+          "marketPosition": "Mainstream contemporary romance about grief, homecoming, and rekindled love",
+          "similarities": [
+            "Return-to-hometown and healing arc",
+            "Slow-burn emotional build",
+            "Focus on community and legacy"
+          ],
+          "differences": [
+            "Current book is higher heat",
+            "British rural village and horse-farm craft detail",
+            "Friends-to-lovers history is stronger"
+          ]
+        },
+        {
+          "title": "One Night on the Island",
+          "author": "Josie Silver",
+          "coverImage": "one_night_on_the_island__josie_silver.png",
+          "marketPosition": "Upmarket UK-leaning commercial romance with remote setting and introspective tone",
+          "similarities": [
+            "British market appeal",
+            "Isolation and rediscovery themes",
+            "Emotion-first pacing"
+          ],
+          "differences": [
+            "Weekly Tuesday-at-six encounters vs single-event premise",
+            "Higher spice level",
+            "Second-chance plus childhood-friends hybrid"
+          ]
+        }
+      ],
+      "indirectCompetitors": [
+        {
+          "title": "Virgin River",
+          "author": "Robyn Carr (series)",
+          "coverImage": "virgin-river_series.jpg",
+          "marketPosition": "Small-town healing romance aesthetic and community comfort"
+        },
+        {
+          "title": "Heartland",
+          "author": "CBC series universe",
+          "coverImage": "heartland_series.jpg",
+          "marketPosition": "Horse-farm milieu drawing rural-life fans"
+        }
+      ],
+      "marketGaps": {
+        "title": "Market gaps and opportunities",
+        "opportunities": [
+          "Under-served UK small-town high-heat romances compared with US output",
+          "Authentic working horse-farm craft provides fresh scene texture",
+          "Grief-to-desire arc with explicit consent language meets current reader demand",
+          "Second-chance plus friends-to-lovers enables multi-trope targeting"
+        ]
+      },
+      "uniquePositioning": {
+        "title": "Unique positioning",
+        "description": "A British rural, working-horse-farm romance that pairs explicit, consent-forward intimacy with a credible grief-and-homecoming journey.",
+        "elements": [
+          "Weekly ritual meet-ups that structure tension",
+          "Northern England village texture and community stakes",
+          "Hybrid of second-chance and childhood-friends dynamics",
+          "High-heat scenes tied to emotional release and healing"
+        ]
+      },
+      "subgenreClassification": {
+        "title": "Subgenre signals",
+        "subgenres": [
+          {
+            "label": "Virgin Romance",
+            "score": 1.0
+          },
+          {
+            "label": "Forced Proximity Romance",
+            "score": 0.977
+          },
+          {
+            "label": "Slow Burn Romance",
+            "score": 0.96
+          },
+          {
+            "label": "High-Heat / Erotic Romance",
+            "score": 0.94
+          },
+          {
+            "label": "Erotic Romance (High Heat)",
+            "score": 0.94
+          },
+          {
+            "label": "Friends to Lovers",
+            "score": 0.939
+          },
+          {
+            "label": "Reunited Lovers Romance",
+            "score": 0.938
+          },
+          {
+            "label": "Alpha/Omega (Omegaverse)",
+            "score": 0.936
+          },
+          {
+            "label": "Friends With Benefits Romance",
+            "score": 0.926
+          },
+          {
+            "label": "Opposing Personalities Romance",
+            "score": 0.916
+          }
+        ]
+      },
+     "marketPositioning": {
+      "primaryCategory": "Fiction > Romance > Contemporary",
+        "secondaryCategories": [
+          "Fiction > Romance > Small Town",
+          "Fiction > Romance > Erotica / High Heat",
+          "Fiction > Women’s Fiction (crossover)"
+        ],
+        "targetShelfPlacement": [
+          "Romance: Contemporary",
+          "Romance: Small-Town",
+          "Trending Romance table",
+          "UK & Commonwealth Local-Interest Romance"
+        ],
+        "pricePositioning": "Mid-market trade paperback and ebook to align with mainstream contemporary romance",
+        "seasonalStrategy": "Autumn–Winter cosy small-town push with Valentine’s retargeting for high-heat creatives"
+      },
+      "brandPositioning": {
+        "coreMessage": "When grief loosens its grip, love finds its hour.",
+        "keyDifferentiators": [
+          "Authentic British rural setting and horse-farm craft",
+          "Consent-forward explicit intimacy",
+          "Second-chance plus childhood-friends hybrid",
+          "Weekly-ritual structure sustaining momentum"
+        ],
+        "emotionalPromise": "A cathartic, sensual homecoming that honours loss while reigniting desire.",
+        "targetReaderIdentity": "Readers of high-heat small-town British romances seeking emotional sincerity and grounded realism"
+      }
+    }
+  },
+  "marketing": {
+    "title": "Marketing Plan",
+    "subtitle": "Stage 1 comprehensive campaign strategy",
+    "objective": "To position 'Tuesdays at Six' as a resonant second-chance rural romance with cross-market appeal across digital and traditional channels.",
+    "keyInsight": "Emotional connection to themes of grief, belonging, and rekindled love in a familiar small-town setting drives engagement.",
+    "howToUse": [
+      "Deploy this plan as a blueprint for launch activities.",
+      "Adjust based on real-time campaign analytics.",
+      "Iterate copy and creative according to audience response."
+    ],
+    "primaryKPIs": [
+      "Pre-order volume",
+      "Email sign-ups",
+      "Click-through rate on ads",
+      "Social engagement (shares, saves, comments)",
+      "Book club adoption mentions"
+    ],
+    "campaignStructure": {
+      "title": "Campaign Funnels",
+      "funnels": [
+        {
+          "name": "Awareness",
+          "description": "Introduce core themes of love, grief, and belonging via broad social media and digital ads.",
+          "formats": "Short-form video teasers, quote graphics, boosted posts",
+          "optimisation": "A/B test creatives against emotions of nostalgia and desire."
+        },
+        {
+          "name": "Consideration",
+          "description": "Deepen interest through author features, comparative hooks, and reader testimonials.",
+          "formats": "Carousel ads, Instagram stories, podcast guesting",
+          "optimisation": "Segment by audience (romance readers, book clubs, mature audiences)."
+        },
+        {
+          "name": "Conversion",
+          "description": "Drive pre-orders and book club selections via email, retargeting, and partnerships.",
+          "formats": "Discount offers, exclusive chapters, early reviews",
+          "optimisation": "Retarget engaged users with urgency-based messaging."
+        }
+      ],
+      "budgetAllocation": {
+        "title": "Budget Allocation",
+        "breakdown": "40% digital advertising, 25% content creation, 20% influencer/partnerships, 15% traditional outreach."
+      },
+      "flightSchedule": {
+        "title": "Flight Schedule",
+        "timeline": "Phase 1 (awareness) 8 weeks pre-launch, Phase 2 (consideration) 4 weeks pre-launch, Phase 3 (conversion) launch week + 6 weeks post."
+      }
+    },
+    "metaTargeting": {
+      "title": "Meta Targeting Strategy",
+      "geolocation": [
+        "UK",
+        "US",
+        "Canada",
+        "Australia",
+        "Nordic regions"
+      ],
+      "ageRange": "30-55",
+      "gender": "Predominantly female with inclusivity for all readers",
+      "householdIncome": "Middle to upper-middle",
+      "professions": [
+        "Educators",
+        "Healthcare professionals",
+        "Writers",
+        "Book club organisers"
+      ],
+      "languages": [
+        "English"
+      ],
+      "interests": [
+        "Romance novels",
+        "Nicholas Sparks",
+        "Josie Silver",
+        "Horse riding",
+        "Small-town life",
+        "Book clubs"
+      ],
+      "behaviours": [
+        "Audiobook listeners",
+        "Frequent ebook buyers",
+        "Active on Goodreads"
+      ],
+      "placements": [
+        "Facebook Feed",
+        "Instagram Stories",
+        "Reels",
+        "Audience Network"
+      ],
+      "devices": "Mobile-first, cross-device retargeting",
+      "exclusions": "Young adult audiences, purely fantasy romance segments"
+    },
+    "lookaalikeAudiences": {
+      "title": "Lookalike Audiences",
+      "seedEvents": [
+        "Email subscribers",
+        "Pre-order purchasers",
+        "High-engagement social followers"
+      ],
+      "sizes": [
+        "1%",
+        "3%",
+        "5%"
+      ],
+      "regions": [
+        "UK",
+        "US",
+        "Australia"
+      ],
+      "refreshCadence": "Quarterly refresh based on campaign data",
+      "prioritisationRules": [
+        "Prioritise high-LTV book club organisers",
+        "Exclude churned audiences"
+      ]
+    },
+    "targetChannels": {
+      "title": "Target Channels",
+      "digitalChannels": {
+        "title": "Digital Channels",
+        "socialMedia": {
+          "title": "Social Media",
+          "items": [
+            "Instagram",
+            "Facebook",
+            "TikTok (romance reader segments)",
+            "Goodreads groups"
+          ]
+        },
+        "advertising": {
+          "title": "Digital Advertising",
+          "items": [
+            "Meta Ads",
+            "Amazon Ads",
+            "BookBub promotions"
+          ]
+        },
+        "contentMarketing": {
+          "title": "Content Marketing",
+          "items": [
+            "Author blog posts",
+            "Newsletter features",
+            "Podcast interviews"
+          ]
+        }
+      },
+      "traditionalChannels": {
+        "title": "Traditional Channels",
+        "printMedia": {
+          "title": "Print Media",
+          "items": [
+            "Women’s lifestyle magazines",
+            "Literary supplements"
+          ]
+        },
+        "events": {
+          "title": "Events",
+          "items": [
+            "Book club tours",
+            "Library readings",
+            "Festival panels"
+          ]
+        },
+        "partnerships": {
+          "title": "Partnerships",
+          "items": [
+            "Romance bloggers",
+            "Book influencers",
+            "Horse riding communities"
+          ]
+        }
+      }
+    },
+    "messagingFramework": {
+      "title": "Messaging Framework",
+      "primaryTagline": "Every Tuesday at six, sparks fly between past and future.",
+      "supportingMessages": [
+        "A widow returns home and finds her first love still waiting.",
+        "Grief and longing collide in a village where tradition runs deep."
+      ],
+      "keyThemes": [
+        "Second chances",
+        "Grief and healing",
+        "Community and tradition",
+        "Slow-burn romance"
+      ],
+      "audienceSpecificMessaging": {
+        "romanceReaders": {
+          "title": "Romance Readers",
+          "message": "An emotionally rich, slow-burn love story that rewards patience with intensity."
+        },
+        "bookClubs": {
+          "title": "Book Clubs",
+          "message": "Themes of grief, community, and belonging make this ideal for thoughtful group discussion."
+        },
+        "matureReaders": {
+          "title": "Mature Readers",
+          "message": "A grounded and relatable tale of love after loss with authentic small-town texture."
+        },
+        "ruralReaders": {
+          "title": "Rural Readers",
+          "message": "Evocative farm and village settings capture the heart of country life."
+        }
+      }
+    },
+    "sampleCopy": {
+      "title": "Sample Copy",
+      "backCoverBlurb": "Emma Jacobs never thought she’d return to her family’s farm in northern England. But when grief calls her home, she finds more than just memories waiting. Luke Carter, her childhood best friend and first love, is still there — steady, loyal, and impossible to ignore. As Tuesdays at six bring them back together, Emma must decide if she can face her past to embrace a future rooted in love and belonging.",
+      "socialMediaPosts": [
+        {
+          "emoji": "🌿",
+          "text": "Every Tuesday at six, Emma and Luke meet again. Can love grow where grief once stood?"
+        },
+        {
+          "emoji": "🐴",
+          "text": "A horse farm, a village, a love rekindled. ‘Tuesdays at Six’ is a story of second chances."
+        }
+      ],
+      "emailSubjectLines": [
+        "Every Tuesday brings them closer…",
+        "Can love survive grief and time?",
+        "A second chance awaits in ‘Tuesdays at Six’"
+      ],
+      "callToActionExamples": [
+        "Pre-order now and be among the first to return to Emma’s world.",
+        "Join the conversation with #TuesdaysAtSix.",
+        "Perfect for your next book club pick."
+      ],
+      "videoCreativeScripts": [
+        {
+          "script": "Open with sweeping shots of the English countryside. Cut to Emma walking the farm, Luke arriving at six. Their eyes meet. Voiceover: 'Every Tuesday at six, past and future collide. Can love take root again?'",
+          "soraPrompt": "A cinematic trailer-style short with English countryside, farm life, and longing glances between two adults."
+        }
+      ]
+    }
+  }
+}

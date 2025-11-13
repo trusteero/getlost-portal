@@ -1,0 +1,51 @@
+{
+“book”: {
+“title”: “Jurassic Park: Chaos Unleashed”,
+“author”: “Michael Crichton”,
+“emoji”: “🦖”,
+“subtitle”: “A high-stakes scientific thriller where mankind’s greatest discovery becomes its deadliest mistake”,
+“description”: “On a remote island, scientists resurrect dinosaurs through genetic engineering, only to watch their controlled paradise spiral into chaos. Jurassic Park: Chaos Unleashed blends cutting-edge science fiction, moral tension, and survivalist terror, exploring the consequences of human ambition colliding with nature’s power.”,
+“coverImage”: “jurassic_park_chaos_unleashed_cover.jpg”
+},
+“audienceMatch”: {
+“title”: “Audience Insights”,
+“emoji”: “👥”,
+“bisac”: {
+“primary”: “Fiction / Science Fiction / Thriller”,
+“secondary”: “Fiction / Adventure”,
+“additional”: “Eco-Thriller; BioTech Thriller; Survivalist Fiction”
+},
+“keyCharacteristics”: “Appeals primarily to college-educated readers aged 25–45 with strong interest in science, technology, and environmental ethics. The audience skews slightly male but includes a broad spectrum of readers drawn to action-driven stories with intellectual depth and moral stakes.”
+},
+“analysisOverview”: {
+“title”: “Comprehensive Analysis”,
+“emoji”: “📊”,
+“readership”: “The readership spans from professionals in STEM fields to genre enthusiasts seeking realism in speculative fiction. The core demographic consists of adults aged 25–45, with high engagement among tech, academic, and scientific communities. Secondary audiences include younger readers (18–30) from fandom-driven, digitally active circles. Both groups are united by curiosity about science and its ethical frontiers.”,
+“classification”: “Jurassic Park: Chaos Unleashed is positioned as a mass-market science thriller grounded in plausible genetics and high-concept ethics. It bridges blockbuster adventure with cerebral speculation, standing alongside works like The Andromeda Strain and Frankenstein. Its blend of awe and terror redefines the dinosaur genre as both entertainment and cautionary tale about unchecked innovation.”,
+“personas”: “Reader archetypes include Emma Caldwell, an eco-conscious lecturer seeking intellectual and moral challenge, and Jason Morales, a tech-savvy gamer craving cinematic, adrenaline-fueled storytelling. Together they represent the dual appeal of the novel: ethical inquiry for thinkers and visceral thrills for escapists.”,
+“marketingGuidance”: “Marketing should highlight both spectacle and substance — promoting the book as a thinking person’s blockbuster. Campaigns can segment by motivation: ethical exploration for academic and eco-readers, high-octane escapism for action fans. Visuals should balance scientific realism with cinematic tension, leveraging nostalgic appeal to the Jurassic Park legacy.”
+},
+“moodAndTone”: {
+“title”: “Mood and Tone”,
+“emoji”: “🌋”,
+“subtitle”: “A fusion of wonder and terror underpinned by scientific realism”,
+“moodTags”: [
+{
+“tag”: “Suspenseful”,
+“description”: “Relentless pacing and escalating tension as humans confront prehistoric predators and moral peril.”
+},
+{
+“tag”: “Awe-Inspiring”,
+“description”: “Evokes wonder at scientific possibility and nature’s raw majesty before that awe turns to fear.”
+},
+{
+“tag”: “Ethical”,
+“description”: “Consistently challenges readers to question scientific ambition, control, and the boundaries of creation.”
+},
+{
+“tag”: “Cinematic”,
+“description”: “Written with immersive, visual energy that mirrors a film experience — visceral, vivid, and emotionally charged.”
+}
+]
+}
+}

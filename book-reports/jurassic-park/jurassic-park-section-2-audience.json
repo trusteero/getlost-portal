@@ -1,0 +1,270 @@
+{
+  "description": "Template for the Demographics section of the book report. This section analyses the target audience demographics and reading preferences.",
+  "demographics": {
+    "primaryAudience": {
+      "summary": {
+        "ageRange": "25-45",
+        "genderSplit": "60% Male, 40% Female",
+        "incomeRange": "$50K-$100K",
+        "marketSize": "2.5M readers"
+      },
+      "ageDistribution": {
+        "18-24": 10,
+        "25-34": 35,
+        "35-44": 30,
+        "45-54": 15,
+        "55+": 10
+      },
+      "genderDistribution": {
+        "Female": 40,
+        "Male": 60,
+        "Non-binary": 0,
+        "Other": 0
+      },
+      "geographicDistribution": {
+        "United States": 50,
+        "United Kingdom": 20,
+        "Canada": 10,
+        "Australia": 10,
+        "Other": 10
+      },
+      "preferredFormats": {
+        "Ebook": 30,
+        "Audiobook": 25,
+        "Paperback": 30,
+        "Hardcover": 15
+      },
+      "educationLevel": "College-educated",
+      "homeOwnership": "Mix of renters and homeowners",
+      "salary": "$50K-$100K annually",
+      "status": "Mix of single and married",
+      "children": "Mix of parents and non-parents",
+      "topLocations": [
+        "New York City",
+        "London",
+        "Toronto",
+        "Los Angeles",
+        "Sydney"
+      ],
+      "topProfessions": [
+        "engineers",
+        "tech professionals",
+        "academics",
+        "doctors",
+        "research scientists"
+      ],
+      "interestProfile": {
+        "books": [
+          "science fiction",
+          "thrillers",
+          "eco-thrillers",
+          "medical thrillers",
+          "survivalist fiction"
+        ],
+        "films": [
+          "Jurassic Park",
+          "The Andromeda Strain",
+          "Interstellar",
+          "The Martian",
+          "World War Z"
+        ],
+        "music": [
+          "cinematic scores",
+          "classic rock",
+          "electronic",
+          "ambient"
+        ],
+        "art": [
+          "sci-fi illustration",
+          "concept art",
+          "digital landscapes"
+        ],
+        "hobbies": [
+          "hiking",
+          "technology",
+          "reading science journals",
+          "gaming",
+          "documentary watching"
+        ],
+        "lifestyle": [
+          "scientifically curious",
+          "ethically conscious",
+          "adventure-seeking"
+        ],
+        "values": [
+          "scientific inquiry",
+          "critical thinking",
+          "environmental awareness",
+          "personal responsibility"
+        ],
+        "tvShows": [
+          "Black Mirror",
+          "Westworld",
+          "Lost",
+          "Stranger Things",
+          "Planet Earth"
+        ]
+      },
+      "discoveryPathways": {
+        "socialMedia": [
+          "Reddit",
+          "YouTube",
+          "Twitter"
+        ],
+        "bookClubs": [
+          "sci-fi book clubs",
+          "tech-themed reading groups",
+          "online forums"
+        ],
+        "recommendations": [
+          "Amazon reviews",
+          "Goodreads",
+          "podcasts",
+          "YouTube influencers"
+        ],
+        "bookstores": [
+          "chain bookstores",
+          "online retailers",
+          "airport bookshops"
+        ]
+      },
+      "marketReach": {
+        "estimatedSize": "2.5M",
+        "engagementLevel": "high",
+        "purchaseBehavior": "impulse buyers for thrillers and science-based fiction; pre-orders common",
+        "readingFrequency": "frequent readers—weekly to monthly basis"
+      }
+    },
+    "secondaryAudience": {
+      "summary": {
+        "ageRange": "18-30",
+        "genderSplit": "55% Female, 40% Male, 5% Non-binary",
+        "incomeRange": "$30K-$60K",
+        "marketSize": "1M readers"
+      },
+      "ageDistribution": {
+        "18-24": 45,
+        "25-34": 35,
+        "35-44": 10,
+        "45-54": 5,
+        "55+": 5
+      },
+      "genderDistribution": {
+        "Female": 55,
+        "Male": 40,
+        "Non-binary": 5,
+        "Other": 0
+      },
+      "geographicDistribution": {
+        "United States": 40,
+        "United Kingdom": 25,
+        "Canada": 10,
+        "Australia": 10,
+        "Other": 15
+      },
+      "preferredFormats": {
+        "Ebook": 35,
+        "Audiobook": 40,
+        "Paperback": 20,
+        "Hardcover": 5
+      },
+      "educationLevel": "Some university or college-educated",
+      "homeOwnership": "Primarily renters",
+      "salary": "$30K-$60K annually",
+      "status": "Mostly single",
+      "children": "Predominantly non-parents",
+      "topLocations": [
+        "London",
+        "Chicago",
+        "Vancouver",
+        "Austin",
+        "Melbourne"
+      ],
+      "topProfessions": [
+        "students",
+        "junior tech roles",
+        "library assistants",
+        "media interns"
+      ],
+      "interestProfile": {
+        "books": [
+          "YA sci-fi",
+          "eco-horror",
+          "pop science books",
+          "action-adventure novels"
+        ],
+        "films": [
+          "Avatar",
+          "Jurassic World",
+          "Inception",
+          "Contagion",
+          "Annihilation"
+        ],
+        "music": [
+          "indie pop",
+          "orchestral soundtrack",
+          "alternative"
+        ],
+        "art": [
+          "graphic novels",
+          "anime-style",
+          "concept illustrations"
+        ],
+        "hobbies": [
+          "gaming",
+          "cosplay",
+          "streaming sci-fi series",
+          "writing fanfiction",
+          "attending conventions"
+        ],
+        "lifestyle": [
+          "curious",
+          "digitally native",
+          "engaged in fandoms",
+          "environmentally aware"
+        ],
+        "values": [
+          "innovation",
+          "imagination",
+          "ethics in science",
+          "sustainability"
+        ],
+        "tvShows": [
+          "Doctor Who",
+          "The X-Files",
+          "Stranger Things",
+          "The 100",
+          "Dark"
+        ]
+      },
+      "discoveryPathways": {
+        "socialMedia": [
+          "TikTok",
+          "Instagram",
+          "Tumblr"
+        ],
+        "bookClubs": [
+          "YA fantasy clubs",
+          "sci-fi fandom Discords",
+          "library-run reading programs"
+        ],
+        "recommendations": [
+          "BookTok",
+          "YouTube book reviewers",
+          "influencer lists"
+        ],
+        "bookstores": [
+          "independent bookstores",
+          "online platforms",
+          "library shelves"
+        ]
+      },
+      "marketReach": {
+        "estimatedSize": "1M",
+        "engagementLevel": "moderate to high",
+        "purchaseBehavior": "influenced by online trends and peer recommendations",
+        "readingFrequency": "monthly readers or binge readers during breaks/holidays"
+      }
+    }
+  }
+}

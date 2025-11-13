@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Persona Images Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-image { margin: 20px; border: 2px solid #ccc; padding: 10px; }
+        img { max-width: 200px; height: auto; }
+    </style>
+</head>
+<body>
+    <h1>Persona Images Test</h1>
+    
+    <div class="test-image">
+        <h3>Daniel the Cultural Critic</h3>
+        <img src="persona_daniel.jpg" alt="Daniel the Cultural Critic" onerror="this.style.border='2px solid red'; this.alt='Image failed to load'">
+        <p>File: persona_daniel.jpg</p>
+    </div>
+    
+    <div class="test-image">
+        <h3>Sofia the Ecological Story-Seeker</h3>
+        <img src="persona_sofia.jpg" alt="Sofia the Ecological Story-Seeker" onerror="this.style.border='2px solid red'; this.alt='Image failed to load'">
+        <p>File: persona_sofia.jpg</p>
+    </div>
+    
+    <div class="test-image">
+        <h3>Test with absolute path</h3>
+        <img src="file:///Users/eerogetlost/book-report-generator/sacred-clown-trilogy/persona_daniel.jpg" alt="Daniel (absolute path)" onerror="this.style.border='2px solid red'; this.alt='Image failed to load'">
+        <p>Absolute path test</p>
+    </div>
+</body>
+</html>
