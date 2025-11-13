@@ -5,6 +5,8 @@ import { users, books, userActivity } from "@/server/db/schema";
 import { account } from "@/server/db/better-auth-schema";
 import { sql, desc, eq } from "drizzle-orm";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const isAdmin = await isAdminFromRequest(request);
 

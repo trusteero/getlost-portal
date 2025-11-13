@@ -7,6 +7,8 @@ import { findMatchingReport } from "@/server/utils/demo-reports";
 import { bundleReportHtml } from "@/server/utils/bundle-report-html";
 import { promises as fs } from "fs";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/admin/reports/[id]/fix-html
  * Fix a report that exists but has no HTML content
