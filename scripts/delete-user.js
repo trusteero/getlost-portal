@@ -109,7 +109,11 @@ try {
   console.log(`⚠️  WARNING: This will delete the user and all related data!`);
   console.log(`   Press Ctrl+C to cancel, or wait 3 seconds to continue...\n`);
   
-  await new Promise(resolve => setTimeout(resolve, 3000));
+  // Wait 3 seconds (synchronous sleep)
+  const start = Date.now();
+  while (Date.now() - start < 3000) {
+    // Busy wait
+  }
 
   // Delete in order to respect foreign key constraints
   console.log("🗑️  Deleting related records...");
