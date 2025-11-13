@@ -5,7 +5,7 @@ services:
     name: getlostportal
     runtime: node
     region: oregon # or your preferred region
-    plan: free # or starter/standard/pro as needed
+    plan: starter # Upgraded to Starter plan for persistent disk support
     buildCommand: chmod +x scripts/render-build.sh && ./scripts/render-build.sh
     startCommand: npm run start
     healthCheckPath: /
