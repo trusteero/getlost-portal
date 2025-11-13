@@ -418,6 +418,35 @@ async function main() {
   // Ensure database directory exists before connecting
   await ensureDatabaseDirectory();
   
+  // Check if book-reports directory exists, copy from repo if missing (for Render)
+  if (BOOK_REPORTS_PATH.startsWith('/var/data')) {
+    try {
+      await fs.access(BOOK_REPORTS_PATH);
+      const entries = await fs.readdir(BOOK_REPORTS_PATH);
+      if (entries.length === 0) {
+        console.log("📦 Book-reports directory is empty, checking repo...");
+        // Try to copy from repo location (Render deployment path)
+        const repoReportsPath = '/opt/render/project/src/book-reports';
+        try {
+          await fs.access(repoReportsPath);
+          console.log(`📦 Copying book-reports from repo to persistent disk...`);
+          const { exec } = await import('child_process');
+          const { promisify } = await import('util');
+          const execAsync = promisify(exec);
+          await execAsync(`cp -r ${repoReportsPath}/* ${BOOK_REPORTS_PATH}/`);
+          console.log(`✅ Book-reports copied to ${BOOK_REPORTS_PATH}`);
+        } catch (repoError) {
+          console.log(`ℹ️  Book-reports not found in repo at ${repoReportsPath}`);
+          console.log(`   They will need to be uploaded separately or added to the repo`);
+        }
+      }
+    } catch {
+      // Directory doesn't exist, create it
+      console.log(`📁 Creating book-reports directory: ${BOOK_REPORTS_PATH}`);
+      await fs.mkdir(BOOK_REPORTS_PATH, { recursive: true });
+    }
+  }
+  
   const db = new Database(DATABASE_PATH);
   console.log(`Connected to database: ${DATABASE_PATH}\n`);
   
