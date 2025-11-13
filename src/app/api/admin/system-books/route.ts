@@ -95,10 +95,14 @@ export async function GET(request: NextRequest) {
       const systemBookId = newSystemBook[0]!.id;
       
       // Create system book version
+      // Note: bookVersions requires fileUrl, fileSize, fileType - using placeholder values
       await db.insert(bookVersions).values({
         bookId: systemBookId,
         versionNumber: 1,
         fileName: "SYSTEM_SEEDED_VERSION",
+        fileUrl: "",
+        fileSize: 0,
+        fileType: "system",
         uploadedAt: now,
       } as any); // Type assertion to bypass Drizzle type checking for id with defaultFn
       
