@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(bookVersions.uploadedAt));
 
     // Get all reports for system versions
+    console.log(`[System Books] Found ${systemVersions.length} system version(s)`);
     const allReports = await Promise.all(
       systemVersions.map(async (version) => {
         const versionReports = await db
@@ -70,6 +71,8 @@ export async function GET(request: NextRequest) {
           .from(reports)
           .where(eq(reports.bookVersionId, version.id))
           .orderBy(desc(reports.requestedAt));
+
+        console.log(`[System Books] Version ${version.id.substring(0, 8)}... has ${versionReports.length} report(s)`);
 
         return {
           version,
@@ -104,6 +107,9 @@ export async function GET(request: NextRequest) {
         };
       })
     );
+
+    const flatReports = allReports.flatMap(v => v.reports);
+    console.log(`[System Books] Total reports found: ${flatReports.length}`);
 
     // Get marketing assets, covers, and landing pages for system book
     const [marketingAssetsData, coversData, landingPagesData] = await Promise.all([
@@ -161,14 +167,18 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({
+    const responseData = {
       systemBook: systemBookData,
-      reports: allReports.flatMap(v => v.reports),
+      reports: flatReports,
       versions: systemVersions,
       marketingAssets: marketingAssetsWithMappings,
       covers: coversWithMappings,
       landingPages: landingPagesWithMappings,
-    });
+    };
+    
+    console.log(`[System Books] Returning ${responseData.reports.length} reports to client`);
+    
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error("Failed to fetch system books:", error);
     return NextResponse.json(
