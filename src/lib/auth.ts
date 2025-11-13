@@ -8,7 +8,6 @@ import { trackUserActivity } from "@/server/services/analytics";
 import * as betterAuthSchema from "@/server/db/better-auth-schema";
 import { env } from "@/env";
 import { eq } from "drizzle-orm";
-import { user } from "@/server/db/better-auth-schema";
 
 // Run account table migration synchronously before Better Auth initializes
 // This ensures the schema is correct before Better Auth tries to use it
@@ -165,8 +164,23 @@ function ensureSessionTableMigration() {
       `).get();
 
       if (!tableInfo) {
+        // Table doesn't exist - create it with Better Auth schema
+        console.log("🔄 [Better Auth] Creating session table with Better Auth schema...");
+        sqlite.exec(`
+          CREATE TABLE getlostportal_session (
+            id TEXT PRIMARY KEY,
+            expires_at INTEGER NOT NULL,
+            token TEXT NOT NULL UNIQUE,
+            created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+            updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+            ip_address TEXT,
+            user_agent TEXT,
+            user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
+          )
+        `);
+        console.log("✅ [Better Auth] Session table created");
         sqlite.close();
-        return; // Table doesn't exist yet
+        return;
       }
 
       // Check table structure - if it has sessionToken, it's the old schema
