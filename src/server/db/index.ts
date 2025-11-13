@@ -97,6 +97,23 @@ if (globalForDb.sqlite) {
 
 	if (!dbExists) {
 		console.log('[DB] Database file does not exist yet, will be created at:', dbPath);
+	} else {
+		// Verify we're using the persistent disk (not a fallback)
+		if (dbPath.startsWith('/var/data')) {
+			const stats = require('fs').statSync(dbPath);
+			const sizeKB = Math.round(stats.size / 1024);
+			console.log(`[DB] Using persistent disk database (${sizeKB} KB)`);
+			
+			// Quick check: try to read a table to verify it's not corrupted
+			try {
+				const testDb = new Database(dbPath, { readonly: true });
+				const tables = testDb.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+				testDb.close();
+				console.log(`[DB] Database verified: ${tables.length} table(s) found`);
+			} catch (testError) {
+				console.warn('[DB] Warning: Could not verify database integrity:', testError);
+			}
+		}
 	}
 
 	try {
@@ -109,6 +126,14 @@ if (globalForDb.sqlite) {
 		// Enable WAL mode for better concurrency
 		sqlite.pragma('journal_mode = WAL');
 		console.log('[DB] Successfully connected to database');
+		
+		// Verify we're on the persistent disk (not a fallback)
+		if (dbPath.startsWith('/var/data')) {
+			console.log('[DB] ✅ Using persistent disk - data will persist across redeploys');
+		} else {
+			console.warn('[DB] ⚠️  WARNING: Not using persistent disk path! Data may be lost on redeploy!');
+			console.warn(`[DB] Expected: /var/data/db.sqlite, Got: ${dbPath}`);
+		}
 	} catch (error) {
 		console.error('[DB] Failed to connect to database:', error);
 		throw error;
