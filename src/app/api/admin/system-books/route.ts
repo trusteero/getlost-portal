@@ -25,32 +25,76 @@ export async function GET(request: NextRequest) {
       .where(eq(books.title, "SYSTEM_SEEDED_REPORTS"))
       .limit(1);
 
-    // If system book doesn't exist, try to auto-seed (non-blocking)
+    // If system book doesn't exist, create it directly
     if (systemBook.length === 0) {
-      console.log("[System Books] System book not found, attempting to seed...");
-      // Run seed script in background (fire and forget)
-      import("child_process").then(({ exec }) => {
-        exec("node scripts/seed-reports-only.js", {
-          cwd: process.cwd(),
-          env: {
-            ...process.env,
-            DATABASE_URL: process.env.DATABASE_URL || "file:/var/data/db.sqlite",
-            BOOK_REPORTS_PATH: process.env.BOOK_REPORTS_PATH || "/var/data/book-reports",
-          },
-        }, (error) => {
-          if (error) {
-            console.error("[System Books] Seed script failed:", error);
-          } else {
-            console.log("[System Books] Seed script completed");
-          }
-        });
-      }).catch(console.error);
+      console.log("[System Books] System book not found, creating it...");
       
-      return NextResponse.json({ 
-        systemBook: null,
-        reports: [],
-        message: "System book not found. Seeding in progress... Please refresh in a moment."
+      // Get or create a system user
+      const systemUsers = await db
+        .select({ id: books.userId })
+        .from(books)
+        .limit(1);
+      
+      let systemUserId: string;
+      if (systemUsers.length > 0) {
+        systemUserId = systemUsers[0]!.userId;
+      } else {
+        // Create system user
+        const { randomUUID } = await import("crypto");
+        systemUserId = randomUUID();
+        const { users } = await import("@/server/db/schema");
+        await db.insert(users).values({
+          id: systemUserId,
+          email: "system@getlost.com",
+          name: "System",
+          role: "admin",
+          emailVerified: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        console.log("[System Books] Created system user");
+      }
+      
+      // Create system book
+      const { randomUUID } = await import("crypto");
+      const systemBookId = randomUUID();
+      await db.insert(books).values({
+        id: systemBookId,
+        userId: systemUserId,
+        title: "SYSTEM_SEEDED_REPORTS",
+        description: "System book for seeded reports - not visible to users",
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
+      
+      // Create system book version
+      const systemVersionId = randomUUID();
+      await db.insert(bookVersions).values({
+        id: systemVersionId,
+        bookId: systemBookId,
+        versionNumber: 1,
+        fileName: "SYSTEM_SEEDED_VERSION",
+        uploadedAt: new Date(),
+      });
+      
+      console.log("[System Books] Created system book and version");
+      
+      // Re-fetch the system book
+      const newSystemBook = await db
+        .select()
+        .from(books)
+        .where(eq(books.title, "SYSTEM_SEEDED_REPORTS"))
+        .limit(1);
+      
+      if (newSystemBook.length === 0) {
+        return NextResponse.json({ 
+          systemBook: null,
+          reports: [],
+          message: "Failed to create system book. Please try again."
+        }, { status: 500 });
+      }
+      
+      systemBook = newSystemBook;
     }
 
     const systemBookData = systemBook[0]!;
