@@ -21,10 +21,13 @@ function ensureAccountTableMigration() {
       dbPath = dbPath.replace(/^file:/, "");
     }
 
-    if (!fs.existsSync(dbPath)) {
-      return; // Database doesn't exist yet, will be created with correct schema
+    // Ensure database directory exists
+    const dbDir = require('path').dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
     }
 
+    // Open database (will create file if it doesn't exist)
     const sqlite = new Database(dbPath);
     
     try {
@@ -36,6 +39,29 @@ function ensureAccountTableMigration() {
 
       if (!tableInfo) {
         // Table doesn't exist - create it with Better Auth schema
+        // First ensure user table exists (required for foreign key)
+        const userTable = sqlite.prepare(`
+          SELECT name FROM sqlite_master 
+          WHERE type='table' AND name='getlostportal_user'
+        `).get();
+        
+        if (!userTable) {
+          console.log("🔄 [Better Auth] Creating user table first (required for account table)...");
+          sqlite.exec(`
+            CREATE TABLE getlostportal_user (
+              id TEXT PRIMARY KEY,
+              name TEXT,
+              email TEXT NOT NULL UNIQUE,
+              emailVerified INTEGER DEFAULT 0,
+              image TEXT,
+              role TEXT DEFAULT 'user' NOT NULL,
+              createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
+              updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
+            )
+          `);
+          console.log("✅ [Better Auth] User table created");
+        }
+        
         console.log("🔄 [Better Auth] Creating account table with Better Auth schema...");
         sqlite.exec(`
           CREATE TABLE getlostportal_account (
@@ -170,10 +196,13 @@ function ensureSessionTableMigration() {
       dbPath = dbPath.replace(/^file:/, "");
     }
 
-    if (!fs.existsSync(dbPath)) {
-      return; // Database doesn't exist yet, will be created with correct schema
+    // Ensure database directory exists
+    const dbDir = require('path').dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
     }
 
+    // Open database (will create file if it doesn't exist)
     const sqlite = new Database(dbPath);
     
     try {
@@ -185,6 +214,29 @@ function ensureSessionTableMigration() {
 
       if (!tableInfo) {
         // Table doesn't exist - create it with Better Auth schema
+        // First ensure user table exists (required for foreign key)
+        const userTable = sqlite.prepare(`
+          SELECT name FROM sqlite_master 
+          WHERE type='table' AND name='getlostportal_user'
+        `).get();
+        
+        if (!userTable) {
+          console.log("🔄 [Better Auth] Creating user table first (required for session table)...");
+          sqlite.exec(`
+            CREATE TABLE getlostportal_user (
+              id TEXT PRIMARY KEY,
+              name TEXT,
+              email TEXT NOT NULL UNIQUE,
+              emailVerified INTEGER DEFAULT 0,
+              image TEXT,
+              role TEXT DEFAULT 'user' NOT NULL,
+              createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
+              updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
+            )
+          `);
+          console.log("✅ [Better Auth] User table created");
+        }
+        
         console.log("🔄 [Better Auth] Creating session table with Better Auth schema...");
         sqlite.exec(`
           CREATE TABLE getlostportal_session (
