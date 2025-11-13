@@ -4,6 +4,9 @@ import { db } from "@/server/db";
 import { marketingAssets } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
