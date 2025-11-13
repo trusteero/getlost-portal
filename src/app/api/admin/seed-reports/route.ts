@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
     const seededMatch = stdout.match(/✅ Seeded: (\d+) report\(s\)/);
     const errorsMatch = stdout.match(/❌ Errors: (\d+) report\(s\)/);
     
-    const seeded = seededMatch ? parseInt(seededMatch[1], 10) : 0;
-    const errors = errorsMatch ? parseInt(errorsMatch[1], 10) : 0;
+    const seeded = seededMatch && seededMatch[1] ? parseInt(seededMatch[1], 10) : 0;
+    const errors = errorsMatch && errorsMatch[1] ? parseInt(errorsMatch[1], 10) : 0;
 
     return NextResponse.json({
       success: true,
