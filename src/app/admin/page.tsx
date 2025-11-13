@@ -616,6 +616,22 @@ export default function AdminDashboard() {
               System Books
             </Button>
           </Link>
+          <Button 
+            variant="outline" 
+            onClick={async () => {
+              try {
+                const response = await fetch("/api/admin/disk-status");
+                const data = await response.json();
+                alert(JSON.stringify(data, null, 2));
+              } catch (error) {
+                alert("Failed to check disk status: " + error);
+              }
+            }}
+            title="Check persistent disk status"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Disk Status
+          </Button>
         </div>
 
         {/* Books/Users Table */}
