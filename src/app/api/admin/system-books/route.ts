@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Find system book
-    const systemBook = await db
+    let systemBook = await db
       .select()
       .from(books)
       .where(eq(books.title, "SYSTEM_SEEDED_REPORTS"))
