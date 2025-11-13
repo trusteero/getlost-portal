@@ -30,19 +30,20 @@ export async function GET(request: NextRequest) {
       console.log("[System Books] System book not found, creating it...");
       
       // Get or create a system user
+      const { users } = await import("@/server/db/schema");
       const systemUsers = await db
-        .select({ id: books.userId })
-        .from(books)
+        .select()
+        .from(users)
+        .where(eq(users.email, "system@getlost.com"))
         .limit(1);
       
       let systemUserId: string;
       if (systemUsers.length > 0) {
-        systemUserId = systemUsers[0]!.userId;
+        systemUserId = systemUsers[0]!.id;
       } else {
         // Create system user
         const { randomUUID } = await import("crypto");
         systemUserId = randomUUID();
-        const { users } = await import("@/server/db/schema");
         await db.insert(users).values({
           id: systemUserId,
           email: "system@getlost.com",
