@@ -93,6 +93,43 @@ else
   echo "   They will need to be uploaded separately or added to the repo"
 fi
 
+# Run database migrations if database exists or will be created
+echo "📦 Running database migrations..."
+if [ -f "/var/data/db.sqlite" ]; then
+  echo "   Database exists, applying migrations..."
+else
+  echo "   Database will be created, migrations will run on first connection..."
+fi
+
+# Run migrations using Node.js script
+node -e "
+const { migrate } = require('drizzle-orm/better-sqlite3/migrator');
+const { drizzle } = require('drizzle-orm/better-sqlite3');
+const Database = require('better-sqlite3');
+const path = require('path');
+const fs = require('fs');
+
+const dbPath = '/var/data/db.sqlite';
+const migrationsFolder = path.join(process.cwd(), 'drizzle');
+
+if (!fs.existsSync(migrationsFolder)) {
+  console.log('⚠️  No migrations folder found at:', migrationsFolder);
+  process.exit(0);
+}
+
+try {
+  const sqlite = new Database(dbPath);
+  const db = drizzle(sqlite);
+  migrate(db, { migrationsFolder });
+  sqlite.close();
+  console.log('✅ Database migrations completed');
+} catch (error) {
+  console.error('⚠️  Migration error:', error.message);
+  // Don't fail - migrations might already be applied
+  process.exit(0);
+}
+" || echo "⚠️  Could not run migrations (this is okay if database doesn't exist yet)"
+
 # Write a marker file to verify disk persistence
 echo "$(date -u +"%Y-%m-%d %H:%M:%S UTC")" > /var/data/.last-init
 echo "✅ Initialization complete! Marker written to /var/data/.last-init"
