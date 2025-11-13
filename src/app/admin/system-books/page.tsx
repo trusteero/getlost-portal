@@ -477,11 +477,51 @@ export default function SystemBooksAdmin() {
           <Card>
             <CardContent className="p-8 text-center">
               <p className="text-gray-600 mb-4">
-                System book not found. Run the seed script to create it.
+                System book not found. Click the button below to seed reports.
               </p>
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm">
-                node scripts/seed-reports-only.js
-              </code>
+              <Button
+                onClick={async () => {
+                  if (!confirm("This will run the seed script to create the system book and seed all reports. Continue?")) {
+                    return;
+                  }
+                  setLoading(true);
+                  try {
+                    const response = await fetch("/api/admin/seed-reports", {
+                      method: "POST",
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                      alert(`✅ Seed completed!\nSeeded: ${result.seeded} reports\nErrors: ${result.errors}`);
+                      await fetchData();
+                    } else {
+                      alert(`❌ Seed failed: ${result.error || result.details}\n\nCheck console for details.`);
+                      console.error("Seed error:", result);
+                    }
+                  } catch (error) {
+                    console.error("Failed to seed reports:", error);
+                    alert("Failed to seed reports: " + (error instanceof Error ? error.message : String(error)));
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Seeding...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Seed Reports
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-gray-400 mt-4">
+                This will create the system book and seed all reports from {process.env.NEXT_PUBLIC_BOOK_REPORTS_PATH || "/var/data/book-reports"}
+              </p>
             </CardContent>
           </Card>
         ) : (
