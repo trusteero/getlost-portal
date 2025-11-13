@@ -25,9 +25,9 @@ export async function PATCH(
     const { id } = await params;
 
     // Validate role
-    if (!["user", "admin"].includes(role)) {
+    if (!["user", "admin", "super_admin"].includes(role)) {
       return NextResponse.json(
-        { error: "Invalid role. Must be 'user' or 'admin'" },
+        { error: "Invalid role. Must be 'user', 'admin', or 'super_admin'" },
         { status: 400 }
       );
     }
@@ -45,12 +45,14 @@ export async function PATCH(
 
     const target = targetUser[0]!;
 
-    // Prevent changing super_admin roles
-    if (target.role === "super_admin") {
-      return NextResponse.json(
-        { error: "Cannot change super admin role" },
-        { status: 403 }
-      );
+    // Only super_admins can promote to super_admin or change super_admin roles
+    if (role === "super_admin" || target.role === "super_admin") {
+      if (currentUserRole !== "super_admin") {
+        return NextResponse.json(
+          { error: "Only super admins can manage super admin roles" },
+          { status: 403 }
+        );
+      }
     }
 
     // Prevent admins from demoting themselves
@@ -61,8 +63,16 @@ export async function PATCH(
       );
     }
 
+    // Prevent super_admins from demoting themselves
+    if (target.id === session.user.id && target.role === "super_admin" && role !== "super_admin") {
+      return NextResponse.json(
+        { error: "Cannot remove your own super admin role" },
+        { status: 403 }
+      );
+    }
+
     // Allow both admins and super_admins to promote users to admin
-    // (super_admins can also demote admins, regular admins can only promote)
+    // (super_admins can also demote admins and manage super_admin roles, regular admins can only promote to admin)
 
     // Update user role
     await db

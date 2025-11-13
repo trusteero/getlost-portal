@@ -1,16 +1,25 @@
 #!/usr/bin/env node
 /**
- * Script to make a user an admin
- * Usage: npm run make-admin <email>
+ * Script to make a user an admin or super admin
+ * Usage: npm run make-admin <email> [role]
+ * Examples:
+ *   npm run make-admin user@example.com        # Makes user an admin
+ *   npm run make-admin user@example.com admin  # Makes user an admin
+ *   npm run make-admin user@example.com super  # Makes user a super admin
  */
 
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
-async function makeAdmin(email: string) {
+async function makeAdmin(email: string, role: "admin" | "super_admin" = "admin") {
 	try {
 		console.log(`Looking for user with email: ${email}`);
+
+		// Temporarily override DATABASE_URL for local script execution
+		if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes("build.db")) {
+			process.env.DATABASE_URL = "file:./dev.db";
+		}
 
 		// Find the user
 		const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -20,24 +29,54 @@ async function makeAdmin(email: string) {
 			process.exit(1);
 		}
 
-		// Update the user's role to admin
-		await db.update(users).set({ role: "admin" }).where(eq(users.email, email));
+		const currentRole = user[0]!.role;
+		if (currentRole === role) {
+			console.log(`ℹ️  User ${email} already has role: ${role}`);
+			process.exit(0);
+		}
 
-		console.log(`✅ Successfully made ${email} an admin`);
+		// Update the user's role
+		await db
+			.update(users)
+			.set({ 
+				role,
+				updatedAt: new Date(),
+			})
+			.where(eq(users.email, email));
+
+		const roleLabel = role === "super_admin" ? "super admin" : "admin";
+		console.log(`✅ Successfully made ${email} a ${roleLabel}`);
+		console.log(`   Previous role: ${currentRole || "user"}`);
+		console.log(`   New role: ${role}`);
 		process.exit(0);
 	} catch (error) {
-		console.error("Error making user admin:", error);
+		console.error("Error updating user role:", error);
 		process.exit(1);
 	}
 }
 
-// Get email from command line arguments
+// Get email and optional role from command line arguments
 const email = process.argv[2];
+const roleArg = process.argv[3]?.toLowerCase();
 
 if (!email) {
 	console.error("Please provide an email address");
-	console.error("Usage: npm run make-admin <email>");
+	console.error("Usage: npm run make-admin <email> [role]");
+	console.error("Examples:");
+	console.error("  npm run make-admin user@example.com        # Makes user an admin");
+	console.error("  npm run make-admin user@example.com admin # Makes user an admin");
+	console.error("  npm run make-admin user@example.com super # Makes user a super admin");
 	process.exit(1);
 }
 
-makeAdmin(email);
+// Parse role argument
+let role: "admin" | "super_admin" = "admin";
+if (roleArg === "super" || roleArg === "super_admin" || roleArg === "superadmin") {
+	role = "super_admin";
+} else if (roleArg && roleArg !== "admin") {
+	console.error(`Invalid role: ${roleArg}`);
+	console.error("Valid roles: admin, super (or super_admin)");
+	process.exit(1);
+}
+
+makeAdmin(email, role);
