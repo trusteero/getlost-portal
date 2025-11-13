@@ -360,6 +360,9 @@ async function main() {
   console.log(`\n📚 Seeding reports (without creating books)...`);
   console.log(`   Reports path: ${BOOK_REPORTS_PATH}\n`);
   
+  // Ensure database directory exists before connecting
+  await ensureDatabaseDirectory();
+  
   const db = new Database(DATABASE_PATH);
   console.log(`Connected to database: ${DATABASE_PATH}\n`);
   
