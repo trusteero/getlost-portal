@@ -291,7 +291,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleUserRoleChange = async (userId: string, newRole: "user" | "admin") => {
+  const handleUserRoleChange = async (userId: string, newRole: "user" | "admin" | "super_admin") => {
     try {
       const response = await fetch(`/api/admin/users/${userId}/role`, {
         method: "PATCH",
@@ -301,7 +301,8 @@ export default function AdminDashboard() {
 
       if (response.ok) {
         await fetchData();
-        alert(`User role updated to ${newRole}`);
+        const roleLabel = newRole === "super_admin" ? "super admin" : newRole;
+        alert(`User role updated to ${roleLabel}`);
       } else {
         const error = await response.json();
         alert(error.error || "Failed to update user role");
@@ -976,22 +977,57 @@ export default function AdminDashboard() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                       {user.role === "admin" ? (
-                                        <DropdownMenuItem
-                                          onClick={() => handleUserRoleChange(user.id, "user")}
-                                          className="text-orange-600"
-                                        >
-                                          <UserX className="w-4 h-4 mr-2" />
-                                          Demote to User
-                                        </DropdownMenuItem>
+                                        <>
+                                          <DropdownMenuItem
+                                            onClick={() => handleUserRoleChange(user.id, "super_admin")}
+                                            className="text-purple-600"
+                                          >
+                                            <Shield className="w-4 h-4 mr-2" />
+                                            Promote to Super Admin
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() => handleUserRoleChange(user.id, "user")}
+                                            className="text-orange-600"
+                                          >
+                                            <UserX className="w-4 h-4 mr-2" />
+                                            Demote to User
+                                          </DropdownMenuItem>
+                                        </>
                                       ) : (
-                                        <DropdownMenuItem
-                                          onClick={() => handleUserRoleChange(user.id, "admin")}
-                                          className="text-blue-600"
-                                        >
-                                          <Shield className="w-4 h-4 mr-2" />
-                                          Promote to Admin
-                                        </DropdownMenuItem>
+                                        <>
+                                          <DropdownMenuItem
+                                            onClick={() => handleUserRoleChange(user.id, "super_admin")}
+                                            className="text-purple-600"
+                                          >
+                                            <Shield className="w-4 h-4 mr-2" />
+                                            Promote to Super Admin
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() => handleUserRoleChange(user.id, "admin")}
+                                            className="text-blue-600"
+                                          >
+                                            <Shield className="w-4 h-4 mr-2" />
+                                            Promote to Admin
+                                          </DropdownMenuItem>
+                                        </>
                                       )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                ) : (session?.user as any)?.role === "super_admin" && user.role === "super_admin" ? (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        <MoreHorizontal className="w-4 h-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem
+                                        onClick={() => handleUserRoleChange(user.id, "admin")}
+                                        className="text-orange-600"
+                                      >
+                                        <UserX className="w-4 h-4 mr-2" />
+                                        Demote to Admin
+                                      </DropdownMenuItem>
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 ) : (session?.user as any)?.role === "admin" && user.role === "user" ? (
