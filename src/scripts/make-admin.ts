@@ -8,6 +8,20 @@
  *   npm run make-admin user@example.com super  # Makes user a super admin
  */
 
+// Set DATABASE_URL before importing db module
+// On Render, use the persistent disk path
+// Locally, use dev.db if DATABASE_URL points to build.db
+if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes("build.db")) {
+	process.env.DATABASE_URL = "file:./dev.db";
+} else if (!process.env.DATABASE_URL) {
+	// Default to persistent disk path on Render, or dev.db locally
+	if (process.env.RENDER === "true" || process.cwd().includes("/opt/render")) {
+		process.env.DATABASE_URL = "file:/var/data/db.sqlite";
+	} else {
+		process.env.DATABASE_URL = "file:./dev.db";
+	}
+}
+
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
@@ -15,21 +29,6 @@ import { eq } from "drizzle-orm";
 async function makeAdmin(email: string, role: "admin" | "super_admin" = "admin") {
 	try {
 		console.log(`Looking for user with email: ${email}`);
-
-		// Use the correct database path
-		// On Render, use the persistent disk path
-		// Locally, use dev.db if DATABASE_URL points to build.db
-		if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes("build.db")) {
-			process.env.DATABASE_URL = "file:./dev.db";
-		} else if (!process.env.DATABASE_URL) {
-			// Default to persistent disk path on Render, or dev.db locally
-			if (process.env.RENDER === "true" || process.cwd().includes("/opt/render")) {
-				process.env.DATABASE_URL = "file:/var/data/db.sqlite";
-			} else {
-				process.env.DATABASE_URL = "file:./dev.db";
-			}
-		}
-		
 		console.log(`Using database: ${process.env.DATABASE_URL}`);
 
 		// Find the user
