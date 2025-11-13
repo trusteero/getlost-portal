@@ -66,7 +66,7 @@ try {
   // Check what tables exist
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all();
   console.log(`\n📋 Tables found (${tables.length}):`);
-  tables.forEach((table: any) => {
+  tables.forEach((table) => {
     console.log(`   - ${table.name}`);
   });
   
@@ -107,8 +107,8 @@ try {
         console.log(`   User may not be able to log in without an account record`);
       }
     }
-  } catch (error: any) {
-    if (error.message.includes("no such table: user")) {
+  } catch (error) {
+    if (error.message && error.message.includes("no such table: user")) {
       console.log(`\n⚠️  'user' table does not exist (Better Auth table)`);
       console.log(`   Checking for old 'getlostportal_user' table...`);
       
@@ -138,14 +138,14 @@ try {
   // Count total users
   try {
     const userCount = db.prepare("SELECT COUNT(*) as count FROM user").get();
-    console.log(`\n📊 Total users in 'user' table: ${(userCount as any).count || 0}`);
+    console.log(`\n📊 Total users in 'user' table: ${userCount?.count || 0}`);
   } catch {
     // Table doesn't exist
   }
   
   try {
     const oldUserCount = db.prepare("SELECT COUNT(*) as count FROM getlostportal_user").get();
-    console.log(`📊 Total users in 'getlostportal_user' table: ${(oldUserCount as any).count || 0}`);
+    console.log(`📊 Total users in 'getlostportal_user' table: ${oldUserCount?.count || 0}`);
   } catch {
     // Table doesn't exist
   }
@@ -161,8 +161,8 @@ try {
     console.log(`\n✅ User persistence check passed!`);
     process.exit(0);
   }
-} catch (error: any) {
-  console.error("\n❌ Error checking database:", error.message);
+} catch (error) {
+  console.error("\n❌ Error checking database:", error?.message || String(error));
   console.error(error);
   process.exit(1);
 }
