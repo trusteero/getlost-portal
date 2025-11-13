@@ -44,14 +44,15 @@ export async function GET(request: NextRequest) {
         // Create system user
         const { randomUUID } = await import("crypto");
         systemUserId = randomUUID();
+        const now = Math.floor(Date.now() / 1000); // Unix timestamp
         await db.insert(users).values({
           id: systemUserId,
           email: "system@getlost.com",
           name: "System",
           role: "admin",
-          emailVerified: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          emailVerified: now, // Timestamp for verified email
+          createdAt: now,
+          updatedAt: now,
         });
         console.log("[System Books] Created system user");
       }
@@ -59,13 +60,14 @@ export async function GET(request: NextRequest) {
       // Create system book
       const { randomUUID } = await import("crypto");
       const systemBookId = randomUUID();
+      const now = Math.floor(Date.now() / 1000); // Unix timestamp
       await db.insert(books).values({
         id: systemBookId,
         userId: systemUserId,
         title: "SYSTEM_SEEDED_REPORTS",
         description: "System book for seeded reports - not visible to users",
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: now,
+        updatedAt: now,
       });
       
       // Create system book version
@@ -75,7 +77,7 @@ export async function GET(request: NextRequest) {
         bookId: systemBookId,
         versionNumber: 1,
         fileName: "SYSTEM_SEEDED_VERSION",
-        uploadedAt: new Date(),
+        uploadedAt: now,
       });
       
       console.log("[System Books] Created system book and version");
