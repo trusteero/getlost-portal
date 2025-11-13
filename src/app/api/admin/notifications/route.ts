@@ -4,6 +4,8 @@ import { db } from "@/server/db";
 import { notifications, reports, bookVersions, books } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   const isAdmin = await isAdminFromRequest(request);
 

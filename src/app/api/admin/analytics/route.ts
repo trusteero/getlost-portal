@@ -5,6 +5,8 @@ import { users, userActivity } from "@/server/db/schema";
 import { sql, gte, and, eq } from "drizzle-orm";
 import { getAnalytics } from "@/server/services/analytics";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const isAdmin = await isAdminFromRequest(request);
 
