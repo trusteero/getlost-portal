@@ -9,17 +9,17 @@
  */
 
 // Set DATABASE_URL before importing db module
-// On Render, use the persistent disk path
-// Locally, use dev.db if DATABASE_URL points to build.db
-if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes("build.db")) {
+// On Render, always use the persistent disk path
+// Locally, use dev.db if DATABASE_URL points to build database
+if (process.env.RENDER === "true" || process.cwd().includes("/opt/render")) {
+	// On Render, always use persistent disk
+	process.env.DATABASE_URL = "file:/var/data/db.sqlite";
+} else if (process.env.DATABASE_URL && (process.env.DATABASE_URL.includes("build") || process.env.DATABASE_URL.includes("build-db"))) {
+	// Local: use dev.db instead of build database
 	process.env.DATABASE_URL = "file:./dev.db";
 } else if (!process.env.DATABASE_URL) {
-	// Default to persistent disk path on Render, or dev.db locally
-	if (process.env.RENDER === "true" || process.cwd().includes("/opt/render")) {
-		process.env.DATABASE_URL = "file:/var/data/db.sqlite";
-	} else {
-		process.env.DATABASE_URL = "file:./dev.db";
-	}
+	// Default to dev.db locally
+	process.env.DATABASE_URL = "file:./dev.db";
 }
 
 import { db } from "@/server/db";
