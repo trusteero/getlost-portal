@@ -7,6 +7,8 @@ import { randomUUID } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/admin/system-books/[bookId]/assets/[assetType]
  * Upload/manage assets for a system book
