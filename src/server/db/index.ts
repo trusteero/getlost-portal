@@ -15,20 +15,21 @@ const globalForDb = globalThis as unknown as {
 };
 
 // Parse the database path - handle both file:// and absolute/relative paths
-let dbPath = env.DATABASE_URL;
+function getDbPath(): string {
+	let dbPath = env.DATABASE_URL;
 
-// Remove file:// or file: prefix if present, but keep the leading slash for absolute paths
-if (dbPath.startsWith('file://')) {
-	// file:///path -> /path (absolute)
-	// file://path -> path (relative)
-	dbPath = dbPath.replace(/^file:\/\//, '');
-} else if (dbPath.startsWith('file:')) {
-	// file:/path -> /path or file:./path -> ./path
-	dbPath = dbPath.replace(/^file:/, '');
+	// Remove file:// or file: prefix if present, but keep the leading slash for absolute paths
+	if (dbPath.startsWith('file://')) {
+		// file:///path -> /path (absolute)
+		// file://path -> path (relative)
+		dbPath = dbPath.replace(/^file:\/\//, '');
+	} else if (dbPath.startsWith('file:')) {
+		// file:/path -> /path or file:./path -> ./path
+		dbPath = dbPath.replace(/^file:/, '');
+	}
+
+	return dbPath;
 }
-
-console.log('[DB] Database URL from env:', env.DATABASE_URL);
-console.log('[DB] Resolved database path:', dbPath);
 
 // Check if we're in a build phase - be more specific
 const isBuildPhase = process.argv.includes('build') || 
@@ -39,6 +40,11 @@ const isBuildPhase = process.argv.includes('build') ||
  * Only connects when actually needed, not at module load time
  */
 function getDatabase(): Database.Database {
+	// During build phase, don't connect to database
+	if (isBuildPhase) {
+		throw new Error('Database connection not available during build phase');
+	}
+
 	// Return cached connection if available
 	if (globalForDb.sqlite) {
 		try {
@@ -50,14 +56,11 @@ function getDatabase(): Database.Database {
 		}
 	}
 
-	// During build phase, don't connect to database
-	if (isBuildPhase) {
-		console.log('[DB] Build phase detected - skipping database connection');
-		// Return a dummy connection that will throw if used
-		throw new Error('Database connection not available during build phase');
-	}
-
 	// Runtime - connect to actual database
+	const dbPath = getDbPath();
+	console.log('[DB] Database URL from env:', env.DATABASE_URL);
+	console.log('[DB] Resolved database path:', dbPath);
+	
 	const dbDir = dirname(dbPath);
 	const dbExists = existsSync(dbPath);
 	const dirExists = dbDir === '.' || dbDir === './' || existsSync(dbDir);
