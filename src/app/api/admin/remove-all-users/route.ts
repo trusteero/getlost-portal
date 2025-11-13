@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import Database from "better-sqlite3";
 import { env } from "@/env";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * API endpoint to remove all users from the database
  * 
