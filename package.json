@@ -22,6 +22,7 @@
 		"make-admin": "tsx src/scripts/make-admin.ts",
 		"create-user": "tsx src/scripts/create-user.ts",
 		"check-user": "node scripts/check-user-persistence.js",
+		"list-users": "node scripts/list-users.js",
 		"db:reset": "./scripts/reset-db.sh"
 	},
 	"dependencies": {
