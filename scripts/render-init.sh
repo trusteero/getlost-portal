@@ -124,8 +124,95 @@ try {
   sqlite.close();
   console.log('✅ Database migrations completed');
   
-  // Ensure Better Auth tables exist (they should be in migrations, but double-check)
+  // Ensure Better Auth tables exist with correct schema
   const sqlite2 = new Database(dbPath);
+  
+  // Check if session table exists and has correct schema
+  const sessionTable = sqlite2.prepare(\"SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_session'\").get();
+  if (sessionTable) {
+    const columns = sqlite2.prepare(\"PRAGMA table_info(getlostportal_session)\").all();
+    const hasId = columns.some(col => col.name === 'id');
+    const hasSessionToken = columns.some(col => col.name === 'sessionToken');
+    
+    // If old schema (has sessionToken but no id), migrate it
+    if (hasSessionToken && !hasId) {
+      console.log('🔄 Migrating session table to Better Auth schema...');
+      sqlite2.exec(\`
+        CREATE TABLE IF NOT EXISTS getlostportal_session_new (
+          id TEXT PRIMARY KEY,
+          expires_at INTEGER NOT NULL,
+          token TEXT NOT NULL UNIQUE,
+          created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+          updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+          ip_address TEXT,
+          user_agent TEXT,
+          user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
+        )
+      \`);
+      
+      // Migrate old sessions if any exist
+      const oldSessions = sqlite2.prepare(\"SELECT sessionToken, userId, expires FROM getlostportal_session\").all();
+      if (oldSessions.length > 0) {
+        const insert = sqlite2.prepare(\`
+          INSERT INTO getlostportal_session_new (id, expires_at, token, user_id, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?)
+        \`);
+        const crypto = require('crypto');
+        for (const session of oldSessions) {
+          insert.run(
+            crypto.randomUUID(),
+            session.expires,
+            session.sessionToken,
+            session.userId,
+            Math.floor(Date.now() / 1000),
+            Math.floor(Date.now() / 1000)
+          );
+        }
+        console.log(\`   Migrated \${oldSessions.length} session(s)\`);
+      }
+      
+      // Replace old table with new one
+      sqlite2.exec(\`
+        DROP TABLE getlostportal_session;
+        ALTER TABLE getlostportal_session_new RENAME TO getlostportal_session;
+      \`);
+      console.log('✅ Session table migrated to Better Auth schema');
+    } else if (!hasId) {
+      // Table exists but doesn't have id column - recreate it
+      console.log('🔄 Recreating session table with Better Auth schema...');
+      sqlite2.exec(\`
+        DROP TABLE IF EXISTS getlostportal_session;
+        CREATE TABLE getlostportal_session (
+          id TEXT PRIMARY KEY,
+          expires_at INTEGER NOT NULL,
+          token TEXT NOT NULL UNIQUE,
+          created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+          updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+          ip_address TEXT,
+          user_agent TEXT,
+          user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
+        )
+      \`);
+      console.log('✅ Session table created with Better Auth schema');
+    }
+  } else {
+    // Table doesn't exist - create it with Better Auth schema
+    console.log('🔄 Creating session table with Better Auth schema...');
+    sqlite2.exec(\`
+      CREATE TABLE getlostportal_session (
+        id TEXT PRIMARY KEY,
+        expires_at INTEGER NOT NULL,
+        token TEXT NOT NULL UNIQUE,
+        created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+        updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+        ip_address TEXT,
+        user_agent TEXT,
+        user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
+      )
+    \`);
+    console.log('✅ Session table created with Better Auth schema');
+  }
+  
   const tables = sqlite2.prepare(\"SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'getlostportal_%'\").all();
   console.log('📋 Found', tables.length, 'getlostportal tables');
   sqlite2.close();
