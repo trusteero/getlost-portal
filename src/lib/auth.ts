@@ -13,8 +13,10 @@ import { eq } from "drizzle-orm";
 // This ensures the schema is correct before Better Auth tries to use it
 function ensureAccountTableMigration() {
   try {
+    console.log("🔍 [Better Auth] ensureAccountTableMigration() called");
     // Get database path
     let dbPath = env.DATABASE_URL || "./dev.db";
+    console.log("   Database URL from env:", env.DATABASE_URL);
     if (dbPath.startsWith("file://")) {
       dbPath = dbPath.replace(/^file:\/\//, "");
     } else if (dbPath.startsWith("file:")) {
@@ -188,8 +190,10 @@ function ensureAccountTableMigration() {
 // Run session table migration synchronously before Better Auth initializes
 function ensureSessionTableMigration() {
   try {
+    console.log("🔍 [Better Auth] ensureSessionTableMigration() called");
     // Get database path
     let dbPath = env.DATABASE_URL || "./dev.db";
+    console.log("   Database URL from env:", env.DATABASE_URL);
     if (dbPath.startsWith("file://")) {
       dbPath = dbPath.replace(/^file:\/\//, "");
     } else if (dbPath.startsWith("file:")) {
@@ -343,8 +347,23 @@ function ensureSessionTableMigration() {
 }
 
 // Run migrations synchronously before Better Auth initializes
-ensureAccountTableMigration();
-ensureSessionTableMigration();
+console.log("🔧 [Better Auth] Starting table migrations...");
+try {
+  ensureAccountTableMigration();
+  console.log("✅ [Better Auth] Account table migration completed");
+} catch (error: any) {
+  console.error("❌ [Better Auth] Account table migration failed:", error?.message || error);
+  console.error("   Stack:", error?.stack);
+}
+
+try {
+  ensureSessionTableMigration();
+  console.log("✅ [Better Auth] Session table migration completed");
+} catch (error: any) {
+  console.error("❌ [Better Auth] Session table migration failed:", error?.message || error);
+  console.error("   Stack:", error?.stack);
+}
+console.log("🔧 [Better Auth] Table migrations finished");
 
 // Debug: Log database configuration
 console.log("🔍 [Better Auth] Database configuration:");
