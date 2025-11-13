@@ -10,10 +10,13 @@
 
 import Database from "better-sqlite3";
 import { promises as fs } from "fs";
+import { existsSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { randomUUID } from "crypto";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -47,6 +50,32 @@ async function ensureDatabaseDirectory() {
         console.error(`❌ Failed to create database directory: ${mkdirError.message}`);
         throw new Error(`Cannot create database directory: ${dbDir}. Make sure the persistent disk is mounted.`);
       }
+    }
+  }
+}
+
+// Run database migrations to ensure tables exist
+async function runMigrations(db) {
+  const migrationsFolder = path.resolve("./drizzle");
+  
+  if (!existsSync(migrationsFolder)) {
+    console.log("⚠️  No migrations folder found, skipping migrations");
+    return;
+  }
+
+  console.log("📦 Running database migrations...");
+  try {
+    const drizzleDb = drizzle(db);
+    migrate(drizzleDb, { migrationsFolder });
+    console.log("✅ Database migrations completed");
+  } catch (migrationError) {
+    // If tables already exist, that's okay - migrations were already applied
+    const errorMsg = migrationError?.message || String(migrationError);
+    if (errorMsg.includes("already exists") || errorMsg.includes("SQLITE_ERROR")) {
+      console.log("ℹ️  Tables already exist, migrations already applied");
+    } else {
+      console.error("⚠️  Migration error (continuing anyway):", errorMsg);
+      // Don't throw - allow script to continue even if migrations fail
     }
   }
 }
@@ -367,13 +396,32 @@ async function main() {
   console.log(`Connected to database: ${DATABASE_PATH}\n`);
   
   try {
-    // Delete existing demo reports
-    console.log(`🧹 Cleaning up existing demo reports...`);
-    const deleted = db.prepare(`
-      DELETE FROM getlostportal_report 
-      WHERE analyzedBy = 'system@getlost.com' OR adminNotes LIKE '%"isSeeded":true%'
-    `).run();
-    console.log(`   Deleted ${deleted.changes} existing demo report(s)\n`);
+    // Run migrations to ensure tables exist
+    await runMigrations(db);
+    console.log("");
+    
+    // Check if report table exists before trying to delete
+    const tables = db.prepare(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name='getlostportal_report'
+    `).all();
+    
+    if (tables.length === 0) {
+      console.log("⚠️  Report table doesn't exist yet - migrations may not have created it");
+      console.log("   Continuing to seed reports (tables will be created if needed)...\n");
+    } else {
+      // Delete existing demo reports
+      console.log(`🧹 Cleaning up existing demo reports...`);
+      try {
+        const deleted = db.prepare(`
+          DELETE FROM getlostportal_report 
+          WHERE analyzedBy = 'system@getlost.com' OR adminNotes LIKE '%"isSeeded":true%'
+        `).run();
+        console.log(`   Deleted ${deleted.changes} existing demo report(s)\n`);
+      } catch (deleteError) {
+        console.log(`   ⚠️  Could not delete existing reports: ${deleteError.message}\n`);
+      }
+    }
     
     // Find all report files
     const reportFiles = await findReportFiles(BOOK_REPORTS_PATH);
