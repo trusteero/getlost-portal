@@ -153,6 +153,21 @@ function getDbInstance(): ReturnType<typeof drizzle> {
 	return dbInstance;
 }
 
-// Export db - use the type-check instance type
-// At runtime, the proxy will return the actual database instance
-export const db = typeCheckDbInstance;
+// Export db - use a proxy to return the actual database instance at runtime
+// This ensures Better Auth gets the correct file-based database, not the in-memory one
+export const db = new Proxy(typeCheckDbInstance, {
+	get(target, prop) {
+		// During build, return from type-check instance
+		if (isBuildPhase) {
+			return (target as any)[prop];
+		}
+		// At runtime, get actual database instance
+		const actualDb = getDbInstance();
+		const value = (actualDb as any)[prop];
+		// If it's a function, bind it to the actual instance
+		if (typeof value === 'function') {
+			return value.bind(actualDb);
+		}
+		return value;
+	}
+}) as typeof typeCheckDbInstance;
