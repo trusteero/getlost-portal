@@ -507,7 +507,18 @@ console.log("🔧 [Better Auth] Table migrations finished");
 
 // CRITICAL: Ensure session table exists before Better Auth initializes
 // This uses the SAME database connection that Better Auth will use
+// IMPORTANT: Skip during build phase - database is only available at runtime
 function ensureSessionTableExistsSync(): void {
+  // Check if we're in build phase
+  const isBuildPhase = process.argv.includes('build') || 
+    process.env.NEXT_PHASE === 'phase-production-build';
+  
+  if (isBuildPhase) {
+    console.log("⚠️  [Better Auth] Skipping session table check during build phase (database not available)");
+    console.log("   Tables will be created at runtime on first request");
+    return;
+  }
+  
   try {
     console.log("🔐 [Better Auth] Ensuring session table exists using the same DB connection Better Auth will use...");
     
@@ -571,12 +582,22 @@ function ensureSessionTableExistsSync(): void {
     dbConnection.prepare("SELECT COUNT(*) as count FROM getlostportal_session").get();
     console.log("✅ [Better Auth] Session table is accessible and ready for Better Auth");
   } catch (error: any) {
+    // If it's a build phase error, skip it (already handled above, but just in case)
+    if (error?.message?.includes("build phase") || error?.message?.includes("not available")) {
+      console.log("⚠️  [Better Auth] Database not available (likely build phase), skipping table check");
+      console.log("   Tables will be created at runtime on first request");
+      return;
+    }
+    
     console.error("❌ [Better Auth] CRITICAL ERROR: Cannot ensure session table exists!");
     console.error("   Error:", error?.message);
     console.error("   Stack:", error?.stack);
     console.error("   Database URL:", env.DATABASE_URL);
-    // Throw in both dev and prod - we can't let Better Auth start without tables
-    throw new Error(`Cannot initialize Better Auth: Session table creation failed: ${error?.message}`);
+    // In production, log but don't throw - runtime fallback will handle it
+    if (process.env.NODE_ENV === "development") {
+      throw new Error(`Cannot initialize Better Auth: Session table creation failed: ${error?.message}`);
+    }
+    console.error("⚠️  [Better Auth] Continuing in production mode - runtime fallback will create table on first request");
   }
 }
 
