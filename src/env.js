@@ -11,7 +11,14 @@ export const env = createEnv({
 		BETTER_AUTH_SECRET: z.string().optional(), // Optional - Better Auth secret
 		AUTH_GOOGLE_ID: z.string().optional(), // Optional - Google OAuth not required
 		AUTH_GOOGLE_SECRET: z.string().optional(), // Optional - Google OAuth not required
-		DATABASE_URL: z.string(), // Required - should be set via environment variable
+		DATABASE_URL: z.string().optional().default(() => {
+			// During build, use build database. At runtime, must be set via env var.
+			if (process.env.NEXT_PHASE === 'phase-production-build' || 
+			    process.argv.includes('build')) {
+				return "file:./build-db.sqlite";
+			}
+			return process.env.DATABASE_URL || "file:./dev.db";
+		}()),
 		BETTER_AUTH_URL: z.string().optional(), // Better Auth base URL
 		SUPER_ADMIN_EMAILS: z.string().optional(),
 		NODE_ENV: z
