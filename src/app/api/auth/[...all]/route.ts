@@ -106,6 +106,9 @@ function isSessionTableError(error: any, response?: Response): boolean {
 }
 
 export const POST = async (request: Request) => {
+  // Log immediately when route handler is called
+  console.log("🚨 [Better Auth Route] POST handler called");
+  
   try {
     // Log the request for debugging
     const url = new URL(request.url);
@@ -125,18 +128,25 @@ export const POST = async (request: Request) => {
     }
     
     try {
+      console.log("🔐 [Better Auth Route] Calling handler.POST...");
       const response = await handler.POST(request);
+      console.log("🔐 [Better Auth Route] Handler returned, status:", response.status);
     
       // Check response status - Better Auth might return 500 with error in body
       if (response.status === 500) {
+        console.log("⚠️ [Better Auth Route] Got 500 response, checking error body...");
         try {
           const responseClone = response.clone();
           const errorData = await responseClone.json();
           const errorString = JSON.stringify(errorData).toLowerCase();
           
           // Check if the error is about missing session table
+          console.log("🔍 [Better Auth Route] Checking error string for session table error...");
+          console.log("   Error string contains 'no such table':", errorString.includes("no such table"));
+          console.log("   Error string contains 'getlostportal_session':", errorString.includes("getlostportal_session"));
+          
           if (errorString.includes("no such table") && errorString.includes("getlostportal_session")) {
-            console.error("❌ [Better Auth] Session table missing error detected in response body, attempting to create it...");
+            console.error("🚨🚨🚨 [Better Auth] Session table missing error detected in response body, attempting to create it...");
             console.error("   Error data:", JSON.stringify(errorData, null, 2));
             ensureBetterAuthTables();
             
