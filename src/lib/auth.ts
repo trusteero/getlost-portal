@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "@/server/db";
+import { db, sqlite } from "@/server/db";
 import Database from "better-sqlite3";
 import crypto from "crypto";
 import fs from "fs";
@@ -506,87 +506,77 @@ try {
 console.log("🔧 [Better Auth] Table migrations finished");
 
 // CRITICAL: Ensure session table exists before Better Auth initializes
-// This will throw if the table cannot be created, preventing Better Auth from starting without tables
+// This uses the SAME database connection that Better Auth will use
 function ensureSessionTableExistsSync(): void {
   try {
-    let dbPath = env.DATABASE_URL || "./dev.db";
-    if (dbPath.startsWith("file://")) {
-      dbPath = dbPath.replace(/^file:\/\//, "");
-    } else if (dbPath.startsWith("file:")) {
-      dbPath = dbPath.replace(/^file:/, "");
-    }
+    console.log("🔐 [Better Auth] Ensuring session table exists using the same DB connection Better Auth will use...");
     
-    const dbDir = require('path').dirname(dbPath);
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
-    }
+    // Force initialize the database connection (same one Better Auth will use)
+    // This accesses sqlite which forces lazy initialization
+    const dbConnection = sqlite;
     
-    const sqlite = new Database(dbPath);
-    try {
-      // Check if session table exists
-      const sessionTable = sqlite.prepare(`
+    console.log("✅ [Better Auth] Database connection initialized");
+    
+    // Check if session table exists
+    const sessionTable = dbConnection.prepare(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name='getlostportal_session'
+    `).get();
+    
+    if (!sessionTable) {
+      console.log("🚨 [Better Auth] CRITICAL: Session table missing before Better Auth init! Creating now...");
+      
+      // Ensure user table exists first
+      const userTable = dbConnection.prepare(`
         SELECT name FROM sqlite_master 
-        WHERE type='table' AND name='getlostportal_session'
+        WHERE type='table' AND name='getlostportal_user'
       `).get();
       
-      if (!sessionTable) {
-        console.log("🚨 [Better Auth] CRITICAL: Session table missing before Better Auth init! Creating now...");
-        
-        // Ensure user table exists first
-        const userTable = sqlite.prepare(`
-          SELECT name FROM sqlite_master 
-          WHERE type='table' AND name='getlostportal_user'
-        `).get();
-        
-        if (!userTable) {
-          console.log("🚨 [Better Auth] Creating user table (required for session table)...");
-          sqlite.exec(`
-            CREATE TABLE IF NOT EXISTS getlostportal_user (
-              id TEXT PRIMARY KEY,
-              name TEXT,
-              email TEXT NOT NULL UNIQUE,
-              emailVerified INTEGER DEFAULT 0,
-              image TEXT,
-              role TEXT DEFAULT 'user' NOT NULL,
-              createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
-              updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
-            )
-          `);
-        }
-        
-        // Create session table
-        sqlite.exec(`
-          CREATE TABLE getlostportal_session (
+      if (!userTable) {
+        console.log("🚨 [Better Auth] Creating user table (required for session table)...");
+        dbConnection.exec(`
+          CREATE TABLE IF NOT EXISTS getlostportal_user (
             id TEXT PRIMARY KEY,
-            expires_at INTEGER NOT NULL,
-            token TEXT NOT NULL UNIQUE,
-            created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-            updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-            ip_address TEXT,
-            user_agent TEXT,
-            user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
+            name TEXT,
+            email TEXT NOT NULL UNIQUE,
+            emailVerified INTEGER DEFAULT 0,
+            image TEXT,
+            role TEXT DEFAULT 'user' NOT NULL,
+            createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
+            updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
           )
         `);
-        console.log("✅ [Better Auth] Session table created successfully before Better Auth init");
-      } else {
-        console.log("✅ [Better Auth] Session table verified - exists before Better Auth init");
+        console.log("✅ [Better Auth] User table created");
       }
       
-      // Verify we can query it
-      sqlite.prepare("SELECT COUNT(*) as count FROM getlostportal_session").get();
-      console.log("✅ [Better Auth] Session table is accessible and ready");
-    } finally {
-      sqlite.close();
+      // Create session table
+      dbConnection.exec(`
+        CREATE TABLE getlostportal_session (
+          id TEXT PRIMARY KEY,
+          expires_at INTEGER NOT NULL,
+          token TEXT NOT NULL UNIQUE,
+          created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+          updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+          ip_address TEXT,
+          user_agent TEXT,
+          user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
+        )
+      `);
+      console.log("✅ [Better Auth] Session table created successfully in the SAME database Better Auth will use");
+    } else {
+      console.log("✅ [Better Auth] Session table verified - exists in the database Better Auth will use");
     }
+    
+    // Verify we can query it
+    dbConnection.prepare("SELECT COUNT(*) as count FROM getlostportal_session").get();
+    console.log("✅ [Better Auth] Session table is accessible and ready for Better Auth");
   } catch (error: any) {
     console.error("❌ [Better Auth] CRITICAL ERROR: Cannot ensure session table exists!");
     console.error("   Error:", error?.message);
     console.error("   Stack:", error?.stack);
-    // Don't throw in production to allow app to start, but log loudly
-    if (process.env.NODE_ENV === "development") {
-      throw new Error(`Cannot initialize Better Auth: Session table creation failed: ${error?.message}`);
-    }
-    console.error("⚠️  [Better Auth] Continuing despite error (production mode)");
+    console.error("   Database URL:", env.DATABASE_URL);
+    // Throw in both dev and prod - we can't let Better Auth start without tables
+    throw new Error(`Cannot initialize Better Auth: Session table creation failed: ${error?.message}`);
   }
 }
 
