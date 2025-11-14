@@ -376,24 +376,28 @@ function ensureSessionTableMigration() {
         }
       } catch (verifyError: any) {
         console.error("⚠️  [Better Auth] Error verifying/migrating session table:", verifyError?.message);
-        // Try to create the table anyway as a last resort
-        try {
-          sqlite.exec(`
-            CREATE TABLE IF NOT EXISTS getlostportal_session (
-              id TEXT PRIMARY KEY,
-              expires_at INTEGER NOT NULL,
-              token TEXT NOT NULL UNIQUE,
-              created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-              updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-              ip_address TEXT,
-              user_agent TEXT,
-              user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
-            )
-          `);
-          console.log("✅ [Better Auth] Session table created as fallback");
-        } catch (fallbackError: any) {
-          console.error("❌ [Better Auth] Even fallback table creation failed:", fallbackError?.message);
-          throw fallbackError;
+        // Try to create the table anyway as a last resort (only if sqlite is still available)
+        if (sqlite) {
+          try {
+            sqlite.exec(`
+              CREATE TABLE IF NOT EXISTS getlostportal_session (
+                id TEXT PRIMARY KEY,
+                expires_at INTEGER NOT NULL,
+                token TEXT NOT NULL UNIQUE,
+                created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+                updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+                ip_address TEXT,
+                user_agent TEXT,
+                user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
+              )
+            `);
+            console.log("✅ [Better Auth] Session table created as fallback");
+          } catch (fallbackError: any) {
+            console.error("❌ [Better Auth] Even fallback table creation failed:", fallbackError?.message);
+            throw fallbackError;
+          }
+        } else {
+          console.error("❌ [Better Auth] Cannot create fallback table - database connection is null");
         }
       }
     }
