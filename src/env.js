@@ -16,7 +16,11 @@ export const env = createEnv({
 			(process.env.NEXT_PHASE === 'phase-production-build' || 
 			 process.argv.includes('build'))
 				? "file:./build-db.sqlite"
-				: (process.env.DATABASE_URL || "file:./dev.db")
+				: (process.env.DATABASE_URL || 
+				   // On Render, try to use persistent disk if available
+				   (process.env.NODE_ENV === "production" && process.env.RENDER 
+				    ? "file:/var/data/db.sqlite" 
+				    : "file:./dev.db"))
 		),
 		BETTER_AUTH_URL: z.string().optional(), // Better Auth base URL
 		SUPER_ADMIN_EMAILS: z.string().optional(),
