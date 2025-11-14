@@ -1,81 +1,108 @@
 import { auth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 import { NextResponse } from "next/server";
-import Database from "better-sqlite3";
+import { sqlite } from "@/server/db";
 import { env } from "@/env";
-import fs from "fs";
 
 const handler = toNextJsHandler(auth);
 
 // Runtime fallback: Create missing Better Auth tables if they don't exist
+// Uses the SAME database connection that Better Auth uses
 function ensureBetterAuthTables() {
   try {
-    let dbPath = env.DATABASE_URL || "./dev.db";
-    if (dbPath.startsWith("file://")) {
-      dbPath = dbPath.replace(/^file:\/\//, "");
-    } else if (dbPath.startsWith("file:")) {
-      dbPath = dbPath.replace(/^file:/, "");
-    }
+    console.log("🔧 [Better Auth Runtime] Ensuring tables exist using the same DB connection...");
     
-    const dbDir = require('path').dirname(dbPath);
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
-    }
+    // Use the same sqlite instance that Better Auth uses
+    const dbConnection = sqlite;
     
-    const sqlite = new Database(dbPath);
-    try {
-      // Check if session table exists
-      const sessionTable = sqlite.prepare(`
+    // Check if session table exists
+    const sessionTable = dbConnection.prepare(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name='getlostportal_session'
+    `).get();
+    
+    if (!sessionTable) {
+      console.log("🚨 [Better Auth Runtime] Session table missing, creating now in the same DB Better Auth uses...");
+      
+      // Ensure user table exists first
+      const userTable = dbConnection.prepare(`
         SELECT name FROM sqlite_master 
-        WHERE type='table' AND name='getlostportal_session'
+        WHERE type='table' AND name='getlostportal_user'
       `).get();
       
-      if (!sessionTable) {
-        console.log("⚠️  [Better Auth Runtime] Session table missing, creating now...");
-        
-        // Ensure user table exists first
-        const userTable = sqlite.prepare(`
-          SELECT name FROM sqlite_master 
-          WHERE type='table' AND name='getlostportal_user'
-        `).get();
-        
-        if (!userTable) {
-          sqlite.exec(`
-            CREATE TABLE IF NOT EXISTS getlostportal_user (
-              id TEXT PRIMARY KEY,
-              name TEXT,
-              email TEXT NOT NULL UNIQUE,
-              emailVerified INTEGER DEFAULT 0,
-              image TEXT,
-              role TEXT DEFAULT 'user' NOT NULL,
-              createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
-              updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
-            )
-          `);
-          console.log("✅ [Better Auth Runtime] User table created");
-        }
-        
-        // Create session table
-        sqlite.exec(`
-          CREATE TABLE getlostportal_session (
+      if (!userTable) {
+        dbConnection.exec(`
+          CREATE TABLE IF NOT EXISTS getlostportal_user (
             id TEXT PRIMARY KEY,
-            expires_at INTEGER NOT NULL,
-            token TEXT NOT NULL UNIQUE,
-            created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-            updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-            ip_address TEXT,
-            user_agent TEXT,
-            user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
+            name TEXT,
+            email TEXT NOT NULL UNIQUE,
+            emailVerified INTEGER DEFAULT 0,
+            image TEXT,
+            role TEXT DEFAULT 'user' NOT NULL,
+            createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
+            updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
           )
         `);
-        console.log("✅ [Better Auth Runtime] Session table created");
+        console.log("✅ [Better Auth Runtime] User table created");
       }
-    } finally {
-      sqlite.close();
+      
+      // Create session table
+      dbConnection.exec(`
+        CREATE TABLE getlostportal_session (
+          id TEXT PRIMARY KEY,
+          expires_at INTEGER NOT NULL,
+          token TEXT NOT NULL UNIQUE,
+          created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+          updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+          ip_address TEXT,
+          user_agent TEXT,
+          user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
+        )
+      `);
+      console.log("✅ [Better Auth Runtime] Session table created in the same database Better Auth uses");
+      
+      // Verify it's accessible
+      dbConnection.prepare("SELECT COUNT(*) as count FROM getlostportal_session").get();
+      console.log("✅ [Better Auth Runtime] Session table verified and accessible");
+    } else {
+      console.log("✅ [Better Auth Runtime] Session table already exists");
     }
   } catch (error: any) {
-    console.error("⚠️  [Better Auth Runtime] Failed to ensure tables:", error?.message);
+    console.error("❌ [Better Auth Runtime] Failed to ensure tables:", error?.message);
+    console.error("   Stack:", error?.stack);
+    throw error; // Re-throw so we know it failed
   }
+}
+
+// Helper to check if error is about missing session table
+function isSessionTableError(error: any, response?: Response): boolean {
+  const errorMessage = error?.message || "";
+  const errorCode = error?.code || "";
+  const errorString = JSON.stringify(error || {}).toLowerCase();
+  
+  // Check thrown error
+  if (errorMessage.includes("no such table") && errorMessage.includes("getlostportal_session")) {
+    return true;
+  }
+  if (errorCode === "SQLITE_ERROR" && errorMessage.includes("getlostportal_session")) {
+    return true;
+  }
+  if (errorString.includes("no such table") && errorString.includes("getlostportal_session")) {
+    return true;
+  }
+  
+  // Check response body if available
+  if (response && response.status === 500) {
+    // Try to parse response body for error
+    try {
+      // We'll check this after cloning
+      return false;
+    } catch {
+      // Ignore
+    }
+  }
+  
+  return false;
 }
 
 export const POST = async (request: Request) => {
@@ -100,6 +127,34 @@ export const POST = async (request: Request) => {
     try {
       const response = await handler.POST(request);
     
+      // Check response status - Better Auth might return 500 with error in body
+      if (response.status === 500) {
+        try {
+          const responseClone = response.clone();
+          const errorData = await responseClone.json();
+          const errorString = JSON.stringify(errorData).toLowerCase();
+          
+          // Check if the error is about missing session table
+          if (errorString.includes("no such table") && errorString.includes("getlostportal_session")) {
+            console.error("❌ [Better Auth] Session table missing error detected in response body, attempting to create it...");
+            console.error("   Error data:", JSON.stringify(errorData, null, 2));
+            ensureBetterAuthTables();
+            
+            // Retry the request once after creating the table
+            try {
+              const retryResponse = await handler.POST(request);
+              console.log("✅ [Better Auth] POST request succeeded after creating missing table");
+              return retryResponse;
+            } catch (retryError: any) {
+              console.error("❌ [Better Auth] POST request still failed after creating table:", retryError?.message);
+              throw retryError;
+            }
+          }
+        } catch (parseError) {
+          // Couldn't parse response, continue with original response
+        }
+      }
+    
       // Log response status for sign-in requests
       if (pathname.includes("/sign-in") || pathname.includes("/signin")) {
         console.log("🔐 [Better Auth] Sign-in response status:", response.status);
@@ -117,12 +172,9 @@ export const POST = async (request: Request) => {
       return response;
     } catch (handlerError: any) {
       // Check if it's a "no such table" error
-      const errorMessage = handlerError?.message || "";
-      const errorCode = handlerError?.code || "";
-      
-      if (errorMessage.includes("no such table") && errorMessage.includes("getlostportal_session") ||
-          errorCode === "SQLITE_ERROR" && errorMessage.includes("getlostportal_session")) {
-        console.error("❌ [Better Auth] Session table missing error detected, attempting to create it...");
+      if (isSessionTableError(handlerError)) {
+        console.error("❌ [Better Auth] Session table missing error detected (thrown), attempting to create it...");
+        console.error("   Error:", handlerError?.message);
         ensureBetterAuthTables();
         
         // Retry the request once after creating the table
@@ -158,15 +210,41 @@ export const POST = async (request: Request) => {
 export const GET = async (request: Request) => {
   try {
     try {
-      return await handler.GET(request);
+      const response = await handler.GET(request);
+      
+      // Check response status - Better Auth might return 500 with error in body
+      if (response.status === 500) {
+        try {
+          const responseClone = response.clone();
+          const errorData = await responseClone.json();
+          const errorString = JSON.stringify(errorData).toLowerCase();
+          
+          // Check if the error is about missing session table
+          if (errorString.includes("no such table") && errorString.includes("getlostportal_session")) {
+            console.error("❌ [Better Auth] Session table missing error detected in GET response, attempting to create it...");
+            ensureBetterAuthTables();
+            
+            // Retry the request once after creating the table
+            try {
+              const retryResponse = await handler.GET(request);
+              console.log("✅ [Better Auth] GET request succeeded after creating missing table");
+              return retryResponse;
+            } catch (retryError: any) {
+              console.error("❌ [Better Auth] GET request still failed after creating table:", retryError?.message);
+              throw retryError;
+            }
+          }
+        } catch (parseError) {
+          // Couldn't parse response, continue with original response
+        }
+      }
+      
+      return response;
     } catch (handlerError: any) {
       // Check if it's a "no such table" error
-      const errorMessage = handlerError?.message || "";
-      const errorCode = handlerError?.code || "";
-      
-      if (errorMessage.includes("no such table") && errorMessage.includes("getlostportal_session") ||
-          errorCode === "SQLITE_ERROR" && errorMessage.includes("getlostportal_session")) {
-        console.error("❌ [Better Auth] Session table missing error detected, attempting to create it...");
+      if (isSessionTableError(handlerError)) {
+        console.error("❌ [Better Auth] Session table missing error detected (thrown), attempting to create it...");
+        console.error("   Error:", handlerError?.message);
         ensureBetterAuthTables();
         
         // Retry the request once after creating the table
