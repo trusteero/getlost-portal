@@ -603,6 +603,9 @@ function ensureSessionTableExistsSync(): void {
 
 // Ensure tables exist BEFORE Better Auth initializes
 console.log("🔐 [Better Auth] Ensuring critical tables exist before initialization...");
+console.log("  NODE_ENV:", process.env.NODE_ENV);
+console.log("  NEXT_PHASE:", process.env.NEXT_PHASE);
+console.log("  Process args:", process.argv);
 ensureSessionTableExistsSync();
 
 // Debug: Log database configuration
