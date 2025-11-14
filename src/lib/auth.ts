@@ -636,9 +636,29 @@ try {
 
 // Log what database Better Auth will use
 console.log("🔐 [Better Auth] Initializing Better Auth with drizzle adapter...");
+console.log("   Using db from @/server/db");
+console.log("   Using sqlite from @/server/db");
+
 try {
   // Force initialize the database connection to see what path it uses
   const testConnection = sqlite;
+  
+  // Try to get the actual database file path if possible
+  try {
+    // Query sqlite_master to verify connection works
+    const testResult = testConnection.prepare("SELECT COUNT(*) as count FROM sqlite_master WHERE type='table'").get();
+    console.log("   ✅ Database connection verified, table count:", (testResult as any).count);
+    
+    // Check if session table exists in this connection
+    const sessionCheck = testConnection.prepare(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name='getlostportal_session'
+    `).get();
+    console.log("   Session table in Better Auth DB:", sessionCheck ? "EXISTS" : "MISSING");
+  } catch (checkError: any) {
+    console.error("   ❌ Database check failed:", checkError?.message);
+  }
+  
   console.log("   Database connection initialized for Better Auth");
 } catch (error: any) {
   console.error("   Database connection error:", error?.message);
