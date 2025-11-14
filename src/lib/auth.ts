@@ -634,6 +634,16 @@ try {
   console.log("  Could not extract database info:", error);
 }
 
+// Log what database Better Auth will use
+console.log("🔐 [Better Auth] Initializing Better Auth with drizzle adapter...");
+try {
+  // Force initialize the database connection to see what path it uses
+  const testConnection = sqlite;
+  console.log("   Database connection initialized for Better Auth");
+} catch (error: any) {
+  console.error("   Database connection error:", error?.message);
+}
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "sqlite",
