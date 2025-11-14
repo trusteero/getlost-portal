@@ -6,9 +6,7 @@ import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
-  experimental: {
-    serverComponentsExternalPackages: ['better-auth', 'better-sqlite3'],
-  },
+  serverExternalPackages: ['better-auth', 'better-sqlite3'],
   webpack: (config, { isServer }) => {
     // Prevent better-auth from being bundled in Edge Runtime
     config.externals = config.externals || [];
