@@ -61,6 +61,8 @@ uploads/
 !precannedcontent/uploads/*.jpeg
 !precannedcontent/uploads/*.png
 !precannedcontent/uploads/*.webp
+# Allow API routes in src/app/api/uploads/
+!src/app/api/uploads/
 
 # design source files
 *.psd
