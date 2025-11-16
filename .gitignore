@@ -55,6 +55,12 @@ yarn-error.log*
 
 # upload directories
 uploads/
+# But allow precanned cover images
+!precannedcontent/uploads/
+!precannedcontent/uploads/*.jpg
+!precannedcontent/uploads/*.jpeg
+!precannedcontent/uploads/*.png
+!precannedcontent/uploads/*.webp
 
 # design source files
 *.psd
