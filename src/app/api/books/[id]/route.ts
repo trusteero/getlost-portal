@@ -138,7 +138,8 @@ export async function PATCH(
       const coverImage = formData.get("coverImage") as File | null;
       if (coverImage) {
         // Save cover image to file system (same as POST endpoint)
-        const coverStoragePath = process.env.COVER_STORAGE_PATH || './uploads/covers';
+        // Use process.cwd() to ensure we resolve from project root
+        const coverStoragePath = process.env.COVER_STORAGE_PATH || path.join(process.cwd(), 'uploads', 'covers');
         const coverDir = path.resolve(coverStoragePath);
         
         // Create directory if it doesn't exist

@@ -10,7 +10,8 @@ export async function GET(
 
   try {
     // First, try the standard covers directory
-    const coverStoragePath = process.env.COVER_STORAGE_PATH || './uploads/covers';
+    // Use process.cwd() to ensure we resolve from project root
+    const coverStoragePath = process.env.COVER_STORAGE_PATH || path.join(process.cwd(), 'uploads', 'covers');
     const coverDir = path.resolve(coverStoragePath);
     let filePath = path.join(coverDir, filename);
     let resolvedPath = path.resolve(filePath);
@@ -24,7 +25,10 @@ export async function GET(
     let fileBuffer: Buffer;
     try {
       fileBuffer = await fs.readFile(filePath);
-    } catch {
+    } catch (error) {
+      // Log the error for debugging
+      console.log(`[Covers API] File not found in ${filePath}, trying precanned uploads`);
+      
       // Try precanned uploads directory (for precanned cover images)
       const precannedUploadsPath = path.resolve(process.cwd(), 'public', 'uploads', 'precanned', 'uploads', filename);
       const precannedResolvedPath = path.resolve(precannedUploadsPath);
@@ -38,6 +42,7 @@ export async function GET(
       try {
         fileBuffer = await fs.readFile(precannedUploadsPath);
       } catch {
+        console.error(`[Covers API] Cover image not found: ${filename}`);
         return NextResponse.json({ error: "Cover image not found" }, { status: 404 });
       }
     }

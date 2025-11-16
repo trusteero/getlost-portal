@@ -212,7 +212,8 @@ export async function checkBookDigestStatus(jobId: string) {
 
             if (job) {
               // Save cover to file system
-              const coverStoragePath = process.env.COVER_STORAGE_PATH || './uploads/covers';
+              // Use process.cwd() to ensure we resolve from project root
+              const coverStoragePath = process.env.COVER_STORAGE_PATH || path.join(process.cwd(), 'uploads', 'covers');
               const coverDir = path.resolve(coverStoragePath);
 
               // Create directory if it doesn't exist
