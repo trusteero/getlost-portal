@@ -15,16 +15,17 @@ export async function GET(
     let filePath = path.join(coverDir, filename);
     let resolvedPath = path.resolve(filePath);
     
+    // Security: Ensure the requested file is within the covers directory
+    if (!resolvedPath.startsWith(coverDir)) {
+      return NextResponse.json({ error: "Invalid file path" }, { status: 403 });
+    }
+    
     // If not found in covers directory, try precanned uploads
     let fileBuffer: Buffer;
     try {
-      // Security: Ensure the requested file is within the covers directory
-      if (!resolvedPath.startsWith(coverDir)) {
-        throw new Error("Invalid path");
-      }
       fileBuffer = await fs.readFile(filePath);
     } catch {
-      // Try precanned uploads directory
+      // Try precanned uploads directory (for precanned cover images)
       const precannedUploadsPath = path.resolve(process.cwd(), 'public', 'uploads', 'precanned', 'uploads', filename);
       const precannedResolvedPath = path.resolve(precannedUploadsPath);
       const precannedBaseDir = path.resolve(process.cwd(), 'public', 'uploads', 'precanned', 'uploads');

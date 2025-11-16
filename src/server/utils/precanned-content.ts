@@ -276,24 +276,43 @@ const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$
 
 const rewriteAssetReferences = (html: string, replacements: Map<string, string>) => {
   let output = html;
+  
+  // First pass: replace full paths
   for (const [search, replacement] of replacements.entries()) {
     if (!search || !replacement) continue;
-    // Replace full path matches
-    output = output.replace(new RegExp(escapeRegex(search), "g"), replacement);
-    // Also replace just the filename (for relative paths in HTML)
-    const filename = path.basename(search);
-    if (filename !== search) {
-      // Replace relative paths like src="Video1.mp4" with the full URL
-      const filenameRegex = new RegExp(`(["'])([^"']*${escapeRegex(filename)})["']`, "gi");
-      output = output.replace(filenameRegex, (match, quote, pathPart) => {
-        // Only replace if it's a relative path (doesn't start with http/https/data)
-        if (!pathPart.startsWith("http://") && !pathPart.startsWith("https://") && !pathPart.startsWith("data:")) {
-          return `${quote}${replacement}${quote}`;
-        }
-        return match;
-      });
-    }
+    output = output.replace(new RegExp(escapeRegex(search), "gi"), replacement);
   }
+  
+  // Second pass: replace filenames in HTML attributes (src, poster, href, etc.)
+  // This handles cases where HTML has relative paths like src="Video1.mp4"
+  for (const [search, replacement] of replacements.entries()) {
+    if (!search || !replacement) continue;
+    const filename = path.basename(search);
+    
+    // Skip if filename is the same as search (already handled in first pass)
+    if (filename === search) continue;
+    
+    // Match filename in HTML attributes: src="Video1.mp4", poster="image.png", etc.
+    // This regex matches: attribute="path/to/filename.ext" or attribute='path/to/filename.ext'
+    const attributeRegex = new RegExp(
+      `(src|poster|href|data-src)=(["'])([^"']*${escapeRegex(filename)})["']`,
+      "gi"
+    );
+    
+    output = output.replace(attributeRegex, (match, attr, quote, pathPart) => {
+      // Only replace if it's a relative path (doesn't start with http/https/data/)
+      if (
+        !pathPart.startsWith("http://") &&
+        !pathPart.startsWith("https://") &&
+        !pathPart.startsWith("data:") &&
+        !pathPart.startsWith("/")
+      ) {
+        return `${attr}=${quote}${replacement}${quote}`;
+      }
+      return match;
+    });
+  }
+  
   return output;
 };
 

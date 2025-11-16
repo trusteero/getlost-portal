@@ -232,7 +232,8 @@ export async function POST(request: NextRequest) {
           `[Demo] Imported precanned package "${precannedResult.packageKey}" for book ${createdBook.id}`
         );
 
-        if (precannedResult.primaryCoverImageUrl) {
+        // Only set precanned cover if no cover was uploaded
+        if (precannedResult.primaryCoverImageUrl && !coverImageUrl) {
           await db
             .update(books)
             .set({ coverImageUrl: precannedResult.primaryCoverImageUrl, updatedAt: new Date() })
@@ -248,20 +249,23 @@ export async function POST(request: NextRequest) {
 
     // Prefer a standalone cover image from precannedcontent/uploads when one
     // matches the uploaded filename (e.g. wool_cover.jpg, beach_read.jpg).
-    try {
-      const uploadsCoverUrl = await findPrecannedCoverImageForFilename(fileName);
-      if (uploadsCoverUrl) {
-        await db
-          .update(books)
-          .set({ coverImageUrl: uploadsCoverUrl, updatedAt: new Date() })
-          .where(eq(books.id, createdBook.id));
-        createdBook.coverImageUrl = uploadsCoverUrl;
-        console.log(
-          `[Demo] Linked cover image from precanned uploads "${uploadsCoverUrl}" for book ${createdBook.id}`
-        );
+    // Only use this if no cover was uploaded and no precanned package cover was found.
+    if (!coverImageUrl) {
+      try {
+        const uploadsCoverUrl = await findPrecannedCoverImageForFilename(fileName);
+        if (uploadsCoverUrl) {
+          await db
+            .update(books)
+            .set({ coverImageUrl: uploadsCoverUrl, updatedAt: new Date() })
+            .where(eq(books.id, createdBook.id));
+          createdBook.coverImageUrl = uploadsCoverUrl;
+          console.log(
+            `[Demo] Linked cover image from precanned uploads "${uploadsCoverUrl}" for book ${createdBook.id}`
+          );
+        }
+      } catch (error) {
+        console.error("[Demo] Failed to find cover image in precanned uploads:", error);
       }
-    } catch (error) {
-      console.error("[Demo] Failed to find cover image in precanned uploads:", error);
     }
 
     return NextResponse.json({
