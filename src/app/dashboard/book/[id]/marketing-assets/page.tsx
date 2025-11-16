@@ -3,10 +3,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
-import { ArrowLeft, Download, Video, Image as ImageIcon, FileText } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import DashboardHeader from "@/components/dashboard-header";
 
 interface MarketingAsset {
   id: string;
@@ -27,7 +25,6 @@ export default function MarketingAssetsPage() {
   const bookId = params.id as string;
   const [assets, setAssets] = useState<MarketingAsset[]>([]);
   const [loading, setLoading] = useState(true);
-  const [bookTitle, setBookTitle] = useState("");
   const parseMetadata = (value?: string | null) => {
     if (!value) return null;
     try {
@@ -42,21 +39,8 @@ export default function MarketingAssetsPage() {
       router.push("/login");
     } else if (session) {
       fetchAssets();
-      fetchBookTitle();
     }
   }, [session, isPending, bookId]);
-
-  const fetchBookTitle = async () => {
-    try {
-      const response = await fetch(`/api/books/${bookId}`);
-      if (response.ok) {
-        const book = await response.json();
-        setBookTitle(book.title);
-      }
-    } catch (error) {
-      console.error("Failed to fetch book title:", error);
-    }
-  };
 
   const fetchAssets = async () => {
     try {
@@ -83,173 +67,55 @@ export default function MarketingAssetsPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <DashboardHeader />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
+  // Find the HTML-based marketing toolkit asset
+  const htmlAsset = assets.find((asset) => {
+    const metadata = parseMetadata(asset.metadata);
+    return metadata?.variant === "html" && metadata?.htmlContent;
+  });
+
+  // If no marketing HTML exists, just show a very simple message without extra chrome
+  if (!htmlAsset) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col">
+        <div className="p-4">
           <Button
-            variant="ghost"
+            variant="outline"
             onClick={() => router.push("/dashboard")}
-            className="mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Marketing Assets
-          </h1>
-          {bookTitle && (
-            <p className="text-gray-600">for {bookTitle}</p>
-          )}
         </div>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-gray-500 text-sm">
+            Marketing toolkit is not available yet for this book.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-        {assets.length === 0 ? (
-          <div className="space-y-6">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-lg bg-emerald-100 flex items-center justify-center">
-                    <Video className="w-6 h-6 text-emerald-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">
-                      Marketing Assets Coming Soon
-                    </h2>
-                    <p className="text-sm text-gray-600">
-                      Your marketing assets are being generated
-                    </p>
-                  </div>
-                </div>
-                <p className="text-gray-700 mb-6">
-                  Once your marketing assets are ready, you'll find video content, social media posts, 
-                  banners, and other promotional materials here. These assets are designed to help you 
-                  effectively market your book to your target audience.
-                </p>
-              </CardContent>
-            </Card>
+  const htmlMetadata = parseMetadata(htmlAsset.metadata);
 
-            {/* Placeholder Assets */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                { type: "video", title: "Book Trailer", description: "60-second promotional video" },
-                { type: "social-post", title: "Instagram Post", description: "Square format social media post" },
-                { type: "banner", title: "Website Banner", description: "Header banner for your website" },
-              ].map((placeholder, index) => (
-                <Card key={index} className="overflow-hidden opacity-60">
-                  <CardContent className="p-0">
-                    <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                      <Video className="w-12 h-12 text-gray-400" />
-                    </div>
-                    <div className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-                        <h3 className="font-semibold text-gray-700">
-                          {placeholder.title}
-                        </h3>
-                      </div>
-                      <p className="text-sm text-gray-500 mb-4">
-                        {placeholder.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-400 capitalize">
-                          {placeholder.type}
-                        </span>
-                        <Button size="sm" variant="outline" disabled>
-                          <Download className="w-4 h-4 mr-2" />
-                          Coming Soon
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <>
-            {(() => {
-              const htmlAsset = assets.find((asset) => {
-                const metadata = parseMetadata(asset.metadata);
-                return metadata?.variant === "html" && metadata?.htmlContent;
-              });
-              if (!htmlAsset) return null;
-              const metadata = parseMetadata(htmlAsset.metadata);
-              return (
-                <Card className="mb-8">
-                  <CardContent className="p-6">
-                    <div className="mb-4">
-                      <p className="text-sm uppercase tracking-wide text-orange-500 font-semibold">
-                        Interactive Toolkit
-                      </p>
-                      <h2 className="text-2xl font-bold text-gray-900">{htmlAsset.title}</h2>
-                      {htmlAsset.description && (
-                        <p className="text-gray-600 mt-1">{htmlAsset.description}</p>
-                      )}
-                    </div>
-                    <div className="border rounded-xl overflow-hidden shadow-inner bg-gray-900/5">
-                      <iframe
-                        title="Marketing toolkit preview"
-                        srcDoc={metadata?.htmlContent || ""}
-                        sandbox="allow-scripts allow-same-origin"
-                        className="w-full h-[900px] bg-white"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })()}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {assets
-              .filter((asset) => {
-                const metadata = parseMetadata(asset.metadata);
-                return !(metadata?.variant === "html" && metadata?.htmlContent);
-              })
-              .map((asset) => (
-              <Card key={asset.id} className="overflow-hidden">
-                <CardContent className="p-0">
-                  {asset.thumbnailUrl ? (
-                    <div className="aspect-video bg-gray-100 relative">
-                      <img
-                        src={asset.thumbnailUrl}
-                        alt={asset.title || "Marketing asset"}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="aspect-video bg-gray-100 flex items-center justify-center">
-                      <Video className="w-12 h-12 text-gray-400" />
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 mb-2">
-                      {asset.title || `${asset.assetType} Asset`}
-                    </h3>
-                    {asset.description && (
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                        {asset.description}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500 capitalize">
-                        {asset.assetType}
-                      </span>
-                      <Button
-                        size="sm"
-                        onClick={() => window.open(asset.fileUrl, "_blank")}
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          </>
-        )}
-      </main>
+  // Render just the HTML (with videos) in a full-screen iframe, similar to report view
+  return (
+    <div className="min-h-screen bg-white w-full relative">
+      <div className="fixed top-4 left-4 z-50">
+        <Button
+          variant="default"
+          onClick={() => router.push("/dashboard")}
+          className="bg-white hover:bg-gray-50 text-gray-900 shadow-lg border border-gray-200"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Dashboard
+        </Button>
+      </div>
+      <iframe
+        title={htmlAsset.title || "Marketing Toolkit"}
+        srcDoc={htmlMetadata?.htmlContent || ""}
+        sandbox="allow-scripts allow-same-origin"
+        className="w-full h-screen border-0 bg-white"
+      />
     </div>
   );
 }

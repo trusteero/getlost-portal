@@ -66,6 +66,7 @@ const PRECANNED_MANIFEST_PATH = path.resolve(PRECANNED_ROOT, "manifest.json");
 
 let manifestCache: PrecannedManifest | null = null;
 const copiedAssetPaths = new Set<string>();
+let precannedUploadImagesCache: string[] | null = null;
 
 const slugify = (value: string) =>
   value
@@ -142,6 +143,33 @@ async function copyPrecannedAsset(relativePath: string, destSegments: string[]) 
     "/uploads/precanned/" + destSegments.map((segment) => segment.replace(/\\/g, "/")).join("/");
 
   return { fileUrl: publicPath, destinationPath };
+}
+
+async function listPrecannedUploadImages(): Promise<string[]> {
+  if (precannedUploadImagesCache) {
+    return precannedUploadImagesCache;
+  }
+
+  const uploadsDir = path.resolve(PRECANNED_ROOT, "uploads");
+  let entries: Array<string> = [];
+
+  try {
+    const dirEntries = await fs.readdir(uploadsDir, { withFileTypes: true });
+    entries = dirEntries
+      .filter((entry) => entry.isFile())
+      .map((entry) => entry.name);
+  } catch {
+    // If the uploads directory doesn't exist, just return empty
+    precannedUploadImagesCache = [];
+    return precannedUploadImagesCache;
+  }
+
+  const imageExtensions = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp"]);
+  precannedUploadImagesCache = entries.filter((name) =>
+    imageExtensions.has(path.extname(name).toLowerCase()),
+  );
+
+  return precannedUploadImagesCache;
 }
 
 async function bundleHtmlInline(htmlFilePath: string, htmlContent: string) {
@@ -564,6 +592,30 @@ export async function findPrecannedPackageByFilename(fileName?: string) {
       }
     }
   }
+  return null;
+}
+
+/**
+ * Find a standalone cover image in precannedcontent/uploads that best matches
+ * the given uploaded filename (e.g. BeachRead.pdf -> beach_read.jpg).
+ * Returns a public URL (under /uploads/precanned/...) or null.
+ */
+export async function findPrecannedCoverImageForFilename(
+  fileName?: string | null,
+): Promise<string | null> {
+  if (!fileName) return null;
+
+  const images = await listPrecannedUploadImages();
+  for (const imageName of images) {
+    if (filenamesMatch(imageName, fileName)) {
+      const { fileUrl } = await copyPrecannedAsset(
+        path.join("uploads", imageName),
+        ["uploads", imageName],
+      );
+      return fileUrl;
+    }
+  }
+
   return null;
 }
 

@@ -7,7 +7,10 @@ import {
   bookVersions,
 } from "@/server/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { importPrecannedContentForBook } from "@/server/utils/precanned-content";
+import {
+  importPrecannedContentForBook,
+  findPrecannedCoverImageForFilename,
+} from "@/server/utils/precanned-content";
 import type { ImportFeatureFlags } from "@/server/utils/precanned-content";
 
 /**
@@ -56,7 +59,51 @@ export async function populateDemoDataForBook(bookId: string, featureType: strin
     });
 
     if (imported) {
+      // If we imported precanned covers and have a primary cover image, make
+      // sure the main book record points at it so the dashboard can show it.
+      if (featureType === "book-covers" && imported.primaryCoverImageUrl) {
+        await db
+          .update(books)
+          .set({
+            coverImageUrl: imported.primaryCoverImageUrl,
+            updatedAt: new Date(),
+          })
+          .where(eq(books.id, bookId));
+      }
       return;
+    }
+
+    // If we couldn't import a precanned package for book covers, but we do
+    // have a standalone cover image in precannedcontent/uploads that matches
+    // this manuscript filename, use that as the primary cover instead of
+    // falling back to generic demo covers.
+    if (featureType === "book-covers") {
+      const uploadsCoverUrl = await findPrecannedCoverImageForFilename(latestFileName);
+      if (uploadsCoverUrl) {
+        await db.insert(bookCovers).values({
+          bookId,
+          coverType: "ebook",
+          title: `${bookTitle} Cover`,
+          imageUrl: uploadsCoverUrl,
+          thumbnailUrl: uploadsCoverUrl,
+          metadata: JSON.stringify({
+            source: "precanned-uploads",
+            originalFileName: latestFileName,
+          }),
+          isPrimary: true,
+          status: "completed",
+        } as any);
+
+        await db
+          .update(books)
+          .set({
+            coverImageUrl: uploadsCoverUrl,
+            updatedAt: new Date(),
+          })
+          .where(eq(books.id, bookId));
+
+        return;
+      }
     }
   }
 
@@ -207,6 +254,19 @@ async function populateBookCovers(
 
   for (const cover of covers) {
     await db.insert(bookCovers).values(cover);
+  }
+
+  // Ensure the dashboard has something to show: if the book doesn't already
+  // have a cover image, point it at the primary demo cover we just created.
+  const primaryDemoCoverUrl = covers.find((c) => c.isPrimary)?.imageUrl;
+  if (primaryDemoCoverUrl) {
+    await db
+      .update(books)
+      .set({
+        coverImageUrl: primaryDemoCoverUrl,
+        updatedAt: new Date(),
+      })
+      .where(eq(books.id, bookId));
   }
 }
 

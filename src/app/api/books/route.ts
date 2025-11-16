@@ -7,7 +7,10 @@ import { triggerBookDigest } from "@/server/services/bookdigest";
 import { promises as fs } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
-import { importPrecannedContentForBook } from "@/server/utils/precanned-content";
+import {
+  importPrecannedContentForBook,
+  findPrecannedCoverImageForFilename,
+} from "@/server/utils/precanned-content";
 
 export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request);
@@ -229,7 +232,7 @@ export async function POST(request: NextRequest) {
           `[Demo] Imported precanned package "${precannedResult.packageKey}" for book ${createdBook.id}`
         );
 
-        if (!createdBook.coverImageUrl && precannedResult.primaryCoverImageUrl) {
+        if (precannedResult.primaryCoverImageUrl) {
           await db
             .update(books)
             .set({ coverImageUrl: precannedResult.primaryCoverImageUrl, updatedAt: new Date() })
@@ -241,6 +244,24 @@ export async function POST(request: NextRequest) {
       }
     } catch (error) {
       console.error("[Demo] Failed to import precanned content:", error);
+    }
+
+    // Prefer a standalone cover image from precannedcontent/uploads when one
+    // matches the uploaded filename (e.g. wool_cover.jpg, beach_read.jpg).
+    try {
+      const uploadsCoverUrl = await findPrecannedCoverImageForFilename(fileName);
+      if (uploadsCoverUrl) {
+        await db
+          .update(books)
+          .set({ coverImageUrl: uploadsCoverUrl, updatedAt: new Date() })
+          .where(eq(books.id, createdBook.id));
+        createdBook.coverImageUrl = uploadsCoverUrl;
+        console.log(
+          `[Demo] Linked cover image from precanned uploads "${uploadsCoverUrl}" for book ${createdBook.id}`
+        );
+      }
+    } catch (error) {
+      console.error("[Demo] Failed to find cover image in precanned uploads:", error);
     }
 
     return NextResponse.json({
