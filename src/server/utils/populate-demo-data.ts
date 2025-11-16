@@ -7,7 +7,8 @@ import {
   bookVersions,
 } from "@/server/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { importPrecannedContentForBook, ImportFeatureFlags } from "@/server/utils/precanned-content";
+import { importPrecannedContentForBook } from "@/server/utils/precanned-content";
+import type { ImportFeatureFlags } from "@/server/utils/precanned-content";
 
 /**
  * Populate demo data for a book when a feature is unlocked
