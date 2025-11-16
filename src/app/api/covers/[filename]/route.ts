@@ -65,9 +65,29 @@ export async function GET(
         fileBuffer = await fs.readFile(precannedUploadsPath);
         console.log(`[Covers API] Successfully read file from precanned: ${precannedUploadsPath}`);
       } catch (precannedError: any) {
-        console.error(`[Covers API] Cover image not found in either location. Filename: ${filename}`);
-        console.error(`[Covers API] Precanned error: ${precannedError.message}`);
-        return NextResponse.json({ error: "Cover image not found" }, { status: 404 });
+        // If not in public/uploads/precanned/uploads, try source precannedcontent/uploads
+        console.log(`[Covers API] File not in public/uploads/precanned/uploads, trying source directory...`);
+        const sourcePrecannedPath = path.resolve(process.cwd(), 'precannedcontent', 'uploads', filename);
+        const sourcePrecannedResolved = path.resolve(sourcePrecannedPath);
+        const sourcePrecannedBaseDir = path.resolve(process.cwd(), 'precannedcontent', 'uploads');
+        
+        console.log(`[Covers API] sourcePrecannedPath: ${sourcePrecannedPath}`);
+        console.log(`[Covers API] sourcePrecannedBaseDir: ${sourcePrecannedBaseDir}`);
+        
+        // Security: Ensure the requested file is within the source precanned uploads directory
+        if (!sourcePrecannedResolved.startsWith(sourcePrecannedBaseDir)) {
+          console.error(`[Covers API] Security check failed for source precanned: ${sourcePrecannedResolved} does not start with ${sourcePrecannedBaseDir}`);
+          return NextResponse.json({ error: "Invalid file path" }, { status: 403 });
+        }
+        
+        try {
+          fileBuffer = await fs.readFile(sourcePrecannedPath);
+          console.log(`[Covers API] ✅ Successfully read file from source precanned: ${sourcePrecannedPath}`);
+        } catch (sourceError: any) {
+          console.error(`[Covers API] Cover image not found in any location. Filename: ${filename}`);
+          console.error(`[Covers API] Source precanned error: ${sourceError.message}`);
+          return NextResponse.json({ error: "Cover image not found" }, { status: 404 });
+        }
       }
     }
 

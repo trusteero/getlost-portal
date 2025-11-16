@@ -18,6 +18,16 @@ const config = {
     }
     return config;
   },
+  async rewrites() {
+    return [
+      {
+        // Route /uploads/precanned/* requests to API route
+        // This ensures files copied at runtime are accessible on Render
+        source: '/uploads/precanned/:path*',
+        destination: '/api/uploads/precanned/:path*',
+      },
+    ];
+  },
 };
 
 export default config;
