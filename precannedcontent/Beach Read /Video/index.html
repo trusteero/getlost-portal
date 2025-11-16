@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beach Read by Emily Henry – Video Toolkit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #0f172a;
+      background: #020617;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, rgba(249, 115, 22, 0.12), transparent 55%), #020617;
+      color: inherit;
+    }
+    .page {
+      padding: 48px 20px 72px;
+    }
+    .shell {
+      width: min(1200px, 100%);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+    .card {
+      background: rgba(248, 250, 252, 0.98);
+      border-radius: 28px;
+      padding: clamp(24px, 4vw, 40px);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow: 0 25px 65px rgba(15, 23, 42, 0.25);
+    }
+    .hero {
+      background: linear-gradient(135deg, rgba(221, 107, 32, 0.12), rgba(236, 72, 153, 0.12));
+    }
+    .card.hero {
+      color: #ffe4f0;
+    }
+    .card.hero h1 {
+      color: #fff7f9;
+    }
+    .card.hero .lede {
+      color: rgba(255, 247, 249, 0.85);
+    }
+    .eyebrow {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: #ea580c;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    h1 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      margin: 0 0 12px;
+      color: #020617;
+    }
+    .lede {
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: #475569;
+      margin: 0 0 28px;
+    }
+    .meta-grid {
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 700px) {
+      .meta-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+    .meta-card {
+      background: #fff;
+      border-radius: 18px;
+      padding: 18px 20px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .meta-card .label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    .meta-card strong {
+      display: block;
+      margin-top: 6px;
+      font-size: 1.35rem;
+      color: #0f172a;
+    }
+    .meta-card p {
+      margin: 6px 0 0;
+      font-size: 0.95rem;
+      color: #475569;
+    }
+    .section-heading {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    @media (min-width: 768px) {
+      .section-heading {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+    }
+    h2 {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      margin: 0;
+      color: #0f172a;
+    }
+    .section-heading .lede {
+      margin-bottom: 0;
+      max-width: 620px;
+    }
+    a.download {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 999px;
+      background: #ec4899;
+      color: #fff;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 15px 40px rgba(236, 72, 153, 0.35);
+    }
+    a.download span {
+      font-size: 1.15rem;
+    }
+    .media-grid {
+      display: grid;
+      gap: 24px;
+      margin-top: 28px;
+    }
+    @media (min-width: 900px) {
+      .media-grid.videos {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    .asset {
+      background: #fff;
+      border-radius: 22px;
+      padding: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+    .asset video {
+      width: 100%;
+      border-radius: 16px;
+      border: none;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25);
+      background: #0f172a;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(236, 72, 153, 0.12);
+      color: #be185d;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .asset .meta {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.95rem;
+      color: #475569;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="shell">
+      <section class="card hero">
+        <p class="eyebrow">Video Toolkit</p>
+        <h1>Beach Read by Emily Henry</h1>
+        <p class="lede">Sun-drenched, emotionally forward clips crafted for romance readers scrolling Meta, TikTok, Pinterest and YouTube. Build campaigns that swing between witty banter and heartfelt, second-chance chemistry.</p>
+        <div class="meta-grid">
+          <div class="meta-card">
+            <span class="label">Clips</span>
+            <strong>4</strong>
+            <p>Short-form hero edits</p>
+          </div>
+          <div class="meta-card">
+            <span class="label">Aspect</span>
+            <strong>16:9 &amp; 9:16</strong>
+            <p>Built for paid + organic</p>
+          </div>
+          <div class="meta-card">
+            <span class="label">Tone</span>
+            <strong>Playful</strong>
+            <p>Warm, bright, emotionally sharp</p>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <main class="shell">
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Campaign Ready</p>
+            <h2>Downloadable Clips</h2>
+            <p class="lede">Mix and match these edits across awareness, consideration and conversion—pair with copy that highlights rivals-to-lovers tension, writer’s block confessionals and beach-town escapism.</p>
+          </div>
+          <a class="download" href="../zips/Beach%20Read%20-20251115T092216Z-1-001.zip" download>
+            <span>⬇</span> Download all assets
+          </a>
+        </div>
+        <div class="media-grid videos">
+          <article class="asset">
+            <span class="badge">Clip 01 · Meet Cute</span>
+            <video controls preload="metadata" src="Video1.mp4" poster="Landing page/Beach Read UI.png"></video>
+            <div class="meta">
+              <span>Format: MP4</span>
+              <span>Size: 5.3 MB</span>
+            </div>
+          </article>
+          <article class="asset">
+            <span class="badge">Clip 02 · Dual POV</span>
+            <video controls preload="metadata" src="Video2.mp4" poster="Landing page/Beach Read UI.png"></video>
+            <div class="meta">
+              <span>Format: MP4</span>
+              <span>Size: 5.1 MB</span>
+            </div>
+          </article>
+          <article class="asset">
+            <span class="badge">Clip 03 · Emotional Pivot</span>
+            <video controls preload="metadata" src="Video3.mp4" poster="Landing page/Beach Read UI.png"></video>
+            <div class="meta">
+              <span>Format: MP4</span>
+              <span>Size: 3.6 MB</span>
+            </div>
+          </article>
+          <article class="asset">
+            <span class="badge">Clip 04 · CTA Bumper</span>
+            <video controls preload="metadata" src="Video4.mp4" poster="Landing page/Beach Read UI.png"></video>
+            <div class="meta">
+              <span>Format: MP4</span>
+              <span>Size: 4.6 MB</span>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

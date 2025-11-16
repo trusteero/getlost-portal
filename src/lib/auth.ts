@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db, sqlite } from "@/server/db";
+import { db } from "@/server/db";
 import Database from "better-sqlite3";
 import crypto from "crypto";
 import fs from "fs";
@@ -13,23 +13,18 @@ import { eq } from "drizzle-orm";
 // This ensures the schema is correct before Better Auth tries to use it
 function ensureAccountTableMigration() {
   try {
-    console.log("🔍 [Better Auth] ensureAccountTableMigration() called");
     // Get database path
     let dbPath = env.DATABASE_URL || "./dev.db";
-    console.log("   Database URL from env:", env.DATABASE_URL);
     if (dbPath.startsWith("file://")) {
       dbPath = dbPath.replace(/^file:\/\//, "");
     } else if (dbPath.startsWith("file:")) {
       dbPath = dbPath.replace(/^file:/, "");
     }
 
-    // Ensure database directory exists
-    const dbDir = require('path').dirname(dbPath);
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
+    if (!fs.existsSync(dbPath)) {
+      return; // Database doesn't exist yet, will be created with correct schema
     }
 
-    // Open database (will create file if it doesn't exist)
     const sqlite = new Database(dbPath);
     
     try {
@@ -40,51 +35,8 @@ function ensureAccountTableMigration() {
       `).get();
 
       if (!tableInfo) {
-        // Table doesn't exist - create it with Better Auth schema
-        // First ensure user table exists (required for foreign key)
-        const userTable = sqlite.prepare(`
-          SELECT name FROM sqlite_master 
-          WHERE type='table' AND name='getlostportal_user'
-        `).get();
-        
-        if (!userTable) {
-          console.log("🔄 [Better Auth] Creating user table first (required for account table)...");
-          sqlite.exec(`
-            CREATE TABLE getlostportal_user (
-              id TEXT PRIMARY KEY,
-              name TEXT,
-              email TEXT NOT NULL UNIQUE,
-              emailVerified INTEGER DEFAULT 0,
-              image TEXT,
-              role TEXT DEFAULT 'user' NOT NULL,
-              createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
-              updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
-            )
-          `);
-          console.log("✅ [Better Auth] User table created");
-        }
-        
-        console.log("🔄 [Better Auth] Creating account table with Better Auth schema...");
-        sqlite.exec(`
-          CREATE TABLE getlostportal_account (
-            id TEXT PRIMARY KEY,
-            account_id TEXT NOT NULL,
-            provider_id TEXT NOT NULL,
-            user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE,
-            access_token TEXT,
-            refresh_token TEXT,
-            id_token TEXT,
-            access_token_expires_at INTEGER,
-            refresh_token_expires_at INTEGER,
-            scope TEXT,
-            password TEXT,
-            created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-            updated_at INTEGER DEFAULT (unixepoch()) NOT NULL
-          )
-        `);
-        console.log("✅ [Better Auth] Account table created");
         sqlite.close();
-        return;
+        return; // Table doesn't exist yet
       }
 
       // Check if table already has id column (already migrated)
@@ -189,380 +141,69 @@ function ensureAccountTableMigration() {
 
 // Run session table migration synchronously before Better Auth initializes
 function ensureSessionTableMigration() {
-  let sqlite: Database.Database | null = null;
   try {
-    console.log("🔍 [Better Auth] ensureSessionTableMigration() called");
     // Get database path
     let dbPath = env.DATABASE_URL || "./dev.db";
-    console.log("   Database URL from env:", env.DATABASE_URL);
     if (dbPath.startsWith("file://")) {
       dbPath = dbPath.replace(/^file:\/\//, "");
     } else if (dbPath.startsWith("file:")) {
       dbPath = dbPath.replace(/^file:/, "");
     }
 
-    // Ensure database directory exists
-    const dbDir = require('path').dirname(dbPath);
-    if (!fs.existsSync(dbDir)) {
-      console.log(`📁 [Better Auth] Creating database directory: ${dbDir}`);
-      fs.mkdirSync(dbDir, { recursive: true });
+    if (!fs.existsSync(dbPath)) {
+      return; // Database doesn't exist yet, will be created with correct schema
     }
 
-    // Open database (will create file if it doesn't exist)
-    console.log(`📂 [Better Auth] Opening database at: ${dbPath}`);
-    sqlite = new Database(dbPath);
+    const sqlite = new Database(dbPath);
     
-    // Ensure user table exists first (required for foreign key)
     try {
-      const userTable = sqlite.prepare(`
-        SELECT name FROM sqlite_master 
-        WHERE type='table' AND name='getlostportal_user'
-      `).get();
-      
-      if (!userTable) {
-        console.log("🔄 [Better Auth] Creating user table first (required for session table)...");
-        sqlite.exec(`
-          CREATE TABLE IF NOT EXISTS getlostportal_user (
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            email TEXT NOT NULL UNIQUE,
-            emailVerified INTEGER DEFAULT 0,
-            image TEXT,
-            role TEXT DEFAULT 'user' NOT NULL,
-            createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
-            updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
-          )
-        `);
-        console.log("✅ [Better Auth] User table created/verified");
-      }
-    } catch (error: any) {
-      console.error("⚠️  [Better Auth] Error checking/creating user table:", error?.message);
-      // Continue anyway - table might already exist
-    }
-    
-    // Check if session table exists
-    let tableInfo: { name: string } | undefined;
-    try {
-      tableInfo = sqlite.prepare(`
+      // Check if session table exists
+      const tableInfo = sqlite.prepare(`
         SELECT name FROM sqlite_master 
         WHERE type='table' AND name='getlostportal_session'
-      `).get() as { name: string } | undefined;
-    } catch (error: any) {
-      console.error("⚠️  [Better Auth] Error checking session table:", error?.message);
-      tableInfo = undefined;
-    }
-
-    if (!tableInfo) {
-      // Table doesn't exist - create it with Better Auth schema
-      console.log("🔄 [Better Auth] Creating session table with Better Auth schema...");
-      try {
-        sqlite.exec(`
-          CREATE TABLE getlostportal_session (
-            id TEXT PRIMARY KEY,
-            expires_at INTEGER NOT NULL,
-            token TEXT NOT NULL UNIQUE,
-            created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-            updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-            ip_address TEXT,
-            user_agent TEXT,
-            user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
-          )
-        `);
-        console.log("✅ [Better Auth] Session table created");
-      } catch (createError: any) {
-        console.error("❌ [Better Auth] Failed to create session table:", createError?.message);
-        throw createError; // Re-throw to be caught by outer catch
-      }
-    } else {
-      // Table exists - verify it has the correct schema
-      console.log("🔍 [Better Auth] Session table exists, verifying schema...");
-      try {
-        const columns = sqlite.prepare("PRAGMA table_info(getlostportal_session)").all() as Array<{ name: string }>;
-        const columnNames = columns.map((col: any) => col.name);
-        const hasSessionToken = columnNames.includes("sessionToken");
-        const hasIdColumn = columnNames.includes("id");
-        const hasToken = columnNames.includes("token");
-        const hasExpiresAt = columnNames.includes("expires_at");
-        
-        console.log(`   Current columns: ${columnNames.join(", ")}`);
-        
-        // If already migrated (has id column and token), skip
-        if (hasIdColumn && hasToken && hasExpiresAt && !hasSessionToken) {
-          console.log("✅ [Better Auth] Session table already has correct Better Auth schema");
-          sqlite.close();
-          sqlite = null;
-          return; // Already migrated
-        }
-
-        // If it has sessionToken, it's the old schema - migrate it
-        if (hasSessionToken && !hasIdColumn) {
-          console.log("🔄 [Better Auth] Migrating session table from old schema to Better Auth schema...");
-
-          // Get all existing sessions from old schema
-          const oldSessions = sqlite.prepare(`
-            SELECT 
-              sessionToken,
-              userId,
-              expires
-            FROM getlostportal_session
-          `).all() as Array<{
-            sessionToken: string;
-            userId: string;
-            expires: number;
-          }>;
-
-          // Create new table with Better Auth schema
-          sqlite.exec(`
-            CREATE TABLE getlostportal_session_new (
-              id TEXT PRIMARY KEY,
-              expires_at INTEGER NOT NULL,
-              token TEXT NOT NULL UNIQUE,
-              created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-              updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-              ip_address TEXT,
-              user_agent TEXT,
-              user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
-            )
-          `);
-
-          // Migrate data
-          const insert = sqlite.prepare(`
-            INSERT INTO getlostportal_session_new (
-              id, expires_at, token, user_id,
-              created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?)
-          `);
-
-          const insertMany = sqlite.transaction((sessions: typeof oldSessions) => {
-            for (const session of sessions) {
-              const id = crypto.randomUUID();
-              insert.run(
-                id,
-                session.expires,
-                session.sessionToken,
-                session.userId,
-                Math.floor(Date.now() / 1000),
-                Math.floor(Date.now() / 1000)
-              );
-            }
-          });
-
-          insertMany(oldSessions);
-
-          // Drop old table and rename new one
-          sqlite.exec(`
-            DROP TABLE getlostportal_session;
-            ALTER TABLE getlostportal_session_new RENAME TO getlostportal_session;
-          `);
-
-          console.log(`✅ [Better Auth] Successfully migrated ${oldSessions.length} sessions`);
-        } else {
-          // Unexpected schema - try to recreate the table
-          console.log("⚠️  [Better Auth] Session table has unexpected schema, recreating...");
-          sqlite.exec(`
-            DROP TABLE IF EXISTS getlostportal_session;
-            CREATE TABLE getlostportal_session (
-              id TEXT PRIMARY KEY,
-              expires_at INTEGER NOT NULL,
-              token TEXT NOT NULL UNIQUE,
-              created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-              updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-              ip_address TEXT,
-              user_agent TEXT,
-              user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
-            )
-          `);
-          console.log("✅ [Better Auth] Session table recreated with correct schema");
-        }
-      } catch (verifyError: any) {
-        console.error("⚠️  [Better Auth] Error verifying/migrating session table:", verifyError?.message);
-        // Try to create the table anyway as a last resort (only if sqlite is still available)
-        if (sqlite) {
-          try {
-            sqlite.exec(`
-              CREATE TABLE IF NOT EXISTS getlostportal_session (
-                id TEXT PRIMARY KEY,
-                expires_at INTEGER NOT NULL,
-                token TEXT NOT NULL UNIQUE,
-                created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-                updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
-                ip_address TEXT,
-                user_agent TEXT,
-                user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
-              )
-            `);
-            console.log("✅ [Better Auth] Session table created as fallback");
-          } catch (fallbackError: any) {
-            console.error("❌ [Better Auth] Even fallback table creation failed:", fallbackError?.message);
-            throw fallbackError;
-          }
-        } else {
-          console.error("❌ [Better Auth] Cannot create fallback table - database connection is null");
-        }
-      }
-    }
-    
-    // Verify the table was created successfully
-    if (sqlite) {
-      try {
-        const verifyTable = sqlite.prepare(`
-          SELECT name FROM sqlite_master 
-          WHERE type='table' AND name='getlostportal_session'
-        `).get();
-        
-        if (!verifyTable) {
-          throw new Error("Session table verification failed - table does not exist after migration");
-        }
-        
-        // Try a simple query to ensure table is accessible
-        sqlite.prepare("SELECT COUNT(*) as count FROM getlostportal_session").get();
-        console.log("✅ [Better Auth] Session table verified and accessible");
-      } catch (verifyError: any) {
-        console.error("❌ [Better Auth] Session table verification failed:", verifyError?.message);
-        throw verifyError;
-      } finally {
-        sqlite.close();
-        sqlite = null;
-      }
-    }
-  } catch (error: any) {
-    if (sqlite) {
-      try {
-        sqlite.close();
-      } catch {
-        // Ignore close errors
-      }
-    }
-    // Log error but allow Better Auth to initialize (it might work on retry)
-    console.error("❌ [Better Auth] Session migration failed:", error?.message || error);
-    console.error("   Stack:", error?.stack);
-    // Don't throw - allow the app to continue and retry on next request
-  }
-}
-
-// Run migrations synchronously before Better Auth initializes
-console.log("🔧 [Better Auth] Starting table migrations...");
-try {
-  ensureAccountTableMigration();
-  console.log("✅ [Better Auth] Account table migration completed");
-} catch (error: any) {
-  console.error("❌ [Better Auth] Account table migration failed:", error?.message || error);
-  console.error("   Stack:", error?.stack);
-}
-
-try {
-  ensureSessionTableMigration();
-  console.log("✅ [Better Auth] Session table migration completed");
-} catch (error: any) {
-  console.error("❌ [Better Auth] Session table migration failed:", error?.message || error);
-  console.error("   Stack:", error?.stack);
-}
-
-// Verify critical tables exist after migrations
-console.log("🔍 [Better Auth] Verifying critical tables exist...");
-try {
-  let dbPath = env.DATABASE_URL || "./dev.db";
-  if (dbPath.startsWith("file://")) {
-    dbPath = dbPath.replace(/^file:\/\//, "");
-  } else if (dbPath.startsWith("file:")) {
-    dbPath = dbPath.replace(/^file:/, "");
-  }
-  
-  const verifyDb = new Database(dbPath);
-  try {
-    const sessionTable = verifyDb.prepare(`
-      SELECT name FROM sqlite_master 
-      WHERE type='table' AND name='getlostportal_session'
-    `).get();
-    
-    const userTable = verifyDb.prepare(`
-      SELECT name FROM sqlite_master 
-      WHERE type='table' AND name='getlostportal_user'
-    `).get();
-    
-    if (!sessionTable) {
-      console.error("❌ [Better Auth] CRITICAL: Session table does not exist after migration!");
-      console.error("   This will cause authentication errors. Trying to create it now...");
-      // Try one more time to create it
-      ensureSessionTableMigration();
-    } else {
-      console.log("✅ [Better Auth] Session table verified");
-    }
-    
-    if (!userTable) {
-      console.error("❌ [Better Auth] CRITICAL: User table does not exist after migration!");
-      console.error("   This will cause authentication errors.");
-    } else {
-      console.log("✅ [Better Auth] User table verified");
-    }
-  } finally {
-    verifyDb.close();
-  }
-} catch (verifyError: any) {
-  console.error("⚠️  [Better Auth] Could not verify tables:", verifyError?.message);
-  console.error("   This might be okay if the database is not yet accessible");
-}
-
-console.log("🔧 [Better Auth] Table migrations finished");
-
-// CRITICAL: Ensure session table exists before Better Auth initializes
-// This uses the SAME database connection that Better Auth will use
-// IMPORTANT: Skip during build phase - database is only available at runtime
-function ensureSessionTableExistsSync(): void {
-  // Check if we're in build phase
-  const isBuildPhase = process.argv.includes('build') || 
-    process.env.NEXT_PHASE === 'phase-production-build';
-  
-  if (isBuildPhase) {
-    console.log("⚠️  [Better Auth] Skipping session table check during build phase (database not available)");
-    console.log("   Tables will be created at runtime on first request");
-    return;
-  }
-  
-  try {
-    console.log("🔐 [Better Auth] Ensuring session table exists using the same DB connection Better Auth will use...");
-    
-    // Force initialize the database connection (same one Better Auth will use)
-    // This accesses sqlite which forces lazy initialization
-    const dbConnection = sqlite;
-    
-    console.log("✅ [Better Auth] Database connection initialized");
-    
-    // Check if session table exists
-    const sessionTable = dbConnection.prepare(`
-      SELECT name FROM sqlite_master 
-      WHERE type='table' AND name='getlostportal_session'
-    `).get();
-    
-    if (!sessionTable) {
-      console.log("🚨 [Better Auth] CRITICAL: Session table missing before Better Auth init! Creating now...");
-      
-      // Ensure user table exists first
-      const userTable = dbConnection.prepare(`
-        SELECT name FROM sqlite_master 
-        WHERE type='table' AND name='getlostportal_user'
       `).get();
-      
-      if (!userTable) {
-        console.log("🚨 [Better Auth] Creating user table (required for session table)...");
-        dbConnection.exec(`
-          CREATE TABLE IF NOT EXISTS getlostportal_user (
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            email TEXT NOT NULL UNIQUE,
-            emailVerified INTEGER DEFAULT 0,
-            image TEXT,
-            role TEXT DEFAULT 'user' NOT NULL,
-            createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
-            updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
-          )
-        `);
-        console.log("✅ [Better Auth] User table created");
+
+      if (!tableInfo) {
+        sqlite.close();
+        return; // Table doesn't exist yet
       }
+
+      // Check table structure - if it has sessionToken, it's the old schema
+      const columns = sqlite.prepare("PRAGMA table_info(getlostportal_session)").all();
+      const hasSessionToken = columns.some((col: any) => col.name === "sessionToken");
+      const hasIdColumn = columns.some((col: any) => col.name === "id");
       
-      // Create session table
-      dbConnection.exec(`
-        CREATE TABLE getlostportal_session (
+      // If already migrated (has id column), skip
+      if (hasIdColumn && !hasSessionToken) {
+        sqlite.close();
+        return; // Already migrated
+      }
+
+      // If it doesn't have sessionToken, it might be a different issue
+      if (!hasSessionToken && !hasIdColumn) {
+        console.log("⚠️  [Better Auth] Session table has unexpected schema");
+        sqlite.close();
+        return;
+      }
+
+      console.log("🔄 [Better Auth] Migrating session table synchronously...");
+
+      // Get all existing sessions from old schema
+      const oldSessions = sqlite.prepare(`
+        SELECT 
+          sessionToken,
+          userId,
+          expires
+        FROM getlostportal_session
+      `).all() as Array<{
+        sessionToken: string;
+        userId: string;
+        expires: number;
+      }>;
+
+      // Create new table with Better Auth schema
+      sqlite.exec(`
+        CREATE TABLE getlostportal_session_new (
           id TEXT PRIMARY KEY,
           expires_at INTEGER NOT NULL,
           token TEXT NOT NULL UNIQUE,
@@ -573,40 +214,50 @@ function ensureSessionTableExistsSync(): void {
           user_id TEXT NOT NULL REFERENCES getlostportal_user(id) ON DELETE CASCADE
         )
       `);
-      console.log("✅ [Better Auth] Session table created successfully in the SAME database Better Auth will use");
-    } else {
-      console.log("✅ [Better Auth] Session table verified - exists in the database Better Auth will use");
+
+      // Migrate data
+      const insert = sqlite.prepare(`
+        INSERT INTO getlostportal_session_new (
+          id, expires_at, token, user_id,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `);
+
+      const insertMany = sqlite.transaction((sessions: typeof oldSessions) => {
+        for (const session of sessions) {
+          const id = crypto.randomUUID();
+          insert.run(
+            id,
+            session.expires,
+            session.sessionToken,
+            session.userId,
+            Math.floor(Date.now() / 1000),
+            Math.floor(Date.now() / 1000)
+          );
+        }
+      });
+
+      insertMany(oldSessions);
+
+      // Drop old table and rename new one
+      sqlite.exec(`
+        DROP TABLE getlostportal_session;
+        ALTER TABLE getlostportal_session_new RENAME TO getlostportal_session;
+      `);
+
+      console.log(`✅ [Better Auth] Successfully migrated ${oldSessions.length} sessions`);
+    } finally {
+      sqlite.close();
     }
-    
-    // Verify we can query it
-    dbConnection.prepare("SELECT COUNT(*) as count FROM getlostportal_session").get();
-    console.log("✅ [Better Auth] Session table is accessible and ready for Better Auth");
   } catch (error: any) {
-    // If it's a build phase error, skip it (already handled above, but just in case)
-    if (error?.message?.includes("build phase") || error?.message?.includes("not available")) {
-      console.log("⚠️  [Better Auth] Database not available (likely build phase), skipping table check");
-      console.log("   Tables will be created at runtime on first request");
-      return;
-    }
-    
-    console.error("❌ [Better Auth] CRITICAL ERROR: Cannot ensure session table exists!");
-    console.error("   Error:", error?.message);
-    console.error("   Stack:", error?.stack);
-    console.error("   Database URL:", env.DATABASE_URL);
-    // In production, log but don't throw - runtime fallback will handle it
-    if (process.env.NODE_ENV === "development") {
-      throw new Error(`Cannot initialize Better Auth: Session table creation failed: ${error?.message}`);
-    }
-    console.error("⚠️  [Better Auth] Continuing in production mode - runtime fallback will create table on first request");
+    // Log but don't throw - allow Better Auth to initialize
+    console.error("⚠️  [Better Auth] Session migration failed:", error?.message || error);
   }
 }
 
-// Ensure tables exist BEFORE Better Auth initializes
-console.log("🔐 [Better Auth] Ensuring critical tables exist before initialization...");
-console.log("  NODE_ENV:", process.env.NODE_ENV);
-console.log("  NEXT_PHASE:", process.env.NEXT_PHASE);
-console.log("  Process args:", process.argv);
-ensureSessionTableExistsSync();
+// Run migrations synchronously before Better Auth initializes
+ensureAccountTableMigration();
+ensureSessionTableMigration();
 
 // Debug: Log database configuration
 console.log("🔍 [Better Auth] Database configuration:");
@@ -632,36 +283,6 @@ try {
   console.log("  Session table:", sessionTableName);
 } catch (error) {
   console.log("  Could not extract database info:", error);
-}
-
-// Log what database Better Auth will use
-console.log("🔐 [Better Auth] Initializing Better Auth with drizzle adapter...");
-console.log("   Using db from @/server/db");
-console.log("   Using sqlite from @/server/db");
-
-try {
-  // Force initialize the database connection to see what path it uses
-  const testConnection = sqlite;
-  
-  // Try to get the actual database file path if possible
-  try {
-    // Query sqlite_master to verify connection works
-    const testResult = testConnection.prepare("SELECT COUNT(*) as count FROM sqlite_master WHERE type='table'").get();
-    console.log("   ✅ Database connection verified, table count:", (testResult as any).count);
-    
-    // Check if session table exists in this connection
-    const sessionCheck = testConnection.prepare(`
-      SELECT name FROM sqlite_master 
-      WHERE type='table' AND name='getlostportal_session'
-    `).get();
-    console.log("   Session table in Better Auth DB:", sessionCheck ? "EXISTS" : "MISSING");
-  } catch (checkError: any) {
-    console.error("   ❌ Database check failed:", checkError?.message);
-  }
-  
-  console.log("   Database connection initialized for Better Auth");
-} catch (error: any) {
-  console.error("   Database connection error:", error?.message);
 }
 
 export const auth = betterAuth({

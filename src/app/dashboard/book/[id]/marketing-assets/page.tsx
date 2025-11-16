@@ -17,6 +17,7 @@ interface MarketingAsset {
   thumbnailUrl?: string;
   status: string;
   createdAt: string;
+  metadata?: string | null;
 }
 
 export default function MarketingAssetsPage() {
@@ -27,6 +28,14 @@ export default function MarketingAssetsPage() {
   const [assets, setAssets] = useState<MarketingAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookTitle, setBookTitle] = useState("");
+  const parseMetadata = (value?: string | null) => {
+    if (!value) return null;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -158,8 +167,45 @@ export default function MarketingAssetsPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {assets.map((asset) => (
+          <>
+            {(() => {
+              const htmlAsset = assets.find((asset) => {
+                const metadata = parseMetadata(asset.metadata);
+                return metadata?.variant === "html" && metadata?.htmlContent;
+              });
+              if (!htmlAsset) return null;
+              const metadata = parseMetadata(htmlAsset.metadata);
+              return (
+                <Card className="mb-8">
+                  <CardContent className="p-6">
+                    <div className="mb-4">
+                      <p className="text-sm uppercase tracking-wide text-orange-500 font-semibold">
+                        Interactive Toolkit
+                      </p>
+                      <h2 className="text-2xl font-bold text-gray-900">{htmlAsset.title}</h2>
+                      {htmlAsset.description && (
+                        <p className="text-gray-600 mt-1">{htmlAsset.description}</p>
+                      )}
+                    </div>
+                    <div className="border rounded-xl overflow-hidden shadow-inner bg-gray-900/5">
+                      <iframe
+                        title="Marketing toolkit preview"
+                        srcDoc={metadata?.htmlContent || ""}
+                        sandbox="allow-scripts allow-same-origin"
+                        className="w-full h-[900px] bg-white"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {assets
+              .filter((asset) => {
+                const metadata = parseMetadata(asset.metadata);
+                return !(metadata?.variant === "html" && metadata?.htmlContent);
+              })
+              .map((asset) => (
               <Card key={asset.id} className="overflow-hidden">
                 <CardContent className="p-0">
                   {asset.thumbnailUrl ? (
@@ -201,6 +247,7 @@ export default function MarketingAssetsPage() {
               </Card>
             ))}
           </div>
+          </>
         )}
       </main>
     </div>

@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../book-report-generator"
+		},
+		{
+			"path": "../../../book-reports"
+		},
+		{
+			"path": "../../../book-processor-local"
+		},
+		{
+			"path": "../../../getlostconverter"
+		}
+	],
+	"settings": {}
+}

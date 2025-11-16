@@ -259,15 +259,25 @@ export async function checkBookDigestStatus(jobId: string) {
 
       // Update book with cover if extracted
       if (coverImageUrl && job.bookId) {
-        console.log(`Updating book ${job.bookId} with cover URL: ${coverImageUrl}`);
-        await db
-          .update(books)
-          .set({
-            coverImageUrl,
-            updatedAt: new Date(),
-          })
-          .where(eq(books.id, job.bookId));
-        console.log(`Successfully updated book ${job.bookId} with cover`);
+        const [existingBook] = await db
+          .select({ coverImageUrl: books.coverImageUrl })
+          .from(books)
+          .where(eq(books.id, job.bookId))
+          .limit(1);
+
+        if (!existingBook?.coverImageUrl) {
+          console.log(`Updating book ${job.bookId} with cover URL: ${coverImageUrl}`);
+          await db
+            .update(books)
+            .set({
+              coverImageUrl,
+              updatedAt: new Date(),
+            })
+            .where(eq(books.id, job.bookId));
+          console.log(`Successfully updated book ${job.bookId} with cover`);
+        } else {
+          console.log(`Book ${job.bookId} already has a cover, skipping BookDigest cover update`);
+        }
       } else {
         console.log(`No cover URL to update for book ${job.bookId}`);
       }

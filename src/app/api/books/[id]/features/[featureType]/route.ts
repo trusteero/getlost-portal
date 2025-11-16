@@ -4,7 +4,7 @@ import { db } from "@/server/db";
 import { books, bookFeatures, purchases, bookVersions, reports } from "@/server/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { populateDemoDataForBook } from "@/server/utils/populate-demo-data";
-import { findSeededReportByFilename, linkSeededReportToBookVersion } from "@/server/utils/find-seeded-report";
+import { importPrecannedContentForBook } from "@/server/utils/precanned-content";
 
 const FEATURE_PRICES: Record<string, number> = {
   "summary": 0, // Free
@@ -180,10 +180,9 @@ export async function POST(
       .where(eq(bookFeatures.id, featureId))
       .limit(1);
 
-    // For manuscript-report, check if we need to link a seeded report
+    // For manuscript-report, attempt to import precanned content if missing
     if (featureType === "manuscript-report") {
       try {
-        // Get the latest version of the book
         const [latestVersion] = await db
           .select()
           .from(bookVersions)
@@ -192,34 +191,33 @@ export async function POST(
           .limit(1);
 
         if (latestVersion) {
-          // Check if there's already a report for this version
           const existingReports = await db
             .select()
             .from(reports)
             .where(eq(reports.bookVersionId, latestVersion.id))
             .limit(1);
 
-          // If no report exists, try to find and link a seeded report
           if (existingReports.length === 0) {
-            const seededReport = await findSeededReportByFilename(latestVersion.fileName);
-            
-            if (seededReport) {
-              console.log(`[Purchase] Found seeded report for "${latestVersion.fileName}", linking it to book ${id}`);
-              
-              // Link the seeded report to the book version
-              const linkedReportId = await linkSeededReportToBookVersion(seededReport, latestVersion.id);
-              
-              console.log(`[Purchase] Linked seeded report ${linkedReportId} to book ${id}`);
+            const importResult = await importPrecannedContentForBook({
+              bookId: id,
+              bookVersionId: latestVersion.id,
+              fileName: latestVersion.fileName,
+              features: { reports: true, marketing: false, covers: false, landingPage: false },
+            });
+
+            if (importResult) {
+              console.log(
+                `[Purchase] Imported precanned report package "${importResult.packageKey}" for book ${id}`
+              );
             } else {
-              console.log(`[Purchase] No seeded report found for "${latestVersion.fileName}"`);
+              console.log(`[Purchase] No precanned report matched "${latestVersion.fileName}"`);
             }
           } else {
-            console.log(`[Purchase] Report already exists for book ${id}, skipping seeded report linking`);
+            console.log(`[Purchase] Report already exists for book ${id}, skipping precanned import`);
           }
         }
       } catch (error) {
-        console.error(`[Purchase] Failed to link seeded report:`, error);
-        // Don't fail the purchase if report linking fails
+        console.error(`[Purchase] Failed to import precanned report:`, error);
       }
     }
 

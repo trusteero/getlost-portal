@@ -52,7 +52,6 @@ export const ManuscriptCard = ({
 }: ManuscriptCardProps) => {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [unlockingFeature, setUnlockingFeature] = useState<string | null>(null);
   const [updatedSteps, setUpdatedSteps] = useState<ProgressStep[]>(steps);
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
@@ -122,7 +121,7 @@ export const ManuscriptCard = ({
   const handleStageAction = (stepId: string, stepTitle: string) => {
     switch (stepId) {
       case 'summary':
-        setIsSummaryOpen(!isSummaryOpen);
+        router.push(`/dashboard/book/${id}#preview`);
         break;
       case 'manuscript-report':
         // Navigate to book detail page with report hash

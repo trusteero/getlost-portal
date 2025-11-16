@@ -48,7 +48,7 @@ export async function GET(
     // Get reports for each version
     const versionsWithReports = await Promise.all(
       versions.map(async (version: any) => {
-        const versionReports = await db
+        const versionReportsRaw = await db
           .select({
             id: reports.id,
             status: reports.status,
@@ -56,10 +56,29 @@ export async function GET(
             completedAt: reports.completedAt,
             htmlContent: reports.htmlContent,
             pdfUrl: reports.pdfUrl,
+            adminNotes: reports.adminNotes,
           })
           .from(reports)
           .where(eq(reports.bookVersionId, version.id))
           .orderBy(desc(reports.requestedAt));
+
+        const versionReports = versionReportsRaw.map((report: any) => {
+          let variant: string | undefined;
+          if (report.adminNotes) {
+            try {
+              const parsed = JSON.parse(report.adminNotes);
+              if (typeof parsed?.variant === "string") {
+                variant = parsed.variant;
+              } else if (parsed?.isPreview) {
+                variant = "preview";
+              }
+            } catch {
+              // ignore invalid admin notes
+            }
+          }
+          const { adminNotes, ...rest } = report;
+          return { ...rest, variant };
+        });
 
         // Extract summary from the latest completed report
         let extractedSummary: string | null = null;

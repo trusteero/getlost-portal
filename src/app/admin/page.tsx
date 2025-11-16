@@ -48,7 +48,7 @@ interface DigestJob {
 interface Report {
   id: string;
   bookVersionId: string;
-  status: "requested" | "analyzing" | "completed";
+  status: "requested" | "analyzing" | "completed" | "pending" | "preview";
   requestedAt: string;
   completedAt?: string;
   fileName?: string;

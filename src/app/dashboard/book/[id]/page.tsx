@@ -25,11 +25,12 @@ interface BookVersion {
 
 interface Report {
   id: string;
-  status: "pending" | "requested" | "analyzing" | "completed";
+  status: "pending" | "requested" | "analyzing" | "completed" | "preview";
   requestedAt: string;
   completedAt?: string;
   htmlContent?: string;
   pdfUrl?: string;
+  variant?: string;
 }
 
 interface Book {
@@ -88,17 +89,28 @@ export default function BookDetail() {
   const [checkingDigest, setCheckingDigest] = useState(false);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const [isViewingReport, setIsViewingReport] = useState(false);
+  const [isViewingPreview, setIsViewingPreview] = useState(false);
   const reportContainerRef = useRef<HTMLIFrameElement>(null);
   const [mounted, setMounted] = useState(false);
+  const getReportVariant = (report?: Report | null) => report?.variant;
+  const previewReport = book?.versions?.[0]?.reports?.find(
+    (r: Report) => r.status === "preview" || getReportVariant(r) === "preview"
+  );
 
   // Set mounted flag after component mounts (client-side only)
   useEffect(() => {
     setMounted(true);
     
-    // Check hash after mount (in case navigation happened before mount)
-    if (typeof window !== 'undefined' && window.location.hash === '#report') {
-      setIsViewingReport(true);
-      setActiveTab("author");
+    if (typeof window !== 'undefined') {
+      if (window.location.hash === '#report') {
+        setIsViewingReport(true);
+        setIsViewingPreview(false);
+        setActiveTab("author");
+      } else if (window.location.hash === '#preview') {
+        setIsViewingReport(false);
+        setIsViewingPreview(true);
+        setActiveTab("summary");
+      }
     }
   }, []);
 
@@ -114,20 +126,28 @@ export default function BookDetail() {
     const checkHash = () => {
       if (typeof window !== 'undefined') {
         if (window.location.hash === '#report') {
-          // Only set viewing report if book data is loaded and has report
           if (book && book.versions.length > 0) {
             const hasReport = book.versions[0]?.reports?.some((r: Report) => r.status === "completed");
             if (hasReport) {
               setIsViewingReport(true);
+              setIsViewingPreview(false);
               setActiveTab("author");
             }
           } else {
-            // Book not loaded yet, will be checked in fetchBook
             setIsViewingReport(true);
+            setIsViewingPreview(false);
             setActiveTab("author");
+          }
+        } else if (window.location.hash === '#preview') {
+          const hasPreview = previewReport || book?.versions?.[0]?.reports?.some((r: Report) => getReportVariant(r) === "preview");
+          if (hasPreview) {
+            setActiveTab("summary");
+            setIsViewingReport(false);
+            setIsViewingPreview(true);
           }
         } else {
           setIsViewingReport(false);
+          setIsViewingPreview(false);
         }
       }
     };
@@ -175,14 +195,25 @@ export default function BookDetail() {
           }
 
           // Check hash AFTER book data is loaded to ensure hasReport check works
-          if (typeof window !== 'undefined' && window.location.hash === '#report') {
-            const hasReport = latestVersion.reports?.some((r: Report) => r.status === "completed");
-            if (hasReport) {
-              setIsViewingReport(true);
-              setActiveTab("author");
+          if (typeof window !== 'undefined') {
+            if (window.location.hash === '#report') {
+              const hasReport = latestVersion.reports?.some((r: Report) => r.status === "completed");
+              if (hasReport) {
+                setIsViewingReport(true);
+                setIsViewingPreview(false);
+                setActiveTab("author");
+              }
+            } else if (window.location.hash === '#preview') {
+              const hasPreview = latestVersion.reports?.some((r: Report) => getReportVariant(r) === "preview" || r.status === "preview");
+              if (hasPreview) {
+                setActiveTab("summary");
+                setIsViewingReport(false);
+                setIsViewingPreview(true);
+              }
+            } else {
+              setIsViewingReport(false);
+              setIsViewingPreview(false);
             }
-          } else {
-            setIsViewingReport(false);
           }
         }
       }
@@ -434,8 +465,11 @@ export default function BookDetail() {
   }
 
   // Check if we're viewing just the report (via hash)
-  const reportHtml = book.versions[0]?.reports?.find((r: Report) => r.status === "completed")?.htmlContent;
-  const hasReport = book.versions[0]?.reports?.some((r: Report) => r.status === "completed");
+  const latestCompletedReport = book.versions[0]?.reports?.find(
+    (r: Report) => r.status === "completed" && getReportVariant(r) !== "preview"
+  );
+  const hasReport = Boolean(latestCompletedReport);
+  const hasPreview = book.versions[0]?.reports?.some((r: Report) => r.status === "preview" || getReportVariant(r) === "preview");
   
   // Check if manuscript-report feature is unlocked
   const manuscriptReportFeature = book.features?.find(f => f.featureType === "manuscript-report");
@@ -447,11 +481,10 @@ export default function BookDetail() {
   if (mounted && isViewingReport && hasReport && isReportUnlocked) {
     return (
       <div className="min-h-screen bg-white w-full relative">
-        {/* Floating Back Button */}
         <div className="fixed top-4 left-4 z-50">
           <Button
             variant="default"
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push(`/dashboard/book/${params.id}`)}
             className="bg-white hover:bg-gray-50 text-gray-900 shadow-lg border border-gray-200"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -464,6 +497,29 @@ export default function BookDetail() {
           className="w-full h-screen border-0"
           sandbox="allow-scripts allow-same-origin"
           title="Report View"
+        />
+      </div>
+    );
+  }
+
+  if (mounted && isViewingPreview && hasPreview) {
+    return (
+      <div className="min-h-screen bg-white w-full relative">
+        <div className="fixed top-4 left-4 z-50">
+          <Button
+            variant="default"
+            onClick={() => router.push(`/dashboard/book/${params.id}`)}
+            className="bg-white hover:bg-gray-50 text-gray-900 shadow-lg border border-gray-200"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
+        <iframe
+          src={`/api/books/${params.id}/preview/view`}
+          className="w-full h-screen border-0"
+          sandbox="allow-scripts allow-same-origin"
+          title="Preview View"
         />
       </div>
     );
@@ -785,52 +841,150 @@ export default function BookDetail() {
 
                             {activeTab === "author" && (
                               <div>
-                                {version.reports.length === 0 ? (
-                                  <div className="text-center py-12">
-                                    <Lock className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No Report Yet</h3>
-                                    <p className="text-gray-600 mb-6">Get a professional analysis of your manuscript</p>
-                                    <Button
-                                      className="bg-orange-600 hover:bg-orange-700"
-                                      onClick={() => handlePurchaseAnalysis(version.id)}
-                                      disabled={purchasing}
-                                    >
-                                      {purchasing ? (
-                                        <>
-                                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                          Processing...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <CreditCard className="w-4 h-4 mr-2" />
-                                          Request Report
-                                        </>
-                                      )}
-                                    </Button>
-                                  </div>
-                                ) : version.reports.length > 0 && version.reports[0] ? (
-                                  <div>
-                                    {version.reports[0]!.status === "completed" ? (
-                                      <>
-                                        {version.reports[0]!.htmlContent ? (
-                                          <div className="w-full"
-                                               dangerouslySetInnerHTML={{ __html: version.reports[0]!.htmlContent }} />
-                                        ) : (
-                                          <div className="text-center py-12">
-                                            <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-600" />
-                                            <h3 className="text-2xl font-semibold text-gray-900 mb-2">Report Ready</h3>
-                                            <p className="text-gray-600 mb-6">Your analysis is complete and ready to download</p>
-                                            <Button
-                                              className="bg-green-600 hover:bg-green-700"
-                                              onClick={() => window.location.href = `/api/books/${book?.id}/report/download`}
-                                            >
-                                              <Download className="w-4 h-4 mr-2" />
-                                              Download Report
-                                            </Button>
+                                {(() => {
+                                  const versionReports = version.reports || [];
+                                  const previewReport = versionReports.find(
+                                    (r) => r.status === "preview" || getReportVariant(r) === "preview"
+                                  );
+                                  const nonPreviewReports = versionReports.filter(
+                                    (r) => getReportVariant(r) !== "preview"
+                                  );
+                                  const latestReport = nonPreviewReports[0];
+
+                                  if (!previewReport && !latestReport) {
+                                    return (
+                                      <div className="text-center py-12">
+                                        <Lock className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                                        <h3 className="text-xl font-semibold text-gray-900 mb-2">No Report Yet</h3>
+                                        <p className="text-gray-600 mb-6">Get a professional analysis of your manuscript</p>
+                                        <Button
+                                          className="bg-orange-600 hover:bg-orange-700"
+                                          onClick={() => handlePurchaseAnalysis(version.id)}
+                                          disabled={purchasing}
+                                        >
+                                          {purchasing ? (
+                                            <>
+                                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                              Processing...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <CreditCard className="w-4 h-4 mr-2" />
+                                              Request Report
+                                            </>
+                                          )}
+                                        </Button>
+                                      </div>
+                                    );
+                                  }
+
+                                  if (!isReportUnlocked) {
+                                    if (previewReport?.htmlContent) {
+                                      return (
+                                        <div className="space-y-6">
+                                          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-left">
+                                            <div className="flex items-start gap-3">
+                                              <Lock className="w-8 h-8 text-orange-500" />
+                                              <div>
+                                                <h3 className="text-lg font-semibold text-orange-900">Preview Available</h3>
+                                                <p className="text-sm text-orange-800">
+                                                  Unlock the full author report to access every section, export options, and marketing insights.
+                                                </p>
+                                              </div>
+                                            </div>
+                                            <div className="mt-4">
+                                              <Button
+                                                className="bg-orange-600 hover:bg-orange-700"
+                                                onClick={() => handlePurchaseAnalysis(version.id)}
+                                                disabled={purchasing}
+                                              >
+                                                {purchasing ? (
+                                                  <>
+                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                    Processing...
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <CreditCard className="w-4 h-4 mr-2" />
+                                                    Unlock Full Report
+                                                  </>
+                                                )}
+                                              </Button>
+                                            </div>
+                                          </div>
+                                          <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
+                                            <div dangerouslySetInnerHTML={{ __html: previewReport.htmlContent }} />
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+
+                                    return (
+                                      <div className="text-center py-12">
+                                        <Lock className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                                        <h3 className="text-xl font-semibold text-gray-900 mb-2">Report Locked</h3>
+                                        <p className="text-gray-600 mb-6">Unlock the full author report to view insights.</p>
+                                        <Button
+                                          className="bg-orange-600 hover:bg-orange-700"
+                                          onClick={() => handlePurchaseAnalysis(version.id)}
+                                          disabled={purchasing}
+                                        >
+                                          {purchasing ? (
+                                            <>
+                                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                              Processing...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <CreditCard className="w-4 h-4 mr-2" />
+                                              Unlock Report
+                                            </>
+                                          )}
+                                        </Button>
+                                      </div>
+                                    );
+                                  }
+
+                                  if (!latestReport) {
+                                    return (
+                                      <div className="text-center py-16">
+                                        <Clock className="w-16 h-16 mx-auto mb-4 text-yellow-600" />
+                                        <h3 className="text-2xl font-semibold text-gray-900 mb-2">Report Requested</h3>
+                                        <p className="text-gray-600">Your report has been requested</p>
+                                        <p className="text-sm text-gray-500 mt-2">We'll start analyzing it soon</p>
+                                        {previewReport?.htmlContent && (
+                                          <div className="mt-8 border rounded-lg overflow-hidden bg-white shadow-sm">
+                                            <div dangerouslySetInnerHTML={{ __html: previewReport.htmlContent }} />
                                           </div>
                                         )}
-                                      </>
-                                    ) : version.reports[0]!.status === "analyzing" ? (
+                                      </div>
+                                    );
+                                  }
+
+                                  if (latestReport.status === "completed") {
+                                    if (latestReport.htmlContent) {
+                                      return (
+                                        <div className="w-full" dangerouslySetInnerHTML={{ __html: latestReport.htmlContent }} />
+                                      );
+                                    }
+                                    return (
+                                      <div className="text-center py-12">
+                                        <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-600" />
+                                        <h3 className="text-2xl font-semibold text-gray-900 mb-2">Report Ready</h3>
+                                        <p className="text-gray-600 mb-6">Your analysis is complete and ready to download</p>
+                                        <Button
+                                          className="bg-green-600 hover:bg-green-700"
+                                          onClick={() => window.location.href = `/api/books/${book?.id}/report/download`}
+                                        >
+                                          <Download className="w-4 h-4 mr-2" />
+                                          Download Report
+                                        </Button>
+                                      </div>
+                                    );
+                                  }
+
+                                  if (latestReport.status === "analyzing") {
+                                    return (
                                       <div className="text-center py-16">
                                         <div className="flex flex-col items-center">
                                           <div className="w-20 h-20 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mb-6" />
@@ -838,23 +992,34 @@ export default function BookDetail() {
                                           <p className="text-gray-600">Our team is currently analyzing your manuscript</p>
                                           <p className="text-sm text-gray-500 mt-2">This usually takes a few hours</p>
                                         </div>
+                                        {previewReport?.htmlContent && (
+                                          <div className="mt-8 border rounded-lg overflow-hidden bg-white shadow-sm">
+                                            <div dangerouslySetInnerHTML={{ __html: previewReport.htmlContent }} />
+                                          </div>
+                                        )}
                                       </div>
-                                    ) : (version.reports[0]!.status === "pending" || version.reports[0]!.status === "requested") ? (
+                                    );
+                                  }
+
+                                  if (latestReport.status === "pending" || latestReport.status === "requested") {
+                                    return (
                                       <div className="text-center py-16">
                                         <Clock className="w-16 h-16 mx-auto mb-4 text-yellow-600" />
                                         <h3 className="text-2xl font-semibold text-gray-900 mb-2">Report Requested</h3>
                                         <p className="text-gray-600">Your report has been requested</p>
                                         <p className="text-sm text-gray-500 mt-2">We'll start analyzing it soon</p>
                                       </div>
-                                    ) : (
-                                      <div className="text-center py-16">
-                                        <AlertCircle className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                                        <h3 className="text-2xl font-semibold text-gray-900 mb-2">Unknown Status</h3>
-                                        <p className="text-gray-600">Please contact support</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : null}
+                                    );
+                                  }
+
+                                  return (
+                                    <div className="text-center py-16">
+                                      <AlertCircle className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                                      <h3 className="text-2xl font-semibold text-gray-900 mb-2">Unknown Status</h3>
+                                      <p className="text-gray-600">Please contact support</p>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             )}
 

@@ -7,15 +7,7 @@ import { triggerBookDigest } from "@/server/services/bookdigest";
 import { promises as fs } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
-import { findSeededReportByFilename, linkSeededReportToBookVersion } from "@/server/utils/find-seeded-report";
-import {
-  findSeededMarketingAssetByFilename,
-  findSeededBookCoverByFilename,
-  findSeededLandingPageByFilename,
-  linkSeededMarketingAssetToBook,
-  linkSeededBookCoverToBook,
-  linkSeededLandingPageToBook,
-} from "@/server/utils/find-seeded-assets";
+import { importPrecannedContentForBook } from "@/server/utils/precanned-content";
 
 export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request);
@@ -224,54 +216,31 @@ export async function POST(request: NextRequest) {
       console.error("Failed to trigger BookDigest job:", error);
     }
 
-    // Check if there's a seeded report matching this filename
+    // Attempt to import precanned content based on filename
     try {
-      const seededReport = await findSeededReportByFilename(fileName);
-      
-      if (seededReport) {
-        console.log(`[Demo] Found seeded report for "${fileName}", linking it to book ${createdBook.id}`);
-        
-        // Link the seeded report to the new book version
-        const linkedReportId = await linkSeededReportToBookVersion(seededReport, newVersion[0]!.id);
-        
-        console.log(`[Demo] Linked seeded report ${linkedReportId} to book ${createdBook.id} (user must purchase to view)`);
+      const precannedResult = await importPrecannedContentForBook({
+        bookId: createdBook.id,
+        bookVersionId: newVersion[0]!.id,
+        fileName,
+      });
+
+      if (precannedResult) {
+        console.log(
+          `[Demo] Imported precanned package "${precannedResult.packageKey}" for book ${createdBook.id}`
+        );
+
+        if (!createdBook.coverImageUrl && precannedResult.primaryCoverImageUrl) {
+          await db
+            .update(books)
+            .set({ coverImageUrl: precannedResult.primaryCoverImageUrl, updatedAt: new Date() })
+            .where(eq(books.id, createdBook.id));
+          createdBook.coverImageUrl = precannedResult.primaryCoverImageUrl;
+        }
       } else {
-        console.log(`[Demo] No seeded report found for "${fileName}" - system book may not exist or filename doesn't match`);
+        console.log(`[Demo] No precanned content matched filename "${fileName}"`);
       }
     } catch (error) {
-      // Log error but don't fail the book creation
-      console.error("[Demo] Failed to link seeded report:", error);
-      console.error("[Demo] Error details:", error instanceof Error ? error.stack : String(error));
-    }
-
-    // Check if there are matching assets (marketing assets, covers, landing pages)
-    try {
-      const [marketingAsset, bookCover, landingPage] = await Promise.all([
-        findSeededMarketingAssetByFilename(fileName),
-        findSeededBookCoverByFilename(fileName),
-        findSeededLandingPageByFilename(fileName),
-      ]);
-
-      if (marketingAsset) {
-        console.log(`[Demo] Found seeded marketing asset for "${fileName}", linking it to book ${createdBook.id}`);
-        const linkedAssetId = await linkSeededMarketingAssetToBook(marketingAsset, createdBook.id);
-        console.log(`[Demo] Linked marketing asset ${linkedAssetId} to book ${createdBook.id}`);
-      }
-
-      if (bookCover) {
-        console.log(`[Demo] Found seeded book cover for "${fileName}", linking it to book ${createdBook.id}`);
-        const linkedCoverId = await linkSeededBookCoverToBook(bookCover, createdBook.id);
-        console.log(`[Demo] Linked book cover ${linkedCoverId} to book ${createdBook.id}`);
-      }
-
-      if (landingPage) {
-        console.log(`[Demo] Found seeded landing page for "${fileName}", linking it to book ${createdBook.id}`);
-        const linkedPageId = await linkSeededLandingPageToBook(landingPage, createdBook.id);
-        console.log(`[Demo] Linked landing page ${linkedPageId} to book ${createdBook.id}`);
-      }
-    } catch (error) {
-      // Log error but don't fail the book creation
-      console.error("[Demo] Failed to link seeded assets:", error);
+      console.error("[Demo] Failed to import precanned content:", error);
     }
 
     return NextResponse.json({

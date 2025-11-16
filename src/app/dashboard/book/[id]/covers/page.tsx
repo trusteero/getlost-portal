@@ -17,6 +17,7 @@ interface BookCover {
   isPrimary: boolean;
   status: string;
   createdAt: string;
+  metadata?: string | null;
 }
 
 export default function BookCoversPage() {
@@ -27,6 +28,14 @@ export default function BookCoversPage() {
   const [covers, setCovers] = useState<BookCover[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookTitle, setBookTitle] = useState("");
+  const parseMetadata = (value?: string | null) => {
+    if (!value) return null;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -168,8 +177,44 @@ export default function BookCoversPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {covers.map((cover) => (
+          <>
+            {(() => {
+              const htmlCover = covers.find((cover) => {
+                const metadata = parseMetadata(cover.metadata);
+                return metadata?.variant === "html" && metadata?.htmlContent;
+              });
+              if (!htmlCover) return null;
+              const metadata = parseMetadata(htmlCover.metadata);
+              return (
+                <Card className="mb-8">
+                  <CardContent className="p-6">
+                    <div className="mb-4">
+                      <p className="text-sm uppercase tracking-wide text-orange-500 font-semibold">
+                        Cover Gallery
+                      </p>
+                      <h2 className="text-2xl font-bold text-gray-900">
+                        {htmlCover.title || "Cover Experience"}
+                      </h2>
+                    </div>
+                    <div className="border rounded-xl overflow-hidden shadow-inner bg-gray-900/5">
+                      <iframe
+                        title="Cover gallery preview"
+                        srcDoc={metadata?.htmlContent || ""}
+                        sandbox="allow-scripts allow-same-origin"
+                        className="w-full h-[900px] bg-white"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {covers
+              .filter((cover) => {
+                const metadata = parseMetadata(cover.metadata);
+                return !(metadata?.variant === "html" && metadata?.htmlContent);
+              })
+              .map((cover) => (
               <Card key={cover.id} className="overflow-hidden">
                 <CardContent className="p-0">
                   <div className="aspect-[2/3] bg-gray-100 relative">
@@ -205,6 +250,7 @@ export default function BookCoversPage() {
               </Card>
             ))}
           </div>
+          </>
         )}
       </main>
     </div>

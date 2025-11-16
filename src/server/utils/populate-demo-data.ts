@@ -1,26 +1,63 @@
 import { db } from "@/server/db";
-import { marketingAssets, bookCovers, landingPages, books } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import {
+  marketingAssets,
+  bookCovers,
+  landingPages,
+  books,
+  bookVersions,
+} from "@/server/db/schema";
+import { eq, desc } from "drizzle-orm";
+import { importPrecannedContentForBook, ImportFeatureFlags } from "@/server/utils/precanned-content";
 
 /**
  * Populate demo data for a book when a feature is unlocked
  * This creates placeholder/demo content in the database tables
  */
-export async function populateDemoDataForBook(
-  bookId: string,
-  featureType: string
-) {
-  const [book] = await db
-    .select({ title: books.title })
-    .from(books)
-    .where(eq(books.id, bookId))
-    .limit(1);
+export async function populateDemoDataForBook(bookId: string, featureType: string) {
+  const [book, latestVersion] = await Promise.all([
+    db
+      .select({ title: books.title })
+      .from(books)
+      .where(eq(books.id, bookId))
+      .limit(1),
+    db
+      .select({ id: bookVersions.id, fileName: bookVersions.fileName })
+      .from(bookVersions)
+      .where(eq(bookVersions.bookId, bookId))
+      .orderBy(desc(bookVersions.uploadedAt))
+      .limit(1),
+  ]);
 
-  if (!book) {
+  const bookRecord = book[0];
+
+  if (!bookRecord) {
     throw new Error("Book not found");
   }
 
-  const bookTitle = book.title;
+  const bookTitle = bookRecord.title;
+  const latestVersionRecord = latestVersion[0] || null;
+  const latestFileName = latestVersionRecord?.fileName ?? null;
+
+  const featureFlagsMap: Record<string, ImportFeatureFlags> = {
+    "manuscript-report": { reports: true, marketing: false, covers: false, landingPage: false },
+    "marketing-assets": { reports: false, marketing: true, covers: false, landingPage: false },
+    "book-covers": { reports: false, marketing: false, covers: true, landingPage: false },
+    "landing-page": { reports: false, marketing: false, covers: false, landingPage: true },
+  };
+
+  const desiredFlags = featureFlagsMap[featureType];
+  if (desiredFlags && latestFileName) {
+    const imported = await importPrecannedContentForBook({
+      bookId,
+      bookVersionId: latestVersionRecord?.id,
+      fileName: latestFileName,
+      features: desiredFlags,
+    });
+
+    if (imported) {
+      return;
+    }
+  }
 
   switch (featureType) {
     case "marketing-assets":
@@ -110,16 +147,18 @@ async function populateMarketingAssets(bookId: string, bookTitle: string) {
 /**
  * Populate book covers for a book
  */
-async function populateBookCovers(bookId: string, bookTitle: string) {
+async function populateBookCovers(
+  bookId: string,
+  bookTitle: string
+) {
   // Check if covers already exist
   const existing = await db
     .select()
     .from(bookCovers)
-    .where(eq(bookCovers.bookId, bookId))
-    .limit(1);
+    .where(eq(bookCovers.bookId, bookId));
 
   if (existing.length > 0) {
-    // Covers already exist, skip
+    // Covers already exist (likely user-generated or placeholders), skip creating defaults
     return;
   }
 

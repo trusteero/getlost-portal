@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wool by Hugh Howey – Cover Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #0f172a;
+      background: #020617;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, rgba(14, 165, 233, 0.15), transparent 55%), #020617;
+      color: inherit;
+    }
+    .page {
+      padding: 48px 20px 72px;
+    }
+    .shell {
+      width: min(1200px, 100%);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+    .card {
+      background: rgba(248, 250, 252, 0.98);
+      border-radius: 28px;
+      padding: clamp(24px, 4vw, 40px);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow: 0 25px 65px rgba(15, 23, 42, 0.25);
+    }
+    .hero {
+      background: linear-gradient(135deg, rgba(15, 118, 173, 0.1), rgba(14, 165, 233, 0.12));
+    }
+    .card.hero {
+      color: #e2e8f0;
+    }
+    .card.hero h1 {
+      color: #f8fafc;
+    }
+    .card.hero .lede {
+      color: rgba(241, 245, 249, 0.9);
+    }
+    .eyebrow {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: #0ea5e9;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    h1 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      margin: 0 0 12px;
+      color: #020617;
+    }
+    .lede {
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: #475569;
+      margin: 0 0 28px;
+    }
+    .meta-grid {
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 700px) {
+      .meta-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+    .meta-card {
+      background: #fff;
+      border-radius: 18px;
+      padding: 18px 20px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .meta-card .label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    .meta-card strong {
+      display: block;
+      margin-top: 6px;
+      font-size: 1.35rem;
+      color: #0f172a;
+    }
+    .meta-card p {
+      margin: 6px 0 0;
+      font-size: 0.95rem;
+      color: #475569;
+    }
+    .section-heading {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    @media (min-width: 768px) {
+      .section-heading {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+    }
+    h2 {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      margin: 0;
+      color: #0f172a;
+    }
+    .section-heading .lede {
+      margin-bottom: 0;
+      max-width: 620px;
+    }
+    a.download {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 999px;
+      background: #0ea5e9;
+      color: #fff;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 15px 40px rgba(14, 165, 233, 0.35);
+    }
+    a.download span {
+      font-size: 1.15rem;
+    }
+    .cover-grid {
+      display: grid;
+      gap: 24px;
+      margin-top: 28px;
+    }
+    @media (min-width: 700px) {
+      .cover-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+    .cover-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 18px 18px 24px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .cover-card img {
+      width: 100%;
+      border-radius: 16px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25);
+      background: #0f172a;
+      border: none;
+    }
+    .tagline {
+      font-size: 0.95rem;
+      color: #475569;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="shell">
+      <section class="card hero">
+        <p class="eyebrow">Cover Gallery</p>
+        <h1>Wool by Hugh Howey</h1>
+        <p class="lede">A trio of gritty, high-contrast jackets built for ecommerce, paid social and retail placements. Mix the palette to emphasize claustrophobic, post-apocalyptic energy across channels.</p>
+        <div class="meta-grid">
+          <div class="meta-card">
+            <span class="label">Variants</span>
+            <strong>3</strong>
+            <p>Hero + alternates</p>
+          </div>
+          <div class="meta-card">
+            <span class="label">Formats</span>
+            <strong>JPG + PNG</strong>
+            <p>3000px ready files</p>
+          </div>
+          <div class="meta-card">
+            <span class="label">Mood</span>
+            <strong>Bleak &amp; Bold</strong>
+            <p>Rust + industrial glow</p>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <main class="shell">
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Marketing Ready</p>
+            <h2>Downloadable Artwork</h2>
+            <p class="lede">Use these covers across PDPs, newsletters, carousel ads and influencer toolkits. Pair with messaging that leans into rebellion, truth-seeking and silo intrigue.</p>
+          </div>
+          <a class="download" href="../zips/Wool-20251115T092220Z-1-001.zip" download>
+            <span>⬇</span> Download all artwork
+          </a>
+        </div>
+        <div class="cover-grid">
+          <figure class="cover-card">
+            <img src="woolcover1.png" alt="Wool marketing cover option 1">
+            <p class="tagline">Primary jacket pairing bold typography with sparks of rebellion.</p>
+          </figure>
+          <figure class="cover-card">
+            <img src="woolcover2.png" alt="Wool marketing cover option 2">
+            <p class="tagline">Alternate emphasizing claustrophobic silo walls and muted embers.</p>
+          </figure>
+          <figure class="cover-card">
+            <img src="woolcover3.png" alt="Wool marketing cover option 3">
+            <p class="tagline">High-contrast variant ideal for teaser graphics and print collateral.</p>
+          </figure>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

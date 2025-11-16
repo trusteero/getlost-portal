@@ -1,0 +1,236 @@
+{
+  "books": [
+    {
+      "key": "wool",
+      "title": "Wool by Hugh Howey",
+      "uploadFileNames": [
+        "wool-final-standalone.html",
+        "wool-mini-standalone.html",
+        "Wool - Manuscript.docx",
+        "Wool by Hugh Howey.docx",
+        "Wool by Hugh Howey.pdf"
+      ],
+      "report": "Wool/Report/wool-final-standalone.html",
+      "preview": "Wool/Preview/wool-mini-standalone.html",
+      "landingPage": {
+        "file": "Wool/Landing page/Wool-UI.html",
+        "slug": "wool-demo",
+        "title": "Wool Launch Page",
+        "description": "Claustrophobic, emotionally charged dystopian launch experience."
+      },
+      "marketingHtml": "Wool/Video/index.html",
+      "coversHtml": "Wool/Covers/index.html",
+      "videos": [
+        {
+          "file": "Wool/Video/Video1.mp4",
+          "title": "Clip 01 · Atmospheric Opener",
+          "description": "Slow zoom into the silo with whispered voiceover.",
+          "poster": "Wool/Landing page/Wool UI.png"
+        },
+        {
+          "file": "Wool/Video/Video2.mp4",
+          "title": "Clip 02 · Tension Builder",
+          "description": "Escalating sirens and dark stairwell transitions.",
+          "poster": "Wool/Landing page/Wool UI.png"
+        },
+        {
+          "file": "Wool/Video/Video3.mp4",
+          "title": "Clip 03 · Character Focus",
+          "description": "Hero shot with emotional copy and CTA.",
+          "poster": "Wool/Landing page/Wool UI.png"
+        }
+      ],
+      "covers": [
+        {
+          "file": "Wool/Covers/woolcover1.png",
+          "title": "Wool Cover 01",
+          "coverType": "ebook",
+          "isPrimary": true
+        },
+        {
+          "file": "Wool/Covers/woolcover2.png",
+          "title": "Wool Cover 02",
+          "coverType": "paperback",
+          "isPrimary": false
+        },
+        {
+          "file": "Wool/Covers/woolcover3.png",
+          "title": "Wool Cover 03",
+          "coverType": "social",
+          "isPrimary": false
+        }
+      ]
+    },
+    {
+      "key": "beach-read",
+      "title": "Beach Read by Emily Henry",
+      "uploadFileNames": [
+        "beach-final-standalone.html",
+        "beach-mini-standalone.html",
+        "Beach Read - Manuscript.docx",
+        "Beach Read by Emily Henry.docx",
+        "BeachRead.pdf"
+      ],
+      "report": "Beach Read /Report/beach-final-standalone.html",
+      "preview": "Beach Read /Preview/beach-mini-standalone.html",
+      "landingPage": {
+        "file": "Beach Read /Landing page/Beach-Read-UI.html",
+        "slug": "beach-read-demo",
+        "title": "Beach Read Launch Page",
+        "description": "Sun-drenched romance funnel focusing on rivals-to-lovers energy."
+      },
+      "marketingHtml": "Beach Read /Video/index.html",
+      "coversHtml": "Beach Read /Covers/index.html",
+      "videos": [
+        {
+          "file": "Beach Read /Video/Video1.mp4",
+          "title": "Clip 01 · Meet Cute",
+          "description": "Split-screen banter with bold typographic captions.",
+          "poster": "Beach Read /Landing page/Beach Read UI.png"
+        },
+        {
+          "file": "Beach Read /Video/Video2.mp4",
+          "title": "Clip 02 · Dual POV",
+          "description": "He said / she said pacing for TikTok hooks.",
+          "poster": "Beach Read /Landing page/Beach Read UI.png"
+        },
+        {
+          "file": "Beach Read /Video/Video3.mp4",
+          "title": "Clip 03 · Emotional Pivot",
+          "description": "Quiet confessional moment with light-leak animation.",
+          "poster": "Beach Read /Landing page/Beach Read UI.png"
+        },
+        {
+          "file": "Beach Read /Video/Video4.mp4",
+          "title": "Clip 04 · CTA Bumper",
+          "description": "Fast-cut CTA for paid remarketing.",
+          "poster": "Beach Read /Landing page/Beach Read UI.png"
+        }
+      ],
+      "covers": [
+        {
+          "file": "Beach Read /Covers/beachreadcover1.png",
+          "title": "Beach Read Cover 01",
+          "coverType": "primary",
+          "isPrimary": true
+        },
+        {
+          "file": "Beach Read /Covers/beachreadcover2.png",
+          "title": "Beach Read Cover 02",
+          "coverType": "variant-a",
+          "isPrimary": false
+        },
+        {
+          "file": "Beach Read /Covers/beachreadcover3.png",
+          "title": "Beach Read Cover 03",
+          "coverType": "variant-b",
+          "isPrimary": false
+        },
+        {
+          "file": "Beach Read /Covers/beachreadcover4.png",
+          "title": "Beach Read Cover 04",
+          "coverType": "stories",
+          "isPrimary": false
+        },
+        {
+          "file": "Beach Read /Covers/beachreadcover5.png",
+          "title": "Beach Read Cover 05",
+          "coverType": "badge",
+          "isPrimary": false
+        }
+      ]
+    },
+    {
+      "key": "the-broken-crown",
+      "title": "The Broken Crown by Jesse Karjalainen",
+      "uploadFileNames": [
+        "the-broken-crown-final.html",
+        "the-broken-crown-mini.html",
+        "The Broken Crown.docx",
+        "Broken Crown Manuscript.docx",
+        "BrokenCrown.pdf"
+      ],
+      "report": "The Broken Crown/Report/the-broken-crown-final-standalone.html",
+      "preview": "The Broken Crown/Preview/the-broken-crown-mini-standalone.html",
+      "landingPage": {
+        "file": "The Broken Crown/Landing page/The-Broken-Crown-UI.html",
+        "slug": "broken-crown-demo",
+        "title": "The Broken Crown Launch Page",
+        "description": "High-fantasy intrigue microsite with regal gradients."
+      },
+      "marketingHtml": "The Broken Crown/Video/index.html",
+      "coversHtml": "The Broken Crown/Covers/index.html",
+      "videos": [
+        {
+          "file": "The Broken Crown/Video/Video1.mp4",
+          "title": "Clip 01 · Royal Reckoning",
+          "description": "Courtroom whispers with orchestral swell.",
+          "poster": "The Broken Crown/Landing page/The Broken Crown UI.png"
+        },
+        {
+          "file": "The Broken Crown/Video/Video2.mp4",
+          "title": "Clip 02 · Palace Intrigue",
+          "description": "Torch-lit corridors and betrayal quotes.",
+          "poster": "The Broken Crown/Landing page/The Broken Crown UI.png"
+        },
+        {
+          "file": "The Broken Crown/Video/Video3.mp4",
+          "title": "Clip 03 · Rebel Flame",
+          "description": "Fast montage of magical sigils and CTA.",
+          "poster": "The Broken Crown/Landing page/The Broken Crown UI.png"
+        }
+      ],
+      "covers": [
+        {
+          "file": "The Broken Crown/Covers/cover1.png",
+          "title": "Broken Crown Cover 01",
+          "coverType": "foil",
+          "isPrimary": true
+        },
+        {
+          "file": "The Broken Crown/Covers/cover2.png",
+          "title": "Broken Crown Cover 02",
+          "coverType": "variant-a",
+          "isPrimary": false
+        },
+        {
+          "file": "The Broken Crown/Covers/cover3.png",
+          "title": "Broken Crown Cover 03",
+          "coverType": "variant-b",
+          "isPrimary": false
+        },
+        {
+          "file": "The Broken Crown/Covers/cover4.png",
+          "title": "Broken Crown Cover 04",
+          "coverType": "sigil",
+          "isPrimary": false
+        },
+        {
+          "file": "The Broken Crown/Covers/cover5.png",
+          "title": "Broken Crown Cover 05",
+          "coverType": "gilded",
+          "isPrimary": false
+        },
+        {
+          "file": "The Broken Crown/Covers/cover6.png",
+          "title": "Broken Crown Cover 06",
+          "coverType": "minimal",
+          "isPrimary": false
+        },
+        {
+          "file": "The Broken Crown/Covers/cover7.png",
+          "title": "Broken Crown Cover 07",
+          "coverType": "ember",
+          "isPrimary": false
+        },
+        {
+          "file": "The Broken Crown/Covers/cover8.png",
+          "title": "Broken Crown Cover 08",
+          "coverType": "badge",
+          "isPrimary": false
+        }
+      ]
+    }
+  ]
+}
+
