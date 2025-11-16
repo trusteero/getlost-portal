@@ -125,9 +125,13 @@ async function ensureDirectory(dirPath: string) {
 
 async function copyPrecannedAsset(relativePath: string, destSegments: string[]) {
   const sourcePath = path.resolve(PRECANNED_ROOT, relativePath);
-  const destinationDir = path.join(PRECANNED_PUBLIC_ROOT, ...destSegments.slice(0, -1));
+  if (!destSegments || destSegments.length === 0) {
+    throw new Error("copyPrecannedAsset: 'destSegments' must be a non-empty array");
+  }
+  const destinationDir = path.join(PRECANNED_PUBLIC_ROOT, ...destSegments.slice(0, - 1));
   await ensureDirectory(destinationDir);
-  const destinationPath = path.join(destinationDir, destSegments[destSegments.length - 1]);
+  const fileName = destSegments[destSegments.length - 1]!;
+  const destinationPath = path.join(destinationDir, fileName);
 
   if (!copiedAssetPaths.has(destinationPath)) {
     await fs.copyFile(sourcePath, destinationPath);
