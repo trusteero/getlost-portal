@@ -18,6 +18,7 @@ export type PrecannedManifestBook = {
   key: string;
   title: string;
   uploadFileNames?: string[];
+  coverImageFileName?: string; // Explicit mapping: uploaded filename -> cover image filename
   report?: string;
   preview?: string;
   landingPage?: {
@@ -153,11 +154,15 @@ async function copyPrecannedAsset(relativePath: string, destSegments: string[]) 
     console.log(`[copyPrecannedAsset] File already copied: ${destinationPath}`);
   }
 
-  const publicPath =
-    "/uploads/precanned/" + destSegments.map((segment) => segment.replace(/\\/g, "/")).join("/");
+  // Use API route directly instead of relying on rewrites (more reliable on Render)
+  const apiPath = "/api/uploads/precanned/" + destSegments.map((segment) => segment.replace(/\\/g, "/")).join("/");
+  // Also keep the public path for backwards compatibility
+  const publicPath = "/uploads/precanned/" + destSegments.map((segment) => segment.replace(/\\/g, "/")).join("/");
 
+  console.log(`[copyPrecannedAsset] API URL: ${apiPath}`);
   console.log(`[copyPrecannedAsset] Public URL: ${publicPath}`);
-  return { fileUrl: publicPath, destinationPath };
+  // Return API route URL as primary, but keep public path available
+  return { fileUrl: apiPath, publicPath, destinationPath };
 }
 
 async function listPrecannedUploadImages(): Promise<string[]> {
@@ -706,20 +711,87 @@ export async function findPrecannedCoverImageForFilename(
   }
 
   console.log(`[findPrecannedCoverImage] Looking for cover matching: ${fileName}`);
+  
+  // First, check if there's an explicit mapping in the manifest
+  const manifest = await loadManifest();
+  for (const book of manifest.books || []) {
+    // Check if this uploaded filename matches any of the book's uploadFileNames
+    const matchesBook = (book.uploadFileNames || []).some((uploadName) =>
+      filenamesMatch(uploadName, fileName)
+    );
+    
+    if (matchesBook && book.coverImageFileName) {
+      // Use the explicitly mapped cover image
+      const imagePath = path.join("uploads", book.coverImageFileName);
+      const sourcePath = path.resolve(PRECANNED_ROOT, imagePath);
+      
+      try {
+        await fs.access(sourcePath);
+        const { fileUrl } = await copyPrecannedAsset(imagePath, ["uploads", book.coverImageFileName]);
+        console.log(`[findPrecannedCoverImage] ✅ Using explicit mapping: ${book.coverImageFileName} for ${fileName}`);
+        return fileUrl;
+      } catch (error) {
+        console.log(`[findPrecannedCoverImage] Explicit mapping file not found: ${book.coverImageFileName}, falling back to fuzzy matching`);
+      }
+    }
+  }
+  
   const images = await listPrecannedUploadImages();
   console.log(`[findPrecannedCoverImage] Found ${images.length} precanned images: ${images.join(', ')}`);
   
+  // Score matches - prefer exact or closer matches
+  type MatchScore = { imageName: string; score: number; reason: string };
+  const matches: MatchScore[] = [];
+  
+  const uploadedNormalized = normalizeFilename(fileName);
+  const uploadedCore = extractCoreName(fileName);
+  
   for (const imageName of images) {
-    const matches = filenamesMatch(imageName, fileName);
-    console.log(`[findPrecannedCoverImage] Checking ${imageName} against ${fileName}: ${matches ? 'MATCH' : 'no match'}`);
-    if (matches) {
-      const { fileUrl } = await copyPrecannedAsset(
-        path.join("uploads", imageName),
-        ["uploads", imageName],
-      );
-      console.log(`[findPrecannedCoverImage] Matched! Returning URL: ${fileUrl}`);
-      return fileUrl;
+    const imageNormalized = normalizeFilename(imageName);
+    const imageCore = extractCoreName(imageName);
+    
+    let score = 0;
+    let reason = "";
+    
+    // Exact normalized match (highest priority)
+    if (uploadedNormalized === imageNormalized) {
+      score = 100;
+      reason = "exact normalized match";
     }
+    // Core name match (high priority)
+    else if (uploadedCore === imageCore && uploadedCore.length >= 4) {
+      score = 80;
+      reason = "core name match";
+    }
+    // One contains the other (medium priority)
+    else if (uploadedNormalized.includes(imageNormalized) || imageNormalized.includes(uploadedNormalized)) {
+      score = 60;
+      reason = "contains match";
+    }
+    // Core contains match (lower priority)
+    else if (uploadedCore.includes(imageCore) || imageCore.includes(uploadedCore)) {
+      score = 40;
+      reason = "core contains match";
+    }
+    
+    if (score > 0) {
+      matches.push({ imageName, score, reason });
+      console.log(`[findPrecannedCoverImage] ${imageName} vs ${fileName}: score=${score} (${reason})`);
+    }
+  }
+  
+  // Sort by score (highest first) and take the best match
+  if (matches.length > 0) {
+    matches.sort((a, b) => b.score - a.score);
+    const bestMatch = matches[0]!;
+    console.log(`[findPrecannedCoverImage] Best match: ${bestMatch.imageName} (score: ${bestMatch.score}, reason: ${bestMatch.reason})`);
+    
+    const { fileUrl } = await copyPrecannedAsset(
+      path.join("uploads", bestMatch.imageName),
+      ["uploads", bestMatch.imageName],
+    );
+    console.log(`[findPrecannedCoverImage] ✅ Matched! Returning URL: ${fileUrl}`);
+    return fileUrl;
   }
 
   console.log(`[findPrecannedCoverImage] No match found for ${fileName}`);

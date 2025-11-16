@@ -189,6 +189,7 @@ export const ManuscriptCard = ({
                 onError={(e) => {
                   console.error(`[ManuscriptCard] Failed to load cover image: ${coverImage}`);
                   console.error(`[ManuscriptCard] Error event:`, e);
+                  console.error(`[ManuscriptCard] Current src: ${e.currentTarget.src}`);
                   // Fallback to placeholder
                   if (e.currentTarget.src !== '/placeholder.svg') {
                     e.currentTarget.src = '/placeholder.svg';

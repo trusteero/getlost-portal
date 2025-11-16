@@ -10,6 +10,7 @@
         "Wool by Hugh Howey.docx",
         "Wool by Hugh Howey.pdf"
       ],
+      "coverImageFileName": "wool_cover.jpg",
       "report": "Wool/Report/wool-final-standalone.html",
       "preview": "Wool/Preview/wool-mini-standalone.html",
       "landingPage": {
@@ -71,6 +72,7 @@
         "Beach Read by Emily Henry.docx",
         "BeachRead.pdf"
       ],
+      "coverImageFileName": "beach_read.jpg",
       "report": "Beach Read /Report/beach-final-standalone.html",
       "preview": "Beach Read /Preview/beach-mini-standalone.html",
       "landingPage": {
@@ -150,6 +152,7 @@
         "Broken Crown Manuscript.docx",
         "BrokenCrown.pdf"
       ],
+      "coverImageFileName": "the_broken_crown_cover.png",
       "report": "The Broken Crown/Report/the-broken-crown-final-standalone.html",
       "preview": "The Broken Crown/Preview/the-broken-crown-mini-standalone.html",
       "landingPage": {
