@@ -464,7 +464,7 @@ async function importCoversFromPackage(bookId: string, pkg: PrecannedManifestBoo
           uploadFileNames: pkg.uploadFileNames || [],
           order,
         }),
-        isPrimary: cover.isPrimary ? 1 : 0,
+        isPrimary: !!cover.isPrimary,
         status: "completed",
       });
       if (!primaryCoverUrl && cover.isPrimary && fileUrl) {
@@ -493,7 +493,7 @@ async function importCoversFromPackage(bookId: string, pkg: PrecannedManifestBoo
           sourceFile: pkg.coversHtml,
           uploadFileNames: pkg.uploadFileNames || [],
         }),
-        isPrimary: 0,
+        isPrimary: false,
         status: "completed",
       });
       created += 1;
@@ -536,7 +536,7 @@ async function importLandingPageFromPackage(bookId: string, pkg: PrecannedManife
       sourceFile: pkg.landingPage.file,
       uploadFileNames: pkg.uploadFileNames || [],
     }),
-    isPublished: 1,
+    isPublished: true,
     status: "published",
   });
 
