@@ -278,7 +278,21 @@ const rewriteAssetReferences = (html: string, replacements: Map<string, string>)
   let output = html;
   for (const [search, replacement] of replacements.entries()) {
     if (!search || !replacement) continue;
+    // Replace full path matches
     output = output.replace(new RegExp(escapeRegex(search), "g"), replacement);
+    // Also replace just the filename (for relative paths in HTML)
+    const filename = path.basename(search);
+    if (filename !== search) {
+      // Replace relative paths like src="Video1.mp4" with the full URL
+      const filenameRegex = new RegExp(`(["'])([^"']*${escapeRegex(filename)})["']`, "gi");
+      output = output.replace(filenameRegex, (match, quote, pathPart) => {
+        // Only replace if it's a relative path (doesn't start with http/https/data)
+        if (!pathPart.startsWith("http://") && !pathPart.startsWith("https://") && !pathPart.startsWith("data:")) {
+          return `${quote}${replacement}${quote}`;
+        }
+        return match;
+      });
+    }
   }
   return output;
 };
@@ -393,8 +407,10 @@ async function importMarketingAssetsFromPackage(bookId: string, pkg: PrecannedMa
       const ext = parsedName.ext || ".mp4";
       const slug = `${slugify(pkg.key)}-${slugify(baseName)}${ext}`;
       const { fileUrl } = await copyPrecannedAsset(video.file, [pkg.key, "videos", slug]);
+      // Map both full path and just the filename for replacement
       assetReplacements.set(video.file, fileUrl);
-      assetReplacements.set(path.basename(video.file), fileUrl);
+      const videoBasename = path.basename(video.file);
+      assetReplacements.set(videoBasename, fileUrl);
 
       let thumbnailUrl: string | null = null;
       if (video.poster) {
@@ -403,8 +419,17 @@ async function importMarketingAssetsFromPackage(bookId: string, pkg: PrecannedMa
         const posterSlug = `${slugify(pkg.key)}-${slugify(posterParsed.name || `${baseName}-poster`)}${posterExt}`;
         const posterCopy = await copyPrecannedAsset(video.poster, [pkg.key, "videos", posterSlug]);
         thumbnailUrl = posterCopy.fileUrl;
+        // Map both full path and just the filename for replacement
         assetReplacements.set(video.poster, posterCopy.fileUrl);
         assetReplacements.set(path.basename(video.poster), posterCopy.fileUrl);
+        // Also map the original poster filename (e.g., "Wool UI.png") to the new URL
+        const originalPosterFilename = path.basename(video.poster);
+        assetReplacements.set(originalPosterFilename, posterCopy.fileUrl);
+        // Handle relative paths like "Landing page/Wool UI.png"
+        const posterRelativePath = video.poster.replace(/^[^/]+\//, "");
+        if (posterRelativePath !== video.poster) {
+          assetReplacements.set(posterRelativePath, posterCopy.fileUrl);
+        }
       }
 
       await db.insert(marketingAssets).values({

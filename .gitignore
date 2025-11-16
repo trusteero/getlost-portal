@@ -14,6 +14,12 @@
 db.sqlite
 *.sqlite
 *.sqlite-journal
+*.db
+*.db-wal
+*.db-shm
+dev.db
+getlostportal.db
+data.db
 
 # next.js
 /.next/
@@ -49,3 +55,12 @@ yarn-error.log*
 
 # upload directories
 uploads/
+
+# design source files
+*.psd
+
+# archive files
+precannedcontent/zips/*.zip
+
+# large media files (optional - uncomment if you don't want to track videos)
+# precannedcontent/**/*.mp4

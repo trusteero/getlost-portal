@@ -9,18 +9,37 @@ export async function GET(
   const { filename } = await params;
 
   try {
+    // First, try the standard covers directory
     const coverStoragePath = process.env.COVER_STORAGE_PATH || './uploads/covers';
     const coverDir = path.resolve(coverStoragePath);
-    const filePath = path.join(coverDir, filename);
-
-    // Security: Ensure the requested file is within the covers directory
-    const resolvedPath = path.resolve(filePath);
-    if (!resolvedPath.startsWith(coverDir)) {
-      return NextResponse.json({ error: "Invalid file path" }, { status: 403 });
+    let filePath = path.join(coverDir, filename);
+    let resolvedPath = path.resolve(filePath);
+    
+    // If not found in covers directory, try precanned uploads
+    let fileBuffer: Buffer;
+    try {
+      // Security: Ensure the requested file is within the covers directory
+      if (!resolvedPath.startsWith(coverDir)) {
+        throw new Error("Invalid path");
+      }
+      fileBuffer = await fs.readFile(filePath);
+    } catch {
+      // Try precanned uploads directory
+      const precannedUploadsPath = path.resolve(process.cwd(), 'public', 'uploads', 'precanned', 'uploads', filename);
+      const precannedResolvedPath = path.resolve(precannedUploadsPath);
+      const precannedBaseDir = path.resolve(process.cwd(), 'public', 'uploads', 'precanned', 'uploads');
+      
+      // Security: Ensure the requested file is within the precanned uploads directory
+      if (!precannedResolvedPath.startsWith(precannedBaseDir)) {
+        return NextResponse.json({ error: "Invalid file path" }, { status: 403 });
+      }
+      
+      try {
+        fileBuffer = await fs.readFile(precannedUploadsPath);
+      } catch {
+        return NextResponse.json({ error: "Cover image not found" }, { status: 404 });
+      }
     }
-
-    // Read the file
-    const fileBuffer = await fs.readFile(filePath);
 
     // Determine MIME type from extension
     const ext = path.extname(filename).toLowerCase();
