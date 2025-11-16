@@ -253,6 +253,7 @@ export async function POST(request: NextRequest) {
     // Only use this if no cover was uploaded and no precanned package cover was found.
     if (!coverImageUrl) {
       try {
+        console.log(`[POST /api/books] Attempting to find precanned cover for filename: ${fileName}`);
         const uploadsCoverUrl = await findPrecannedCoverImageForFilename(fileName);
         if (uploadsCoverUrl) {
           await db
@@ -261,12 +262,16 @@ export async function POST(request: NextRequest) {
             .where(eq(books.id, createdBook.id));
           createdBook.coverImageUrl = uploadsCoverUrl;
           console.log(
-            `[Demo] Linked cover image from precanned uploads "${uploadsCoverUrl}" for book ${createdBook.id}`
+            `[Demo] ✅ Linked cover image from precanned uploads "${uploadsCoverUrl}" for book ${createdBook.id}`
           );
+        } else {
+          console.log(`[Demo] ⚠️  No precanned cover image found matching "${fileName}"`);
         }
       } catch (error) {
-        console.error("[Demo] Failed to find cover image in precanned uploads:", error);
+        console.error("[Demo] ❌ Failed to find cover image in precanned uploads:", error);
       }
+    } else {
+      console.log(`[POST /api/books] Skipping precanned cover lookup - cover already uploaded: ${coverImageUrl}`);
     }
 
     return NextResponse.json({

@@ -186,6 +186,17 @@ export const ManuscriptCard = ({
                 loading="lazy"
                 className="w-full h-auto object-contain rounded-lg border border-gray-200"
                 style={{ boxShadow: 'var(--shadow-mobile-cover)' }}
+                onError={(e) => {
+                  console.error(`[ManuscriptCard] Failed to load cover image: ${coverImage}`);
+                  console.error(`[ManuscriptCard] Error event:`, e);
+                  // Fallback to placeholder
+                  if (e.currentTarget.src !== '/placeholder.svg') {
+                    e.currentTarget.src = '/placeholder.svg';
+                  }
+                }}
+                onLoad={() => {
+                  console.log(`[ManuscriptCard] Successfully loaded cover: ${coverImage}`);
+                }}
               />
             </div>
             
@@ -207,6 +218,17 @@ export const ManuscriptCard = ({
                 <img
                   src={coverImage || "/placeholder.svg"}
                   alt={title}
+                  onError={(e) => {
+                    console.error(`[ManuscriptCard] Failed to load cover image: ${coverImage}`);
+                    console.error(`[ManuscriptCard] Error event:`, e);
+                    // Fallback to placeholder
+                    if (e.currentTarget.src !== '/placeholder.svg') {
+                      e.currentTarget.src = '/placeholder.svg';
+                    }
+                  }}
+                  onLoad={() => {
+                    console.log(`[ManuscriptCard] Successfully loaded cover: ${coverImage}`);
+                  }}
                   loading="lazy"
                   className="w-full h-auto object-contain rounded-xl transition-all duration-500"
                 />

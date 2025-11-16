@@ -126,6 +126,9 @@ async function ensureDirectory(dirPath: string) {
 
 async function copyPrecannedAsset(relativePath: string, destSegments: string[]) {
   const sourcePath = path.resolve(PRECANNED_ROOT, relativePath);
+  console.log(`[copyPrecannedAsset] Source: ${sourcePath}`);
+  console.log(`[copyPrecannedAsset] PRECANNED_ROOT: ${PRECANNED_ROOT}`);
+  
   if (!destSegments || destSegments.length === 0) {
     throw new Error("copyPrecannedAsset: 'destSegments' must be a non-empty array");
   }
@@ -134,14 +137,26 @@ async function copyPrecannedAsset(relativePath: string, destSegments: string[]) 
   const fileName = destSegments[destSegments.length - 1]!;
   const destinationPath = path.join(destinationDir, fileName);
 
+  console.log(`[copyPrecannedAsset] Destination: ${destinationPath}`);
+  console.log(`[copyPrecannedAsset] PRECANNED_PUBLIC_ROOT: ${PRECANNED_PUBLIC_ROOT}`);
+
   if (!copiedAssetPaths.has(destinationPath)) {
-    await fs.copyFile(sourcePath, destinationPath);
-    copiedAssetPaths.add(destinationPath);
+    try {
+      await fs.copyFile(sourcePath, destinationPath);
+      copiedAssetPaths.add(destinationPath);
+      console.log(`[copyPrecannedAsset] ✅ Copied file to ${destinationPath}`);
+    } catch (error: any) {
+      console.error(`[copyPrecannedAsset] ❌ Failed to copy file: ${error.message}`);
+      throw error;
+    }
+  } else {
+    console.log(`[copyPrecannedAsset] File already copied: ${destinationPath}`);
   }
 
   const publicPath =
     "/uploads/precanned/" + destSegments.map((segment) => segment.replace(/\\/g, "/")).join("/");
 
+  console.log(`[copyPrecannedAsset] Public URL: ${publicPath}`);
   return { fileUrl: publicPath, destinationPath };
 }
 
@@ -501,7 +516,7 @@ async function importMarketingAssetsFromPackage(bookId: string, pkg: PrecannedMa
   return created;
 }
 
-async function importCoversFromPackage(bookId: string, pkg: PrecannedManifestBook) {
+async function importCoversFromPackage(bookId: string, pkg: PrecannedManifestBook, fileName?: string | null) {
   await deleteExistingPrecannedRows(bookCovers, [
     eq(bookCovers.bookId, bookId),
     sql`${bookCovers.metadata} IS NOT NULL AND ${bookCovers.metadata} LIKE ${`%"precannedKey":"${pkg.key}"%`}`,
@@ -511,6 +526,41 @@ async function importCoversFromPackage(bookId: string, pkg: PrecannedManifestBoo
   let created = 0;
   let primaryCoverUrl: string | null = null;
 
+  // First, check precannedcontent/uploads for a standalone cover image that matches the uploaded filename
+  // This takes priority over manifest covers since it's more specific to the uploaded file
+  if (fileName) {
+    try {
+      const uploadsCoverUrl = await findPrecannedCoverImageForFilename(fileName);
+      if (uploadsCoverUrl) {
+        console.log(`[importCoversFromPackage] Found matching cover in uploads: ${uploadsCoverUrl}`);
+        // Create a cover entry for the uploads image and mark it as primary
+        await db.insert(bookCovers).values({
+          id: randomUUID(),
+          bookId,
+          coverType: "ebook",
+          title: `${pkg.title} Cover`,
+          imageUrl: uploadsCoverUrl,
+          thumbnailUrl: uploadsCoverUrl,
+          metadata: JSON.stringify({
+            precanned: true,
+            precannedKey: pkg.key,
+            source: "precanned-uploads",
+            originalFileName: fileName,
+            uploadFileNames: pkg.uploadFileNames || [],
+          }),
+          isPrimary: true,
+          status: "completed",
+        });
+        primaryCoverUrl = uploadsCoverUrl;
+        created += 1;
+        console.log(`[importCoversFromPackage] ✅ Set primary cover from uploads: ${uploadsCoverUrl}`);
+      }
+    } catch (error) {
+      console.error(`[importCoversFromPackage] Error checking uploads for cover:`, error);
+    }
+  }
+
+  // Then, import covers from the manifest (if any)
   if (Array.isArray(pkg.covers)) {
     let order = 0;
     for (const cover of pkg.covers) {
@@ -521,6 +571,9 @@ async function importCoversFromPackage(bookId: string, pkg: PrecannedManifestBoo
       const { fileUrl } = await copyPrecannedAsset(cover.file, [pkg.key, "covers", slug]);
       coverReplacements.set(cover.file, fileUrl);
       coverReplacements.set(path.basename(cover.file), fileUrl);
+
+      // Only set as primary if we don't already have one from uploads
+      const isPrimary = !primaryCoverUrl && !!cover.isPrimary;
 
       await db.insert(bookCovers).values({
         id: randomUUID(),
@@ -536,7 +589,7 @@ async function importCoversFromPackage(bookId: string, pkg: PrecannedManifestBoo
           uploadFileNames: pkg.uploadFileNames || [],
           order,
         }),
-        isPrimary: !!cover.isPrimary,
+        isPrimary,
         status: "completed",
       });
       if (!primaryCoverUrl && cover.isPrimary && fileUrl) {
@@ -647,19 +700,29 @@ export async function findPrecannedPackageByFilename(fileName?: string) {
 export async function findPrecannedCoverImageForFilename(
   fileName?: string | null,
 ): Promise<string | null> {
-  if (!fileName) return null;
+  if (!fileName) {
+    console.log(`[findPrecannedCoverImage] No filename provided`);
+    return null;
+  }
 
+  console.log(`[findPrecannedCoverImage] Looking for cover matching: ${fileName}`);
   const images = await listPrecannedUploadImages();
+  console.log(`[findPrecannedCoverImage] Found ${images.length} precanned images: ${images.join(', ')}`);
+  
   for (const imageName of images) {
-    if (filenamesMatch(imageName, fileName)) {
+    const matches = filenamesMatch(imageName, fileName);
+    console.log(`[findPrecannedCoverImage] Checking ${imageName} against ${fileName}: ${matches ? 'MATCH' : 'no match'}`);
+    if (matches) {
       const { fileUrl } = await copyPrecannedAsset(
         path.join("uploads", imageName),
         ["uploads", imageName],
       );
+      console.log(`[findPrecannedCoverImage] Matched! Returning URL: ${fileUrl}`);
       return fileUrl;
     }
   }
 
+  console.log(`[findPrecannedCoverImage] No match found for ${fileName}`);
   return null;
 }
 
@@ -711,7 +774,7 @@ export async function importPrecannedContentForBook(options: {
   }
 
   if (flags.covers) {
-    const { created, primaryCoverUrl } = await importCoversFromPackage(bookId, pkg);
+    const { created, primaryCoverUrl } = await importCoversFromPackage(bookId, pkg, fileName || undefined);
     coversLinked = created;
     primaryCoverImageUrl = primaryCoverUrl;
   }
