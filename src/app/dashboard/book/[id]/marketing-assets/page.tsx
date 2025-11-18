@@ -99,23 +99,32 @@ export default function MarketingAssetsPage() {
 
   // Render just the HTML (with videos) in a full-screen iframe, similar to report view
   return (
-    <div className="min-h-screen bg-white w-full relative">
-      <div className="fixed top-4 left-4 z-50">
+    <div className="min-h-screen bg-white w-full relative overflow-hidden">
+      <div className="fixed top-2 left-2 sm:top-4 sm:left-4 z-50">
         <Button
           variant="default"
           onClick={() => router.push("/dashboard")}
-          className="bg-white hover:bg-gray-50 text-gray-900 shadow-lg border border-gray-200"
+          className="bg-white hover:bg-gray-50 text-gray-900 shadow-lg border border-gray-200 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
+          size="sm"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
+          <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+          <span className="hidden sm:inline">Back to Dashboard</span>
+          <span className="sm:hidden">Back</span>
         </Button>
       </div>
-      <iframe
-        title={htmlAsset.title || "Marketing Toolkit"}
-        srcDoc={htmlMetadata?.htmlContent || ""}
-        sandbox="allow-scripts allow-same-origin"
-        className="w-full h-screen border-0 bg-white"
-      />
+      <div className="w-full h-screen pt-10 sm:pt-0">
+        <iframe
+          title={htmlAsset.title || "Marketing Toolkit"}
+          srcDoc={htmlMetadata?.htmlContent || ""}
+          sandbox="allow-scripts allow-same-origin"
+          className="w-full h-full border-0 bg-white"
+          style={{ 
+            width: '100%', 
+            height: '100%',
+            minHeight: 'calc(100vh - 2.5rem)'
+          }}
+        />
+      </div>
     </div>
   );
 }
