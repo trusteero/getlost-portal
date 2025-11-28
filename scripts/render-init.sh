@@ -232,6 +232,14 @@ try {
           console.error('   ❌ Failed to add viewedAt to marketing_asset:', err.message);
         }
       }
+      if (!marketingColumnNames.includes('isActive')) {
+        try {
+          sqlite.exec('ALTER TABLE getlostportal_marketing_asset ADD COLUMN isActive integer DEFAULT 0;');
+          console.log('   ✅ Added isActive to marketing_asset table');
+        } catch (err) {
+          console.error('   ❌ Failed to add isActive to marketing_asset:', err.message);
+        }
+      }
     }
     
     // Book Covers table
@@ -260,6 +268,14 @@ try {
           console.log('   ✅ Added viewedAt to landing_page table');
         } catch (err) {
           console.error('   ❌ Failed to add viewedAt to landing_page:', err.message);
+        }
+      }
+      if (!landingColumnNames.includes('isActive')) {
+        try {
+          sqlite.exec('ALTER TABLE getlostportal_landing_page ADD COLUMN isActive integer DEFAULT 0;');
+          console.log('   ✅ Added isActive to landing_page table');
+        } catch (err) {
+          console.error('   ❌ Failed to add isActive to landing_page:', err.message);
         }
       }
     }

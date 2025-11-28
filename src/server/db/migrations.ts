@@ -153,7 +153,7 @@ export function ensureOtherTableColumns(): void {
       }
     }
 
-    // Marketing Assets table - viewedAt
+    // Marketing Assets table - viewedAt and isActive
     const marketingTableCheck = sqlite
       .prepare(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_marketing_asset'"
@@ -163,6 +163,9 @@ export function ensureOtherTableColumns(): void {
     if (marketingTableCheck) {
       if (addColumnIfMissing("getlostportal_marketing_asset", "viewedAt", "integer")) {
         console.log("✅ [Migrations] Added viewedAt to marketing_asset table");
+      }
+      if (addColumnIfMissing("getlostportal_marketing_asset", "isActive", "integer DEFAULT 0")) {
+        console.log("✅ [Migrations] Added isActive to marketing_asset table");
       }
     }
 
@@ -179,7 +182,7 @@ export function ensureOtherTableColumns(): void {
       }
     }
 
-    // Landing Pages table - viewedAt
+    // Landing Pages table - viewedAt and isActive
     const landingTableCheck = sqlite
       .prepare(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_landing_page'"
@@ -189,6 +192,9 @@ export function ensureOtherTableColumns(): void {
     if (landingTableCheck) {
       if (addColumnIfMissing("getlostportal_landing_page", "viewedAt", "integer")) {
         console.log("✅ [Migrations] Added viewedAt to landing_page table");
+      }
+      if (addColumnIfMissing("getlostportal_landing_page", "isActive", "integer DEFAULT 0")) {
+        console.log("✅ [Migrations] Added isActive to landing_page table");
       }
     }
 
