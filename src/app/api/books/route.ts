@@ -11,6 +11,7 @@ import {
   importPrecannedContentForBook,
   findPrecannedCoverImageForFilename,
 } from "@/server/utils/precanned-content";
+import { ensureBooksTableColumns, columnExists } from "@/server/db/migrations";
 
 export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request);
@@ -20,17 +21,31 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Ensure required columns exist before querying
+    ensureBooksTableColumns();
+
+    // Build select fields - only include columns that exist
+    const selectFields: any = {
+      id: books.id,
+      title: books.title,
+      description: books.description,
+      coverImageUrl: books.coverImageUrl,
+      createdAt: books.createdAt,
+    };
+
+    // Only add optional columns if they exist
+    if (columnExists("getlostportal_book", "authorName")) {
+      selectFields.authorName = books.authorName;
+    }
+    if (columnExists("getlostportal_book", "authorBio")) {
+      selectFields.authorBio = books.authorBio;
+    }
+    if (columnExists("getlostportal_book", "manuscriptStatus")) {
+      selectFields.manuscriptStatus = books.manuscriptStatus;
+    }
+
     const userBooks = await db
-      .select({
-        id: books.id,
-        title: books.title,
-        description: books.description,
-        coverImageUrl: books.coverImageUrl,
-        authorName: books.authorName,
-        authorBio: books.authorBio,
-        manuscriptStatus: books.manuscriptStatus,
-        createdAt: books.createdAt,
-      })
+      .select(selectFields)
       .from(books)
       .where(
         and(
@@ -518,18 +533,32 @@ export async function POST(request: NextRequest) {
     // Create book with pre-generated ID
     // Use form fields if provided, otherwise will be filled from extracted metadata
     // Initial manuscript status is "queued"
+    // Ensure required columns exist before inserting
+    ensureBooksTableColumns();
+
+    // Build insert values - only include columns that exist
+    const insertValues: any = {
+      id: bookId,
+      userId: session.user.id,
+      title: bookTitle,
+      description,
+      coverImageUrl,
+    };
+
+    // Only add optional columns if they exist
+    if (columnExists("getlostportal_book", "authorName")) {
+      insertValues.authorName = authorName?.trim() || null;
+    }
+    if (columnExists("getlostportal_book", "authorBio")) {
+      insertValues.authorBio = authorBio?.trim() || null;
+    }
+    if (columnExists("getlostportal_book", "manuscriptStatus")) {
+      insertValues.manuscriptStatus = "queued"; // Initial status is queued
+    }
+
     const newBook = await db
       .insert(books)
-      .values({
-        id: bookId,
-        userId: session.user.id,
-        title: bookTitle,
-        description,
-        coverImageUrl,
-        authorName: authorName?.trim() || null,
-        authorBio: authorBio?.trim() || null,
-        manuscriptStatus: "queued", // Initial status is queued
-      })
+      .values(insertValues)
       .returning();
 
     const createdBook = newBook[0]!;
@@ -651,7 +680,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Only use extracted author if form authorName was not provided
-    if (extractedAuthor && !authorName?.trim()) {
+    // Check if column exists before trying to update
+    if (extractedAuthor && !authorName?.trim() && columnExists("getlostportal_book", "authorName")) {
       updates.authorName = extractedAuthor;
       hasUpdates = true;
     }

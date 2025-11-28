@@ -155,17 +155,67 @@ try {
       console.warn('   authorName:', hasAuthorName ? '✅' : '❌ MISSING');
       console.warn('   authorBio:', hasAuthorBio ? '✅' : '❌ MISSING');
       console.warn('   manuscriptStatus:', hasManuscriptStatus ? '✅' : '❌ MISSING');
-      console.warn('   Run: node scripts/run-migrations.js to apply missing migrations');
+      console.log('🔧 Adding missing columns...');
+      
+      // Add missing columns directly
+      if (!hasAuthorName) {
+        try {
+          sqlite.exec('ALTER TABLE getlostportal_book ADD COLUMN authorName text(500);');
+          console.log('   ✅ Added authorName column');
+        } catch (err) {
+          console.error('   ❌ Failed to add authorName:', err.message);
+        }
+      }
+      
+      if (!hasAuthorBio) {
+        try {
+          sqlite.exec('ALTER TABLE getlostportal_book ADD COLUMN authorBio text;');
+          console.log('   ✅ Added authorBio column');
+        } catch (err) {
+          console.error('   ❌ Failed to add authorBio:', err.message);
+        }
+      }
+      
+      if (!hasManuscriptStatus) {
+        try {
+          sqlite.exec('ALTER TABLE getlostportal_book ADD COLUMN manuscriptStatus text(50) DEFAULT \\'queued\\';');
+          console.log('   ✅ Added manuscriptStatus column');
+        } catch (err) {
+          console.error('   ❌ Failed to add manuscriptStatus:', err.message);
+        }
+      }
+      
+      // Verify again
+      const verifyColumns2 = sqlite.prepare("PRAGMA table_info(getlostportal_book)").all();
+      const columnNames2 = verifyColumns2.map(col => col.name);
+      const hasAuthorName2 = columnNames2.includes('authorName');
+      const hasAuthorBio2 = columnNames2.includes('authorBio');
+      const hasManuscriptStatus2 = columnNames2.includes('manuscriptStatus');
+      
+      if (hasAuthorName2 && hasAuthorBio2 && hasManuscriptStatus2) {
+        console.log('✅ All columns successfully added');
+      } else {
+        console.warn('⚠️  Some columns still missing after attempt to add them');
+      }
     } else {
       console.log('✅ All expected columns verified');
     }
+    
+    // Close the connection after all column operations
+    sqlite.close();
   } catch (migrateError) {
     console.error('❌ Migration failed:', migrateError.message);
     console.error('   This might be okay if migrations were already applied');
     // Don't throw - continue with other initialization
+    // Close connection even on error
+    if (sqlite) {
+      try {
+        sqlite.close();
+      } catch (closeError) {
+        // Ignore close errors
+      }
+    }
   }
-  
-  sqlite.close();
   
   // Now ensure Better Auth session table has correct schema
   console.log('🔍 Checking Better Auth session table...');

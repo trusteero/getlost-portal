@@ -4,6 +4,7 @@ import { db } from "@/server/db";
 import { books } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { user as betterAuthUser } from "@/server/db/better-auth-schema";
+import { ensureBooksTableColumns, columnExists } from "@/server/db/migrations";
 
 export async function PATCH(
   request: NextRequest,
@@ -37,12 +38,23 @@ export async function PATCH(
       return NextResponse.json({ error: "Book not found" }, { status: 404 });
     }
 
+    // Ensure column exists before updating
+    ensureBooksTableColumns();
+
+    const updateValues: any = {
+      updatedAt: new Date(),
+    };
+
+    // Only update manuscriptStatus if column exists
+    if (columnExists("getlostportal_book", "manuscriptStatus")) {
+      updateValues.manuscriptStatus = status;
+    } else {
+      console.warn("[Manuscript Status] manuscriptStatus column does not exist, skipping update");
+    }
+
     await db
       .update(books)
-      .set({
-        manuscriptStatus: status,
-        updatedAt: new Date(),
-      })
+      .set(updateValues)
       .where(eq(books.id, id));
 
     // Send notification email when status changes to "working_on"

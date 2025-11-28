@@ -144,4 +144,20 @@ if (globalForDb.sqlite) {
 	}
 }
 
-export { sqlite };export const db = sqlite ? drizzle(sqlite, { schema }) : drizzle({} as any, { schema });
+export { sqlite };
+
+// Initialize migrations on database connection
+// This ensures required columns exist before any queries run
+if (sqlite) {
+  // Run migrations synchronously to ensure columns exist before app starts
+  try {
+    // Use dynamic import to avoid circular dependencies
+    const migrations = require("./migrations");
+    migrations.initializeMigrations();
+  } catch (error: any) {
+    console.warn("[DB] Could not initialize migrations:", error?.message || error);
+    // Don't throw - allow app to continue, but queries may fail
+  }
+}
+
+export const db = sqlite ? drizzle(sqlite, { schema }) : drizzle({} as any, { schema });

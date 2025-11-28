@@ -3,6 +3,7 @@ import { isAdminFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookVersions, users, digestJobs, reports, bookFeatures, marketingAssets, bookCovers, landingPages } from "@/server/db/schema";
 import { desc, eq, and } from "drizzle-orm";
+import { ensureBooksTableColumns, columnExists } from "@/server/db/migrations";
 
 export const dynamic = 'force-dynamic';
 
@@ -14,22 +15,32 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Ensure required columns exist before querying
+    ensureBooksTableColumns();
+
+    // Build select fields - only include columns that exist
+    const selectFields: any = {
+      id: books.id,
+      title: books.title,
+      description: books.description,
+      coverImageUrl: books.coverImageUrl,
+      createdAt: books.createdAt,
+      updatedAt: books.updatedAt,
+      user: {
+        id: users.id,
+        name: users.name,
+        email: users.email,
+      },
+    };
+
+    // Only add optional columns if they exist
+    if (columnExists("getlostportal_book", "manuscriptStatus")) {
+      selectFields.manuscriptStatus = books.manuscriptStatus;
+    }
+
     // Get all books with user info and digest status
     const allBooks = await db
-      .select({
-        id: books.id,
-        title: books.title,
-        description: books.description,
-        coverImageUrl: books.coverImageUrl,
-        manuscriptStatus: books.manuscriptStatus,
-        createdAt: books.createdAt,
-        updatedAt: books.updatedAt,
-        user: {
-          id: users.id,
-          name: users.name,
-          email: users.email,
-        },
-      })
+      .select(selectFields)
       .from(books)
       .leftJoin(users, eq(books.userId, users.id))
       .orderBy(desc(books.createdAt));
@@ -319,7 +330,7 @@ export async function GET(request: NextRequest) {
           marketingStatus,
           coversStatus,
           landingPageStatus,
-          manuscriptStatus: book.manuscriptStatus || "queued",
+          manuscriptStatus: (book as any).manuscriptStatus || "queued",
         };
       })
     );
