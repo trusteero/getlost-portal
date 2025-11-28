@@ -128,6 +128,78 @@ export function ensureBooksTableColumns(): void {
 }
 
 /**
+ * Ensure all required columns exist in other tables (reports, marketingAssets, etc.)
+ * This is called automatically on startup to ensure schema is up to date
+ */
+export function ensureOtherTableColumns(): void {
+  if (!sqlite) {
+    console.warn("[Migrations] Database not available, skipping column checks");
+    return;
+  }
+
+  try {
+    console.log("[Migrations] Checking other table columns...");
+
+    // Reports table - viewedAt
+    const reportsTableCheck = sqlite
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_report'"
+      )
+      .get();
+
+    if (reportsTableCheck) {
+      if (addColumnIfMissing("getlostportal_report", "viewedAt", "integer")) {
+        console.log("✅ [Migrations] Added viewedAt to reports table");
+      }
+    }
+
+    // Marketing Assets table - viewedAt
+    const marketingTableCheck = sqlite
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_marketing_asset'"
+      )
+      .get();
+
+    if (marketingTableCheck) {
+      if (addColumnIfMissing("getlostportal_marketing_asset", "viewedAt", "integer")) {
+        console.log("✅ [Migrations] Added viewedAt to marketing_asset table");
+      }
+    }
+
+    // Book Covers table - viewedAt
+    const coversTableCheck = sqlite
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_book_cover'"
+      )
+      .get();
+
+    if (coversTableCheck) {
+      if (addColumnIfMissing("getlostportal_book_cover", "viewedAt", "integer")) {
+        console.log("✅ [Migrations] Added viewedAt to book_cover table");
+      }
+    }
+
+    // Landing Pages table - viewedAt
+    const landingTableCheck = sqlite
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_landing_page'"
+      )
+      .get();
+
+    if (landingTableCheck) {
+      if (addColumnIfMissing("getlostportal_landing_page", "viewedAt", "integer")) {
+        console.log("✅ [Migrations] Added viewedAt to landing_page table");
+      }
+    }
+
+    console.log("✅ [Migrations] Other table columns check complete");
+  } catch (error: any) {
+    console.error("[Migrations] Error ensuring other table columns:", error.message);
+    // Don't throw - allow app to continue
+  }
+}
+
+/**
  * Get safe column selection - only selects columns that exist
  */
 export function getSafeBookColumns(): string[] {
@@ -172,6 +244,7 @@ export function initializeMigrations(): void {
   try {
     console.log("[Migrations] Initializing database migrations...");
     ensureBooksTableColumns();
+    ensureOtherTableColumns();
     console.log("[Migrations] Migration check complete");
   } catch (error: any) {
     console.error("[Migrations] Error during migration initialization:", error.message);
@@ -207,6 +280,7 @@ export async function runPendingMigrations(): Promise<{
     const beforeColumnNames = beforeColumns.map((col) => col.name);
 
     ensureBooksTableColumns();
+    ensureOtherTableColumns();
 
     const afterColumns = sqlite
       .prepare("PRAGMA table_info(getlostportal_book)")

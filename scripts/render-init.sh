@@ -201,6 +201,69 @@ try {
       console.log('✅ All expected columns verified');
     }
     
+    // Check and add viewedAt columns to other tables
+    console.log('🔍 Checking viewedAt columns in other tables...');
+    
+    // Reports table
+    const reportTable = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_report'").get();
+    if (reportTable) {
+      const reportColumns = sqlite.prepare("PRAGMA table_info(getlostportal_report)").all();
+      const reportColumnNames = reportColumns.map(col => col.name);
+      if (!reportColumnNames.includes('viewedAt')) {
+        try {
+          sqlite.exec('ALTER TABLE getlostportal_report ADD COLUMN viewedAt integer;');
+          console.log('   ✅ Added viewedAt to reports table');
+        } catch (err) {
+          console.error('   ❌ Failed to add viewedAt to reports:', err.message);
+        }
+      }
+    }
+    
+    // Marketing Assets table
+    const marketingTable = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_marketing_asset'").get();
+    if (marketingTable) {
+      const marketingColumns = sqlite.prepare("PRAGMA table_info(getlostportal_marketing_asset)").all();
+      const marketingColumnNames = marketingColumns.map(col => col.name);
+      if (!marketingColumnNames.includes('viewedAt')) {
+        try {
+          sqlite.exec('ALTER TABLE getlostportal_marketing_asset ADD COLUMN viewedAt integer;');
+          console.log('   ✅ Added viewedAt to marketing_asset table');
+        } catch (err) {
+          console.error('   ❌ Failed to add viewedAt to marketing_asset:', err.message);
+        }
+      }
+    }
+    
+    // Book Covers table
+    const coversTable = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_book_cover'").get();
+    if (coversTable) {
+      const coversColumns = sqlite.prepare("PRAGMA table_info(getlostportal_book_cover)").all();
+      const coversColumnNames = coversColumns.map(col => col.name);
+      if (!coversColumnNames.includes('viewedAt')) {
+        try {
+          sqlite.exec('ALTER TABLE getlostportal_book_cover ADD COLUMN viewedAt integer;');
+          console.log('   ✅ Added viewedAt to book_cover table');
+        } catch (err) {
+          console.error('   ❌ Failed to add viewedAt to book_cover:', err.message);
+        }
+      }
+    }
+    
+    // Landing Pages table
+    const landingTable = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_landing_page'").get();
+    if (landingTable) {
+      const landingColumns = sqlite.prepare("PRAGMA table_info(getlostportal_landing_page)").all();
+      const landingColumnNames = landingColumns.map(col => col.name);
+      if (!landingColumnNames.includes('viewedAt')) {
+        try {
+          sqlite.exec('ALTER TABLE getlostportal_landing_page ADD COLUMN viewedAt integer;');
+          console.log('   ✅ Added viewedAt to landing_page table');
+        } catch (err) {
+          console.error('   ❌ Failed to add viewedAt to landing_page:', err.message);
+        }
+      }
+    }
+    
     // Close the connection after all column operations
     sqlite.close();
   } catch (migrateError) {
