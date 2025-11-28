@@ -21,6 +21,7 @@ function LoginContent() {
 	const [error, setError] = useState("");
 	const [successMessage, setSuccessMessage] = useState("");
 	const [emailNotVerified, setEmailNotVerified] = useState(false);
+	const [googleOAuthAvailable, setGoogleOAuthAvailable] = useState(false);
 
 	useEffect(() => {
 		if (searchParams.get("verified") === "true") {
@@ -30,6 +31,24 @@ function LoginContent() {
 			setSuccessMessage("Password reset successfully! You can now sign in with your new password.");
 		}
 	}, [searchParams]);
+
+	// Check which auth providers are available
+	useEffect(() => {
+		async function checkProviders() {
+			try {
+				const response = await fetch("/api/auth/providers");
+				if (response.ok) {
+					const data = await response.json();
+					setGoogleOAuthAvailable(data.providers?.google || false);
+				}
+			} catch (error) {
+				console.error("Failed to check auth providers:", error);
+				// Default to false if check fails
+				setGoogleOAuthAvailable(false);
+			}
+		}
+		checkProviders();
+	}, []);
 
 	const handleEmailLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -115,9 +134,14 @@ function LoginContent() {
 	};
 
 	const handleGoogleSignIn = async () => {
+		setError("");
+		setIsSubmitting(true);
 		try {
-			setIsSubmitting(true);
-			setError("");
+			if (!googleOAuthAvailable) {
+				setError("Google sign-in is not configured. Please use email and password to sign in.");
+				setIsSubmitting(false);
+				return;
+			}
 			console.log("🔵 [Login] Starting Google sign-in...");
 			
 			const result = await signIn.social({
@@ -126,15 +150,21 @@ function LoginContent() {
 			});
 			
 			console.log("🔵 [Login] Google sign-in result:", result);
+			
+			if (result.error) {
+				if (result.error.code === "PROVIDER_NOT_FOUND") {
+					setError("Google sign-in is not configured on the server. Please use email and password to sign in.");
+				} else {
+					setError(result.error.message || "Unable to authenticate with Google. Please try again.");
+				}
+			}
 		} catch (error: any) {
 			console.error("❌ [Login] Google signin failed:", error);
-			console.error("❌ [Login] Error details:", {
-				message: error?.message,
-				stack: error?.stack,
-				name: error?.name,
-				cause: error?.cause,
-			});
-			setError(error?.message || "Unable to authenticate with Google. Please check the server console for details.");
+			if (error?.message?.includes("PROVIDER_NOT_FOUND") || error?.code === "PROVIDER_NOT_FOUND") {
+				setError("Google sign-in is not configured. Please use email and password to sign in.");
+			} else {
+				setError(error?.message || "Unable to authenticate with Google. Please check the server console for details.");
+			}
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -316,14 +346,15 @@ function LoginContent() {
 								</div>
 							</div>
 
-							{/* Google Sign In */}
-							<Button
-								type="button"
-								variant="outline"
-								className="w-full"
-								onClick={handleGoogleSignIn}
-								disabled={isSubmitting}
-							>
+							{/* Google Sign In - Only show if configured */}
+							{googleOAuthAvailable && (
+								<Button
+									type="button"
+									variant="outline"
+									className="w-full"
+									onClick={handleGoogleSignIn}
+									disabled={isSubmitting}
+								>
 								<svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
 									<path
 										fill="#4285F4"
@@ -344,6 +375,7 @@ function LoginContent() {
 								</svg>
 								Sign in with Google
 							</Button>
+							)}
 
 							{/* Sign Up Link */}
 							<div className="text-center text-sm text-gray-600">

@@ -502,19 +502,33 @@ export const auth = betterAuth({
 
   // Social providers (only enable if credentials are provided)
   socialProviders: (() => {
-    const hasGoogleCredentials = process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET;
+    const googleId = process.env.AUTH_GOOGLE_ID;
+    const googleSecret = process.env.AUTH_GOOGLE_SECRET;
+    const hasGoogleCredentials = !!googleId && !!googleSecret;
+    
+    // Log configuration status for debugging
+    console.log("🔍 [Better Auth] Google OAuth configuration check:");
+    console.log("   AUTH_GOOGLE_ID:", googleId ? `${googleId.substring(0, 10)}...` : "NOT SET");
+    console.log("   AUTH_GOOGLE_SECRET:", googleSecret ? "SET" : "NOT SET");
+    console.log("   Has credentials:", hasGoogleCredentials);
     
     if (!hasGoogleCredentials) {
       console.warn("⚠️  [Better Auth] Google OAuth credentials not found.");
-      console.warn("   Set AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET to enable Google sign-in.");
+      console.warn("   Set AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET in Render dashboard to enable Google sign-in.");
+      console.warn("   Google sign-in will be disabled until credentials are configured.");
+      return {};
+    }
+    
+    if (!googleId || !googleSecret) {
+      console.error("❌ [Better Auth] Google OAuth credentials are incomplete.");
       return {};
     }
     
     console.log("✅ [Better Auth] Google OAuth configured");
     return {
       google: {
-        clientId: process.env.AUTH_GOOGLE_ID!,
-        clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+        clientId: googleId,
+        clientSecret: googleSecret,
       },
     };
   })(),
