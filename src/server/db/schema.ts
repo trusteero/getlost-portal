@@ -98,6 +98,9 @@ export const books = createTable(
 		title: d.text({ length: 500 }).notNull(),
 		description: d.text(),
 		coverImageUrl: d.text({ length: 1000 }),
+		authorName: d.text({ length: 500 }),
+		authorBio: d.text(),
+		manuscriptStatus: d.text({ length: 50 }).default("queued"), // queued, working_on, ready_to_purchase
 		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
 		updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
 	}),
@@ -135,7 +138,7 @@ export const reports = createTable(
 	(d) => ({
 		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 		bookVersionId: d.text({ length: 255 }).notNull().references(() => bookVersions.id),
-		status: d.text({ length: 50 }).notNull().default("pending"), // pending, analyzing, completed
+		status: d.text({ length: 50 }).notNull().default("pending"), // pending, analyzing, completed, preview
 		htmlContent: d.text(), // HTML version of the report
 		pdfUrl: d.text({ length: 1000 }), // URL to PDF version
 		adminNotes: d.text(), // Notes from admin
@@ -143,6 +146,7 @@ export const reports = createTable(
 		startedAt: d.integer({ mode: "timestamp" }),
 		completedAt: d.integer({ mode: "timestamp" }),
 		analyzedBy: d.text({ length: 255 }), // Admin who analyzed it
+		viewedAt: d.integer({ mode: "timestamp" }), // When was this report last viewed by the user?
 	}),
 	(t) => [
 		index("report_version_idx").on(t.bookVersionId),
@@ -278,7 +282,9 @@ export const marketingAssets = createTable(
 		fileUrl: d.text({ length: 1000 }), // URL to the asset file
 		thumbnailUrl: d.text({ length: 1000 }), // Thumbnail/preview image
 		metadata: d.text(), // JSON metadata (dimensions, duration, etc.)
+		isActive: d.integer({ mode: "boolean" }).default(false), // Is this the active asset?
 		status: d.text({ length: 50 }).notNull().default("pending"), // pending, processing, completed, failed
+		viewedAt: d.integer({ mode: "timestamp" }), // When was this asset last viewed by the user?
 		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
 		updatedAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
 	}),
@@ -286,6 +292,7 @@ export const marketingAssets = createTable(
 		index("marketing_book_idx").on(t.bookId),
 		index("marketing_type_idx").on(t.assetType),
 		index("marketing_status_idx").on(t.status),
+		index("marketing_active_idx").on(t.isActive),
 	],
 );
 
@@ -297,11 +304,12 @@ export const bookCovers = createTable(
 		bookId: d.text({ length: 255 }).notNull().references(() => books.id),
 		coverType: d.text({ length: 50 }).notNull(), // ebook, paperback, hardcover, social-media
 		title: d.text({ length: 500 }),
-		imageUrl: d.text({ length: 1000 }).notNull(), // URL to cover image
+		imageUrl: d.text({ length: 1000 }), // URL to cover image (nullable for HTML galleries)
 		thumbnailUrl: d.text({ length: 1000 }), // Thumbnail version
 		metadata: d.text(), // JSON metadata (dimensions, style, etc.)
 		isPrimary: d.integer({ mode: "boolean" }).default(false), // Is this the primary cover?
 		status: d.text({ length: 50 }).notNull().default("pending"), // pending, processing, completed, failed
+		viewedAt: d.integer({ mode: "timestamp" }), // When was this cover last viewed by the user?
 		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
 		updatedAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
 	}),
@@ -328,8 +336,10 @@ export const landingPages = createTable(
 		customCss: d.text(), // Custom CSS styles
 		metadata: d.text(), // JSON metadata (CTA buttons, social links, etc.)
 		isPublished: d.integer({ mode: "boolean" }).default(false),
+		isActive: d.integer({ mode: "boolean" }).default(false), // Is this the active landing page?
 		publishedAt: d.integer({ mode: "timestamp" }),
 		status: d.text({ length: 50 }).notNull().default("draft"), // draft, published, archived
+		viewedAt: d.integer({ mode: "timestamp" }), // When was this landing page last viewed by the user?
 		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
 		updatedAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
 	}),
@@ -338,6 +348,7 @@ export const landingPages = createTable(
 		index("landing_slug_idx").on(t.slug),
 		index("landing_status_idx").on(t.status),
 		index("landing_published_idx").on(t.isPublished),
+		index("landing_active_idx").on(t.isActive),
 		uniqueIndex("landing_slug_unique_idx").on(t.slug),
 	],
 );

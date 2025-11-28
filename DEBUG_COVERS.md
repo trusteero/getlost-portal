@@ -95,3 +95,4 @@ ls -la uploads/covers/
 2. Verify `COVER_STORAGE_PATH` environment variable
 3. Ensure path is absolute or relative to project root
 
+

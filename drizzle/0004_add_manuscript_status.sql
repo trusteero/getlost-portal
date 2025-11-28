@@ -1,0 +1,1 @@
+ALTER TABLE `getlostportal_book` ADD `manuscriptStatus` text(50) DEFAULT 'queued';

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
-import { books, bookVersions, digestJobs, reports, bookFeatures } from "@/server/db/schema";
+import { books, bookVersions, reports, bookFeatures, marketingAssets, bookCovers, landingPages } from "@/server/db/schema";
 import { eq, desc, and, ne } from "drizzle-orm";
-import { triggerBookDigest } from "@/server/services/bookdigest";
+import { extractEpubMetadata } from "@/server/utils/extract-epub-metadata";
 import { promises as fs } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
@@ -26,6 +26,9 @@ export async function GET(request: NextRequest) {
         title: books.title,
         description: books.description,
         coverImageUrl: books.coverImageUrl,
+        authorName: books.authorName,
+        authorBio: books.authorBio,
+        manuscriptStatus: books.manuscriptStatus,
         createdAt: books.createdAt,
       })
       .from(books)
@@ -47,18 +50,7 @@ export async function GET(request: NextRequest) {
           .orderBy(desc(bookVersions.uploadedAt))
           .limit(1);
 
-        // Get digest job data
-        const digestJob = await db
-          .select({
-            status: digestJobs.status,
-            words: digestJobs.words,
-            summary: digestJobs.summary,
-            coverUrl: digestJobs.coverUrl,
-          })
-          .from(digestJobs)
-          .where(eq(digestJobs.bookId, book.id))
-          .orderBy(desc(digestJobs.createdAt))
-          .limit(1);
+        // Metadata is now extracted directly from EPUB on upload, no digest jobs needed
 
         // Get latest report for the latest version
         let latestReport = null;
@@ -92,13 +84,375 @@ export async function GET(request: NextRequest) {
           .from(bookFeatures)
           .where(eq(bookFeatures.bookId, book.id));
 
+        // Helper function to determine asset status for assets linked by bookId
+        const getAssetStatusByBookId = async (featureType: string, assetTable: any) => {
+          // Check if feature is requested/purchased
+          const [feature] = await db
+            .select()
+            .from(bookFeatures)
+            .where(
+              and(
+                eq(bookFeatures.bookId, book.id),
+                eq(bookFeatures.featureType, featureType)
+              )
+            )
+            .limit(1);
+
+          const isRequested = feature && (feature.status === "purchased" || feature.status === "requested");
+
+          if (!isRequested) {
+            return "not_requested";
+          }
+
+          // Check if any asset exists (excluding precanned assets for purchased features)
+          // Precanned assets should only count if they were imported before the feature was purchased
+          let anyAsset;
+          if (assetTable === marketingAssets) {
+            [anyAsset] = await db
+              .select()
+              .from(marketingAssets)
+              .where(eq(marketingAssets.bookId, book.id))
+              .limit(1);
+          } else if (assetTable === bookCovers) {
+            [anyAsset] = await db
+              .select()
+              .from(bookCovers)
+              .where(eq(bookCovers.bookId, book.id))
+              .limit(1);
+          } else if (assetTable === landingPages) {
+            [anyAsset] = await db
+              .select()
+              .from(landingPages)
+              .where(eq(landingPages.bookId, book.id))
+              .limit(1);
+          }
+
+          if (!anyAsset) {
+            return "requested";
+          }
+
+          // Check if the asset is precanned and handle 10-second delay
+          if (anyAsset.metadata) {
+            try {
+              const metadata = JSON.parse(anyAsset.metadata);
+              const isPrecanned = metadata.precanned === true;
+              
+              if (isPrecanned && feature.purchasedAt) {
+                // Get timestamps
+                const assetCreatedAt = anyAsset.createdAt instanceof Date 
+                  ? anyAsset.createdAt.getTime() 
+                  : typeof anyAsset.createdAt === 'number' 
+                    ? anyAsset.createdAt * (anyAsset.createdAt < 10000000000 ? 1000 : 1)
+                    : new Date(anyAsset.createdAt).getTime();
+                
+                const purchasedAt = feature.purchasedAt instanceof Date
+                  ? feature.purchasedAt.getTime()
+                  : typeof feature.purchasedAt === 'number'
+                    ? feature.purchasedAt * (feature.purchasedAt < 10000000000 ? 1000 : 1)
+                    : new Date(feature.purchasedAt).getTime();
+                
+                // If precanned asset was created after purchase, it means it was auto-imported
+                // Don't count it - wait for admin upload
+                if (assetCreatedAt > purchasedAt) {
+                  return "requested";
+                }
+                
+                // If precanned asset existed before purchase, apply 10-second delay
+                // Show "processing" for 10 seconds after purchase, then show as "uploaded"
+                if (assetCreatedAt <= purchasedAt) {
+                  const timeSincePurchase = Date.now() - purchasedAt;
+                  const delayMs = 10 * 1000; // 10 seconds
+                  
+                  if (timeSincePurchase < delayMs) {
+                    // Still within 10-second delay period
+                    return "requested";
+                  }
+                  // 10 seconds have passed, precanned asset is now available
+                }
+              }
+            } catch {
+              // Invalid metadata, continue with normal check
+            }
+          }
+
+          // Check active/primary asset for viewed status
+          let activeAsset;
+          if (assetTable === marketingAssets) {
+            // First try to find active asset
+            [activeAsset] = await db
+              .select()
+              .from(marketingAssets)
+              .where(
+                and(
+                  eq(marketingAssets.bookId, book.id),
+                  eq(marketingAssets.isActive, true)
+                )
+              )
+              .limit(1);
+            
+            // If no active asset, find HTML asset (same logic as user-facing route)
+            if (!activeAsset) {
+              const allAssets = await db
+                .select()
+                .from(marketingAssets)
+                .where(eq(marketingAssets.bookId, book.id));
+              
+              activeAsset = allAssets.find(asset => {
+                if (!asset.metadata) return false;
+                try {
+                  const metadata = JSON.parse(asset.metadata);
+                  return metadata.variant === "html";
+                } catch {
+                  return false;
+                }
+              }) || undefined;
+            }
+          } else if (assetTable === bookCovers) {
+            // First try to find primary cover
+            [activeAsset] = await db
+              .select()
+              .from(bookCovers)
+              .where(
+                and(
+                  eq(bookCovers.bookId, book.id),
+                  eq(bookCovers.isPrimary, true)
+                )
+              )
+              .limit(1);
+            
+            // If no primary cover, find HTML cover
+            if (!activeAsset) {
+              const allCovers = await db
+                .select()
+                .from(bookCovers)
+                .where(eq(bookCovers.bookId, book.id));
+              
+              activeAsset = allCovers.find(cover => {
+                if (!cover.metadata) return false;
+                try {
+                  const metadata = JSON.parse(cover.metadata);
+                  return metadata.variant === "html";
+                } catch {
+                  return false;
+                }
+              }) || undefined;
+            }
+          } else if (assetTable === landingPages) {
+            // First try to find active landing page
+            [activeAsset] = await db
+              .select()
+              .from(landingPages)
+              .where(
+                and(
+                  eq(landingPages.bookId, book.id),
+                  eq(landingPages.isActive, true)
+                )
+              )
+              .limit(1);
+            
+            // If no active landing page, get any landing page
+            if (!activeAsset) {
+              [activeAsset] = await db
+                .select()
+                .from(landingPages)
+                .where(eq(landingPages.bookId, book.id))
+                .limit(1);
+            }
+          }
+
+          // If no active asset, just return uploaded
+          if (!activeAsset) {
+            return "uploaded";
+          }
+
+          // Check if active asset has been viewed
+          if (activeAsset.viewedAt) {
+            return "viewed";
+          }
+
+          return "uploaded";
+        };
+
+        // Calculate report status (reports are linked by bookVersionId)
+        let reportStatus = "not_requested";
+        if (latestVersion[0]) {
+          // Check if feature is requested/purchased
+          const [reportFeature] = await db
+            .select()
+            .from(bookFeatures)
+            .where(
+              and(
+                eq(bookFeatures.bookId, book.id),
+                eq(bookFeatures.featureType, "manuscript-report")
+              )
+            )
+            .limit(1);
+
+          const isRequested = reportFeature && (reportFeature.status === "purchased" || reportFeature.status === "requested");
+
+          if (isRequested) {
+            // Get all completed reports for this version (same logic as view route)
+            const completedReports = await db
+              .select({
+                id: reports.id,
+                viewedAt: reports.viewedAt,
+                adminNotes: reports.adminNotes,
+              })
+              .from(reports)
+              .where(and(
+                eq(reports.bookVersionId, latestVersion[0].id),
+                eq(reports.status, "completed")
+              ))
+              .orderBy(desc(reports.requestedAt));
+            
+            // Find active report (same logic as view route)
+            let activeReport = completedReports.find(r => {
+              if (!r.adminNotes) return false;
+              try {
+                const notes = JSON.parse(r.adminNotes);
+                return notes.isActive === true;
+              } catch {
+                return false;
+              }
+            });
+            
+            // If no active report, use the latest one
+            if (!activeReport && completedReports.length > 0) {
+              activeReport = completedReports[0] || null;
+            }
+            
+            if (activeReport) {
+              // Check if viewedAt exists and is not null/undefined
+              // Drizzle converts integer timestamps to Date objects when reading
+              const hasViewedAt = activeReport.viewedAt !== null && 
+                                  activeReport.viewedAt !== undefined;
+              
+              if (hasViewedAt) {
+                reportStatus = "viewed";
+                console.log(`[Books API] Report ${activeReport.id} has been viewed. viewedAt: ${activeReport.viewedAt}`);
+              } else {
+                reportStatus = "uploaded";
+                console.log(`[Books API] Report ${activeReport.id} exists but not viewed yet. viewedAt: ${activeReport.viewedAt}`);
+              }
+            } else {
+              reportStatus = "requested";
+              console.log(`[Books API] No active report found for book ${book.id}`);
+            }
+          }
+        }
+
+        // Calculate other asset statuses
+        const marketingStatus = await getAssetStatusByBookId("marketing-assets", marketingAssets);
+        const coversStatus = await getAssetStatusByBookId("book-covers", bookCovers);
+        const landingPageStatus = await getAssetStatusByBookId("landing-page", landingPages);
+
+        // Check if preview report exists
+        const hasPreviewReport = await (async () => {
+          if (latestVersion[0]) {
+            const [previewReport] = await db
+              .select({
+                id: reports.id,
+                htmlContent: reports.htmlContent,
+              })
+              .from(reports)
+              .where(
+                and(
+                  eq(reports.bookVersionId, latestVersion[0].id),
+                  eq(reports.status, "preview")
+                )
+              )
+              .limit(1);
+            
+            return Boolean(previewReport && previewReport.htmlContent);
+          }
+          return false;
+        })();
+
+        // Check if book has any precanned content (subtle indicator for demo content)
+        const hasPrecannedContent = await (async () => {
+          // Check reports
+          if (latestVersion[0]) {
+            const precannedReports = await db
+              .select()
+              .from(reports)
+              .where(eq(reports.bookVersionId, latestVersion[0].id))
+              .limit(5);
+            
+            for (const report of precannedReports) {
+              if (report.adminNotes) {
+                try {
+                  const notes = JSON.parse(report.adminNotes);
+                  if (notes.precanned === true) return true;
+                } catch {}
+              }
+            }
+          }
+          
+          // Check marketing assets
+          const precannedMarketing = await db
+            .select()
+            .from(marketingAssets)
+            .where(eq(marketingAssets.bookId, book.id))
+            .limit(1);
+          
+          for (const asset of precannedMarketing) {
+            if (asset.metadata) {
+              try {
+                const metadata = JSON.parse(asset.metadata);
+                if (metadata.precanned === true) return true;
+              } catch {}
+            }
+          }
+          
+          // Check covers
+          const precannedCovers = await db
+            .select()
+            .from(bookCovers)
+            .where(eq(bookCovers.bookId, book.id))
+            .limit(1);
+          
+          for (const cover of precannedCovers) {
+            if (cover.metadata) {
+              try {
+                const metadata = JSON.parse(cover.metadata);
+                if (metadata.precanned === true) return true;
+              } catch {}
+            }
+          }
+          
+          // Check landing pages
+          const precannedLanding = await db
+            .select()
+            .from(landingPages)
+            .where(eq(landingPages.bookId, book.id))
+            .limit(1);
+          
+          for (const landing of precannedLanding) {
+            if (landing.metadata) {
+              try {
+                const metadata = JSON.parse(landing.metadata);
+                if (metadata.precanned === true) return true;
+              } catch {}
+            }
+          }
+          
+          return false;
+        })();
+
         return {
           ...book,
           latestVersion: latestVersion[0],
           latestReport,
-          isProcessing: digestJob[0]?.status === "processing" || digestJob[0]?.status === "pending",
-          digestJob: digestJob[0] || null,
+          isProcessing: false, // No longer using digest jobs
           features: features,
+          assetStatuses: {
+            report: reportStatus,
+            marketing: marketingStatus,
+            covers: coversStatus,
+            landingPage: landingPageStatus,
+          },
+          hasPrecannedContent,
+          hasPreviewReport,
         };
       })
     );
@@ -119,15 +473,20 @@ export async function POST(request: NextRequest) {
 
   try {
     const formData = await request.formData();
-    const title = formData.get("title") as string;
+    const title = formData.get("title") as string | null;
+    const authorName = formData.get("authorName") as string | null;
+    const authorBio = formData.get("authorBio") as string | null;
     const description = formData.get("description") as string || "";
     const summary = formData.get("summary") as string || "";
     const file = formData.get("file") as File;
     const coverImage = formData.get("coverImage") as File | null;
 
-    if (!title || !file) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!file) {
+      return NextResponse.json({ error: "File is required" }, { status: 400 });
     }
+
+    // Use filename (without extension) as title if title not provided
+    const bookTitle = title?.trim() || path.basename(file.name, path.extname(file.name));
 
     // Generate book ID first
     const bookId = randomUUID();
@@ -157,14 +516,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Create book with pre-generated ID
+    // Use form fields if provided, otherwise will be filled from extracted metadata
+    // Initial manuscript status is "queued"
     const newBook = await db
       .insert(books)
       .values({
         id: bookId,
         userId: session.user.id,
-        title,
+        title: bookTitle,
         description,
         coverImageUrl,
+        authorName: authorName?.trim() || null,
+        authorBio: authorBio?.trim() || null,
+        manuscriptStatus: "queued", // Initial status is queued
       })
       .returning();
 
@@ -211,13 +575,111 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    // Trigger BookDigest job asynchronously
-    try {
-      await triggerBookDigest(createdBook.id, fileBuffer, fileName);
-      console.log(`BookDigest job triggered for book ${createdBook.id}`);
-    } catch (error) {
-      // Log error but don't fail the book creation
-      console.error("Failed to trigger BookDigest job:", error);
+    // Extract metadata from EPUB file (if EPUB format)
+    let extractedTitle: string | null = null;
+    let extractedAuthor: string | null = null;
+    let extractedCoverUrl: string | null = null;
+    
+    if (fileExt.toLowerCase() === ".epub") {
+      try {
+        console.log(`[EPUB] Extracting metadata from ${fileName}`);
+        const metadata = await extractEpubMetadata(fileBuffer, fileName);
+
+        // Use extracted title if available and current title is from filename
+        // Only use if form title was not provided
+        if (metadata.title && metadata.title.trim() && !title?.trim()) {
+          extractedTitle = metadata.title.trim();
+          console.log(`[EPUB] Extracted title: "${extractedTitle}"`);
+        }
+
+        // Extract author if not provided in form
+        if (metadata.author && metadata.author.trim() && !authorName?.trim()) {
+          extractedAuthor = metadata.author.trim();
+          console.log(`[EPUB] Extracted author: "${extractedAuthor}"`);
+        }
+
+        // Save cover image if extracted and not provided in form
+        if (metadata.coverImage && !coverImage) {
+          const coverStoragePath = process.env.COVER_STORAGE_PATH || path.join(process.cwd(), 'uploads', 'covers');
+          const coverDir = path.resolve(coverStoragePath);
+          await fs.mkdir(coverDir, { recursive: true });
+
+          // Determine file extension from MIME type
+          let ext = 'jpg'; // default
+          if (metadata.coverImageMimeType) {
+            const mimeParts = metadata.coverImageMimeType.split('/');
+            if (mimeParts[1]) {
+              ext = mimeParts[1];
+              // Normalize jpeg to jpg
+              if (ext === 'jpeg') ext = 'jpg';
+            }
+          }
+          
+          const coverFileName = `${bookId}.${ext}`;
+          const coverFilePath = path.join(coverDir, coverFileName);
+
+          // Save cover image to disk
+          await fs.writeFile(coverFilePath, metadata.coverImage);
+
+          // Store the path for serving
+          extractedCoverUrl = `/api/covers/${bookId}.${ext}`;
+          console.log(`[EPUB] Extracted and saved cover image: ${extractedCoverUrl} (${metadata.coverImage.length} bytes, ${metadata.coverImageMimeType})`);
+        }
+      } catch (error) {
+        // Log error but don't fail the book creation
+        console.error("[EPUB] Failed to extract metadata:", error);
+      }
+    }
+
+    // Update book with extracted metadata if available and form fields were not provided
+    // Priority: form fields > extracted metadata
+    const updates: {
+      title?: string;
+      authorName?: string;
+      coverImageUrl?: string;
+      updatedAt: Date;
+    } = {
+      updatedAt: new Date(),
+    };
+
+    let hasUpdates = false;
+
+    // Only use extracted title if form title was not provided
+    if (extractedTitle && !title?.trim()) {
+      updates.title = extractedTitle;
+      hasUpdates = true;
+    }
+
+    // Only use extracted author if form authorName was not provided
+    if (extractedAuthor && !authorName?.trim()) {
+      updates.authorName = extractedAuthor;
+      hasUpdates = true;
+    }
+
+    // Only use extracted cover if form coverImage was not provided
+    if (extractedCoverUrl && !coverImage) {
+      updates.coverImageUrl = extractedCoverUrl;
+      hasUpdates = true;
+    }
+
+    if (hasUpdates) {
+      await db
+        .update(books)
+        .set(updates)
+        .where(eq(books.id, createdBook.id));
+
+      // Update the returned book object
+      if (updates.title) {
+        createdBook.title = updates.title;
+      }
+      if (updates.authorName) {
+        createdBook.authorName = updates.authorName;
+      }
+      if (updates.coverImageUrl) {
+        createdBook.coverImageUrl = updates.coverImageUrl;
+      }
+
+      console.log(`[EPUB] Updated book ${createdBook.id} with extracted metadata`);
     }
 
     // Attempt to import precanned content based on filename
@@ -253,7 +715,6 @@ export async function POST(request: NextRequest) {
     // Only use this if no cover was uploaded and no precanned package cover was found.
     if (!coverImageUrl) {
       try {
-        console.log(`[POST /api/books] Attempting to find precanned cover for filename: ${fileName}`);
         const uploadsCoverUrl = await findPrecannedCoverImageForFilename(fileName);
         if (uploadsCoverUrl) {
           await db
@@ -262,16 +723,43 @@ export async function POST(request: NextRequest) {
             .where(eq(books.id, createdBook.id));
           createdBook.coverImageUrl = uploadsCoverUrl;
           console.log(
-            `[Demo] ✅ Linked cover image from precanned uploads "${uploadsCoverUrl}" for book ${createdBook.id}`
+            `[Demo] Linked cover image from precanned uploads "${uploadsCoverUrl}" for book ${createdBook.id}`
           );
-        } else {
-          console.log(`[Demo] ⚠️  No precanned cover image found matching "${fileName}"`);
         }
       } catch (error) {
-        console.error("[Demo] ❌ Failed to find cover image in precanned uploads:", error);
+        console.error("[Demo] Failed to find cover image in precanned uploads:", error);
       }
-    } else {
-      console.log(`[POST /api/books] Skipping precanned cover lookup - cover already uploaded: ${coverImageUrl}`);
+    }
+
+    // Send notification email for queued manuscript (after all updates are complete)
+    try {
+      const { sendManuscriptQueuedEmail } = await import("@/server/services/email");
+      const betterAuthSchema = await import("@/server/db/better-auth-schema");
+      const betterAuthUser = betterAuthSchema.user;
+      const [userData] = await db
+        .select({ email: betterAuthUser.email, name: betterAuthUser.name })
+        .from(betterAuthUser)
+        .where(eq(betterAuthUser.id, session.user.id))
+        .limit(1);
+      
+      // Get the final book title (may have been updated with extracted metadata)
+      const [finalBook] = await db
+        .select({ title: books.title })
+        .from(books)
+        .where(eq(books.id, bookId))
+        .limit(1);
+      
+      if (userData?.email) {
+        await sendManuscriptQueuedEmail(
+          userData.email,
+          finalBook?.title || createdBook.title || "Untitled",
+          userData.name || undefined
+        );
+        console.log(`[Email] Sent manuscript queued notification to ${userData.email}`);
+      }
+    } catch (error) {
+      // Don't fail book creation if email fails
+      console.error("[Email] Failed to send manuscript queued notification:", error);
     }
 
     return NextResponse.json({

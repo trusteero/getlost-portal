@@ -47,14 +47,26 @@ services:
         value: https://bookdigest.onrender.com
       - key: BOOKDIGEST_API_KEY
         sync: false # Set this in Render dashboard
-      - key: MAILERSEND_API_KEY
+      - key: RESEND_API_KEY
         sync: false # Set this in Render dashboard
-      - key: MAILERSEND_FROM_EMAIL
-        sync: false # Set this in Render dashboard
+      - key: RESEND_FROM_EMAIL
+        sync: false # Set this in Render dashboard (e.g., noreply@yourdomain.com or onboarding@resend.dev for testing)
+      - key: STRIPE_SECRET_KEY
+        sync: false # Set this in Render dashboard (optional - for Stripe payments)
+      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        sync: false # Set this in Render dashboard (optional - for Stripe payments)
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false # Set this in Render dashboard (optional - for Stripe webhooks)
+      - key: USE_SIMULATED_PURCHASES
+        sync: false # Set to "true" to force simulated purchases (for testing)
       - key: OPENAI_API_KEY
         sync: false # Set this in Render dashboard
       - key: ANTHROPIC_API_KEY
         sync: false # Set this in Render dashboard
+      - key: BOOK_STORAGE_PATH
+        value: /var/data/books
+      - key: COVER_STORAGE_PATH
+        value: /var/data/covers
       - key: REPORT_STORAGE_PATH
         value: /var/data/reports
       - key: UPLOAD_DIR

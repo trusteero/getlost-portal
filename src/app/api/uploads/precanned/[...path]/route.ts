@@ -211,12 +211,40 @@ export async function GET(
         break;
     }
 
-    // Return the file
+    // Handle Range requests for video playback (required for MP4 seeking)
+    const range = request.headers.get("range");
+    if (range && ext === ".mp4") {
+      const parts = range.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0] || "0", 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileBuffer.length - 1;
+      const chunksize = end - start + 1;
+      const chunk = fileBuffer.slice(start, end + 1);
+
+      return new NextResponse(chunk, {
+        status: 206, // Partial Content
+        headers: {
+          "Content-Range": `bytes ${start}-${end}/${fileBuffer.length}`,
+          "Accept-Ranges": "bytes",
+          "Content-Length": chunksize.toString(),
+          "Content-Type": mimeType,
+          "Cache-Control": "public, max-age=31536000, immutable",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET",
+        },
+      });
+    }
+
+    // Return the file with CORS headers to allow iframe access
     return new NextResponse(fileBuffer as any, {
       status: 200,
       headers: {
         "Content-Type": mimeType,
+        "Content-Length": fileBuffer.length.toString(),
+        "Accept-Ranges": "bytes", // Indicate support for Range requests
         "Cache-Control": "public, max-age=31536000, immutable",
+        "Access-Control-Allow-Origin": "*", // Allow iframe access
+        "Access-Control-Allow-Methods": "GET",
+        "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length",
       },
     });
   } catch (error: any) {

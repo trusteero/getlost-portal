@@ -54,13 +54,43 @@ export async function GET(
       );
     }
 
-    // Get book covers
-    const covers = await db
+    // Get book covers - prefer primary one, otherwise get HTML one, otherwise any
+    const allCovers = await db
       .select()
       .from(bookCovers)
       .where(eq(bookCovers.bookId, id));
 
-    return NextResponse.json(covers);
+    // Find primary cover
+    let primaryCover = allCovers.find(cover => cover.isPrimary);
+
+    // If no primary cover, find HTML cover
+    if (!primaryCover) {
+      primaryCover = allCovers.find(cover => {
+        if (!cover.metadata) return false;
+        try {
+          const metadata = JSON.parse(cover.metadata);
+          return metadata.variant === "html";
+        } catch {
+          return false;
+        }
+      });
+    }
+
+    // If still no primary cover, use first cover
+    if (!primaryCover && allCovers.length > 0) {
+      primaryCover = allCovers[0];
+    }
+
+    // Update viewedAt timestamp when user views the cover
+    if (primaryCover) {
+      await db
+        .update(bookCovers)
+        .set({ viewedAt: new Date() })
+        .where(eq(bookCovers.id, primaryCover.id));
+    }
+
+    // Return primary cover or first cover, or all covers if none marked
+    return NextResponse.json(primaryCover ? [primaryCover] : allCovers);
   } catch (error) {
     console.error("Failed to get book covers:", error);
     return NextResponse.json(

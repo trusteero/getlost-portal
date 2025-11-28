@@ -116,13 +116,27 @@ function LoginContent() {
 
 	const handleGoogleSignIn = async () => {
 		try {
-			await signIn.social({
+			setIsSubmitting(true);
+			setError("");
+			console.log("🔵 [Login] Starting Google sign-in...");
+			
+			const result = await signIn.social({
 				provider: "google",
 				callbackURL: "/dashboard",
 			});
-		} catch (error) {
-			console.error("Google signin failed:", error);
-			setError("Unable to authenticate with Google");
+			
+			console.log("🔵 [Login] Google sign-in result:", result);
+		} catch (error: any) {
+			console.error("❌ [Login] Google signin failed:", error);
+			console.error("❌ [Login] Error details:", {
+				message: error?.message,
+				stack: error?.stack,
+				name: error?.name,
+				cause: error?.cause,
+			});
+			setError(error?.message || "Unable to authenticate with Google. Please check the server console for details.");
+		} finally {
+			setIsSubmitting(false);
 		}
 	};
 

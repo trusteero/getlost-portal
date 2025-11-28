@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Lock, MoreVertical, Download, Eye, Trash2, Loader2, CreditCard, X } from "lucide-react";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,13 +17,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 interface ProgressStep {
   id: string;
   title: string;
-  status: 'complete' | 'locked';
+  status: 'complete' | 'locked' | 'processing';
   action: string;
   price: string;
   buttonText: string;
@@ -37,6 +43,9 @@ interface ManuscriptCardProps {
   genre: string;
   steps: ProgressStep[];
   coverImage: string;
+  hasPrecannedContent?: boolean;
+  manuscriptStatus?: "queued" | "working_on" | "ready_to_purchase";
+  hasViewedReport?: boolean;
   onDelete?: () => void;
 }
 
@@ -48,14 +57,23 @@ export const ManuscriptCard = ({
   genre, 
   steps, 
   coverImage,
+  hasPrecannedContent = false,
+  manuscriptStatus = "queued",
+  hasViewedReport = false,
   onDelete
 }: ManuscriptCardProps) => {
+  const isManuscriptReady = manuscriptStatus === "ready_to_purchase";
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [unlockingFeature, setUnlockingFeature] = useState<string | null>(null);
   const [updatedSteps, setUpdatedSteps] = useState<ProgressStep[]>(steps);
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
   const [pendingFeature, setPendingFeature] = useState<ProgressStep | null>(null);
+
+  // Sync updatedSteps with steps prop when it changes (from parent refresh)
+  useEffect(() => {
+    setUpdatedSteps(steps);
+  }, [steps]);
 
   const handleUnlockClick = (step: ProgressStep) => {
     // If it's free (summary), unlock immediately without confirmation
@@ -73,9 +91,53 @@ export const ManuscriptCard = ({
     if (!pendingFeature) return;
     
     const featureId = pendingFeature.id;
-    setShowPurchaseDialog(false);
-    setPendingFeature(null);
-    await handleUnlockFeature(featureId);
+    
+    // Check if this is a paid feature (not free)
+    if (pendingFeature.price !== 'Free' && pendingFeature.price !== 'Unlocked') {
+      try {
+        // Try to create Stripe checkout session
+        const checkoutResponse = await fetch('/api/checkout/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bookId: id,
+            featureType: featureId,
+          }),
+        });
+
+        if (checkoutResponse.ok) {
+          // Stripe checkout available, redirect to Stripe
+          const { url } = await checkoutResponse.json();
+          if (url) {
+            window.location.href = url;
+            return;
+          }
+        } else if (checkoutResponse.status === 503) {
+          // Stripe not configured, use simulated purchase
+          const error = await checkoutResponse.json();
+          if (error.useSimulated) {
+            console.log('Stripe not configured, using simulated purchase');
+            setShowPurchaseDialog(false);
+            setPendingFeature(null);
+            await handleUnlockFeature(featureId);
+            return;
+          }
+        }
+        
+        // If we get here, there was an error
+        const error = await checkoutResponse.json();
+        throw new Error(error.error || 'Failed to create checkout session');
+      } catch (error) {
+        console.error('Failed to initiate payment:', error);
+        alert('Failed to start payment. Please try again.');
+        return;
+      }
+    } else {
+      // Free feature, unlock directly
+      setShowPurchaseDialog(false);
+      setPendingFeature(null);
+      await handleUnlockFeature(featureId);
+    }
   };
 
   const handleCancelPurchase = () => {
@@ -92,6 +154,37 @@ export const ManuscriptCard = ({
         method: "POST",
       });
 
+      if (response.status === 402) {
+        // Payment required - redirect to checkout
+        const error = await response.json();
+        if (error.redirectToCheckout) {
+          // Try to create checkout session
+          try {
+            const checkoutResponse = await fetch('/api/checkout/create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                bookId: id,
+                featureType: featureType,
+              }),
+            });
+
+            if (checkoutResponse.ok) {
+              const { url } = await checkoutResponse.json();
+              if (url) {
+                window.location.href = url;
+                return;
+              }
+            }
+          } catch (checkoutError) {
+            console.error('Failed to create checkout session:', checkoutError);
+            alert('Failed to start payment. Please try again.');
+            return;
+          }
+        }
+        throw new Error(error.error || "Payment required");
+      }
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || "Failed to unlock feature");
@@ -99,17 +192,19 @@ export const ManuscriptCard = ({
 
       const data = await response.json();
       
-      // Update the step status locally
+      // Update the step status locally - set to processing if asset not uploaded yet
       setUpdatedSteps(prevSteps => 
         prevSteps.map(step => 
           step.id === featureType 
-            ? { ...step, status: 'complete' as const, price: 'Unlocked', buttonText: step.id === 'summary' ? 'View Summary' : step.id === 'manuscript-report' ? 'View Report' : 'View' }
+            ? { ...step, status: 'processing' as const, price: 'Processing', buttonText: 'Processing...' }
             : step
         )
       );
 
-      // Navigate to the feature page after unlocking
-      handleStageAction(featureType, "");
+      // Don't navigate after purchase - wait for admin to upload asset
+      // Dispatch event to refresh books data immediately
+      // The main dashboard polling will handle automatic updates
+      window.dispatchEvent(new CustomEvent('refreshBooks'));
     } catch (error: any) {
       console.error("Failed to unlock feature:", error);
       alert(error.message || "Failed to unlock feature. Please try again.");
@@ -121,6 +216,7 @@ export const ManuscriptCard = ({
   const handleStageAction = (stepId: string, stepTitle: string) => {
     switch (stepId) {
       case 'summary':
+        // Only navigate to preview if it exists (checked by button availability)
         router.push(`/dashboard/book/${id}#preview`);
         break;
       case 'manuscript-report':
@@ -143,10 +239,21 @@ export const ManuscriptCard = ({
     if (!step.buttonText) return null;
     
     const isAvailable = step.status === 'complete';
+    const isProcessing = step.status === 'processing';
     const isUnlocking = unlockingFeature === step.id;
-    const buttonClass = isAvailable 
-      ? "w-full md:w-auto btn-premium-emerald text-white text-sm font-semibold px-4 py-2 rounded h-10 min-w-[120px] max-w-full whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-emerald-500"
-      : "w-full md:w-auto premium-card hover:premium-card text-gray-900 text-sm font-medium px-4 py-2 rounded h-10 min-w-[120px] max-w-full whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-sapphire-500 backdrop-blur-sm";
+    
+    // For manuscript-report, check if it's queued or working_on (show text without spinner)
+    const isManuscriptStatus = step.id === 'manuscript-report' && 
+      (step.buttonText === 'Queued' || step.buttonText === 'Working on Report');
+    
+    let buttonClass: string;
+    if (isAvailable) {
+      buttonClass = "w-full md:w-auto btn-premium-emerald text-white text-sm font-semibold px-4 py-2 rounded h-10 min-w-[120px] max-w-full whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-emerald-500";
+    } else if (isProcessing) {
+      buttonClass = "w-full md:w-auto premium-card text-gray-500 text-sm font-medium px-4 py-2 rounded h-10 min-w-[120px] max-w-full whitespace-nowrap focus:outline-none cursor-not-allowed opacity-75";
+    } else {
+      buttonClass = "w-full md:w-auto premium-card hover:premium-card text-gray-900 text-sm font-medium px-4 py-2 rounded h-10 min-w-[120px] max-w-full whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-sapphire-500 backdrop-blur-sm";
+    }
       
     return (
       <button 
@@ -154,16 +261,21 @@ export const ManuscriptCard = ({
         onClick={() => {
           if (isAvailable) {
             handleStageAction(step.id, step.title);
-          } else {
+          } else if (!isProcessing) {
             handleUnlockClick(step);
           }
         }}
-        disabled={isUnlocking}
+        disabled={isUnlocking || isProcessing}
       >
         {isUnlocking ? (
           <>
             <Loader2 className="w-4 h-4 inline-block align-middle mr-2 animate-spin" />
             Unlocking...
+          </>
+        ) : isProcessing && !isManuscriptStatus ? (
+          <>
+            <Loader2 className="w-4 h-4 inline-block align-middle mr-2 animate-spin" />
+            Processing...
           </>
         ) : (
           step.buttonText
@@ -179,7 +291,7 @@ export const ManuscriptCard = ({
         <aside className="book-glow-panel-large p-4 md:p-8 flex items-center justify-center min-h-[200px] md:min-h-[500px] md:sticky md:top-0 md:self-start relative overflow-hidden">
           <div className="relative mx-auto w-32 md:w-48 z-10">
             {/* Mobile: Flat cover display */}
-            <div className="md:hidden">
+            <div className="md:hidden relative">
               <img
                 src={coverImage || "/placeholder.svg"}
                 alt={title}
@@ -199,6 +311,20 @@ export const ManuscriptCard = ({
                   console.log(`[ManuscriptCard] Successfully loaded cover: ${coverImage}`);
                 }}
               />
+              {/* Subtle precanned content indicator */}
+              {hasPrecannedContent && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-400/60 border border-amber-500/40 shadow-sm cursor-help" 
+                           aria-label="Demo content indicator" />
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      <p className="text-xs">Demo content</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
             
             {/* Desktop: 3D cover display */}
@@ -233,6 +359,20 @@ export const ManuscriptCard = ({
                   loading="lazy"
                   className="w-full h-auto object-contain rounded-xl transition-all duration-500"
                 />
+                {/* Subtle precanned content indicator */}
+                {hasPrecannedContent && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-400/60 border border-amber-500/40 shadow-sm z-10 cursor-help" 
+                             aria-label="Demo content indicator" />
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p className="text-xs">Demo content</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
                 {/* Enhanced 3D spine */}
                 <div 
                   className="absolute inset-y-0 left-0 w-3 rounded-l-xl transition-all duration-500"
@@ -409,8 +549,22 @@ export const ManuscriptCard = ({
 
           {/* Action Sections Grid - Mobile: Single Column, Desktop: 5 Column Grid */}
           <div className="flex flex-col space-y-6 md:space-y-0 md:grid md:grid-cols-5 md:gap-6 items-stretch">
-            {updatedSteps.slice(0, 5).map((step) => (
-              <div key={step.id} className="flex flex-col items-start justify-start h-full text-left">
+            {updatedSteps.slice(0, 5).map((step) => {
+              // Dim other features until manuscript is ready (except manuscript-report itself)
+              // Also dim summary if it's locked (no preview report uploaded)
+              // Dim marketing, covers, and landing pages until report is viewed
+              // BUT: if report has been viewed, don't dim them even if they're locked (not_requested)
+              const isMarketingOrCoverOrLanding = step.id === "marketing-assets" || step.id === "book-covers" || step.id === "landing-page";
+              const shouldDim = (!isManuscriptReady && step.id !== "manuscript-report") || 
+                                (step.id === "summary" && step.status === "locked") ||
+                                (isMarketingOrCoverOrLanding && step.status === "locked" && !hasViewedReport);
+              return (
+              <div 
+                key={step.id} 
+                className={`flex flex-col items-start justify-start h-full text-left transition-opacity ${
+                  shouldDim ? "opacity-40 pointer-events-none" : ""
+                }`}
+              >
                 {/* Top Section */}
                 <div className="w-full">
                   <h3 className="text-base font-semibold text-gray-900 tracking-wide leading-6 min-h-[24px]">{step.title}</h3>
@@ -439,7 +593,8 @@ export const ManuscriptCard = ({
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

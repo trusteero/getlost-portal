@@ -139,7 +139,7 @@ export default function BookDetail() {
             setActiveTab("author");
           }
         } else if (window.location.hash === '#preview') {
-          const hasPreview = previewReport || book?.versions?.[0]?.reports?.some((r: Report) => getReportVariant(r) === "preview");
+          const hasPreview = previewReport?.htmlContent || book?.versions?.[0]?.reports?.some((r: Report) => (getReportVariant(r) === "preview" || r.status === "preview") && r.htmlContent);
           if (hasPreview) {
             setActiveTab("summary");
             setIsViewingReport(false);
@@ -204,7 +204,7 @@ export default function BookDetail() {
                 setActiveTab("author");
               }
             } else if (window.location.hash === '#preview') {
-              const hasPreview = latestVersion.reports?.some((r: Report) => getReportVariant(r) === "preview" || r.status === "preview");
+              const hasPreview = latestVersion.reports?.some((r: Report) => (getReportVariant(r) === "preview" || r.status === "preview") && r.htmlContent);
               if (hasPreview) {
                 setActiveTab("summary");
                 setIsViewingReport(false);
@@ -469,7 +469,7 @@ export default function BookDetail() {
     (r: Report) => r.status === "completed" && getReportVariant(r) !== "preview"
   );
   const hasReport = Boolean(latestCompletedReport);
-  const hasPreview = book.versions[0]?.reports?.some((r: Report) => r.status === "preview" || getReportVariant(r) === "preview");
+  const hasPreview = book.versions[0]?.reports?.some((r: Report) => (r.status === "preview" || getReportVariant(r) === "preview") && r.htmlContent);
   
   // Check if manuscript-report feature is unlocked
   const manuscriptReportFeature = book.features?.find(f => f.featureType === "manuscript-report");
@@ -484,7 +484,11 @@ export default function BookDetail() {
         <div className="fixed top-2 left-2 sm:top-4 sm:left-4 z-50">
           <Button
             variant="default"
-            onClick={() => router.push(`/dashboard/book/${params.id}`)}
+            onClick={() => {
+              // Trigger refresh of books list when returning to dashboard
+              window.dispatchEvent(new CustomEvent('refreshBooks'));
+              router.push(`/dashboard`);
+            }}
             className="bg-white hover:bg-gray-50 text-gray-900 shadow-lg border border-gray-200 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
             size="sm"
           >
@@ -505,13 +509,27 @@ export default function BookDetail() {
               height: '100%',
               minHeight: 'calc(100vh - 2.5rem)'
             }}
+            onLoad={() => {
+              // When iframe loads (report is viewed), trigger refresh after a delay
+              // to allow the viewedAt update to complete on the server
+              // The API call happens when the iframe src is loaded, so we need to wait
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('refreshBooks'));
+              }, 1000); // Increased delay to ensure server has time to update viewedAt
+            }}
           />
         </div>
       </div>
     );
   }
 
-  if (mounted && isViewingPreview && hasPreview) {
+  // Only show preview if it exists and has HTML content
+  const previewReportWithContent = book.versions[0]?.reports?.find(
+    (r: Report) => (r.status === "preview" || getReportVariant(r) === "preview") && r.htmlContent
+  );
+  const hasPreviewWithContent = Boolean(previewReportWithContent);
+
+  if (mounted && isViewingPreview && hasPreviewWithContent) {
     return (
       <div className="min-h-screen bg-white w-full relative overflow-hidden">
         <div className="fixed top-2 left-2 sm:top-4 sm:left-4 z-50">

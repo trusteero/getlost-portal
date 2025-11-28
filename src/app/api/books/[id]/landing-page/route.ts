@@ -54,18 +54,40 @@ export async function GET(
       );
     }
 
-    // Get landing page
-    const landingPage = await db
+    // Get landing page - prefer active one
+    let landingPage = await db
       .select()
       .from(landingPages)
-      .where(eq(landingPages.bookId, id))
+      .where(
+        and(
+          eq(landingPages.bookId, id),
+          eq(landingPages.isActive, true)
+        )
+      )
       .limit(1);
 
+    // If no active landing page, get any landing page
     if (landingPage.length === 0) {
+      landingPage = await db
+        .select()
+        .from(landingPages)
+        .where(eq(landingPages.bookId, id))
+        .limit(1);
+    }
+
+    if (landingPage.length === 0 || !landingPage[0]) {
       return NextResponse.json({ error: "Landing page not found" }, { status: 404 });
     }
 
-    return NextResponse.json(landingPage[0]);
+    const page = landingPage[0];
+
+    // Update viewedAt timestamp when user views the landing page
+    await db
+      .update(landingPages)
+      .set({ viewedAt: new Date() })
+      .where(eq(landingPages.id, page.id));
+
+    return NextResponse.json(page);
   } catch (error) {
     console.error("Failed to get landing page:", error);
     return NextResponse.json(

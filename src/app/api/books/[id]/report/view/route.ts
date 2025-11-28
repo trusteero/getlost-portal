@@ -84,25 +84,41 @@ export async function GET(
     console.log(`[Report View] Found ${allReports.length} report(s) for version ${latestVersion.id}:`, 
       allReports.map(r => ({ id: r.id, status: r.status, hasHtml: !!r.htmlContent })));
 
-    // Get the latest completed report for this version
-    const [report] = await db
+    // Get all completed reports for this version
+    const completedReports = await db
       .select({
         id: reports.id,
         htmlContent: reports.htmlContent,
+        adminNotes: reports.adminNotes,
       })
       .from(reports)
       .where(and(
         eq(reports.bookVersionId, latestVersion.id),
         eq(reports.status, "completed")
       ))
-      .orderBy(desc(reports.requestedAt))
-      .limit(1);
+      .orderBy(desc(reports.requestedAt));
+
+    // Find active report
+    let report = completedReports.find(r => {
+      if (!r.adminNotes) return false;
+      try {
+        const notes = JSON.parse(r.adminNotes);
+        return notes.isActive === true;
+      } catch {
+        return false;
+      }
+    });
+
+    // If no active report, use the latest one
+    if (!report) {
+      report = completedReports[0] || null;
+    }
 
     if (!report || !report.htmlContent) {
       // Provide more detailed error information
       const hasAnyReport = allReports.length > 0;
       const hasCompletedReport = allReports.some(r => r.status === "completed");
-      const hasReportWithoutHtml = allReports.some(r => r.status === "completed" && !r.htmlContent);
+      const hasReportWithoutHtml = completedReports.some(r => !r.htmlContent);
       
       let errorMessage = "No completed report found.";
       if (!hasAnyReport) {
@@ -132,6 +148,15 @@ export async function GET(
     // HTML content should already be bundled with images when stored in database
     // All data comes from database, no file system access needed
     const htmlContent = report.htmlContent;
+
+    // Update viewedAt timestamp when user views the report
+    // Drizzle's mode: "timestamp" expects a Date object
+    await db
+      .update(reports)
+      .set({ viewedAt: new Date() })
+      .where(eq(reports.id, report.id));
+    
+    console.log(`[Report View] Updated viewedAt for report ${report.id} to ${new Date().toISOString()}`);
 
     // Return HTML directly with proper headers
     return new NextResponse(htmlContent, {

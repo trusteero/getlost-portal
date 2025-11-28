@@ -53,8 +53,8 @@ Choose one of these options:
 - `AUTH_GOOGLE_SECRET`: Your Google OAuth client secret
 
 #### Email Configuration
-- `MAILERSEND_API_KEY`: Your MailerSend API key
-- `MAILERSEND_FROM_EMAIL`: Verified sender email (e.g., noreply@yourdomain.com)
+- `RESEND_API_KEY`: Your Resend API key
+- `RESEND_FROM_EMAIL`: Verified sender email (e.g., noreply@yourdomain.com) or onboarding@resend.dev for testing
 
 #### Admin Configuration
 - `ADMIN_EMAILS`: Comma-separated admin emails (e.g., admin@example.com)

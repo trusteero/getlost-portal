@@ -106,9 +106,9 @@ NEXT_PUBLIC_APP_URL=https://your-app-domain.com
 AUTH_GOOGLE_ID=your-google-client-id
 AUTH_GOOGLE_SECRET=your-google-client-secret
 
-# Email (MailerSend)
-MAILERSEND_API_KEY=your-mailersend-api-key
-MAILERSEND_FROM_EMAIL=noreply@yourdomain.com
+# Email (Resend)
+RESEND_API_KEY=your-resend-api-key
+RESEND_FROM_EMAIL=noreply@yourdomain.com  # or onboarding@resend.dev for testing
 
 # Admin
 SUPER_ADMIN_EMAILS=admin@example.com,another@example.com
@@ -278,14 +278,17 @@ If moving from SQLite to PostgreSQL or Turso:
 
 ---
 
-## 📧 Email Setup (MailerSend)
+## 📧 Email Setup (Resend)
 
-1. Sign up at [MailerSend](https://www.mailersend.com)
-2. Verify your domain
-3. Create API token
-4. Add to environment variables:
-   - `MAILERSEND_API_KEY`
-   - `MAILERSEND_FROM_EMAIL` (must be verified domain)
+1. Sign up at [Resend](https://resend.com)
+2. Get your API key from [Resend API Keys](https://resend.com/api-keys)
+3. For testing: Use `onboarding@resend.dev` (no domain verification needed)
+4. For production: Add and verify your domain in [Resend Domains](https://resend.com/domains)
+5. Add to environment variables:
+   - `RESEND_API_KEY`
+   - `RESEND_FROM_EMAIL` (use `onboarding@resend.dev` for testing, or your verified domain for production)
+
+See [RESEND_SETUP.md](./RESEND_SETUP.md) for detailed instructions.
 
 ---
 

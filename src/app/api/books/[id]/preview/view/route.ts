@@ -61,6 +61,12 @@ export async function GET(
       );
     }
 
+    // Update viewedAt timestamp when user views the preview report
+    await db
+      .update(reports)
+      .set({ viewedAt: new Date() })
+      .where(eq(reports.id, previewReport.id));
+
     return new NextResponse(previewReport.htmlContent, {
       status: 200,
       headers: {

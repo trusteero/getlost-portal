@@ -1,0 +1,132 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getSessionFromRequest } from "@/server/auth";
+import { db } from "@/server/db";
+import { books, purchases } from "@/server/db/schema";
+import { eq } from "drizzle-orm";
+
+const FEATURE_PRICES: Record<string, number> = {
+  "summary": 0,
+  "manuscript-report": 14999, // $149.99
+  "marketing-assets": 14999,
+  "book-covers": 14999,
+  "landing-page": 14999,
+};
+
+function getFeatureName(featureType: string): string {
+  const names: Record<string, string> = {
+    "summary": "Summary",
+    "manuscript-report": "Manuscript Report",
+    "marketing-assets": "Marketing Assets",
+    "book-covers": "Book Covers",
+    "landing-page": "Landing Page",
+  };
+  return names[featureType] || featureType;
+}
+
+export async function POST(request: NextRequest) {
+  const session = await getSessionFromRequest(request);
+  
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { bookId, featureType } = await request.json();
+
+    // Verify book ownership
+    const [book] = await db
+      .select()
+      .from(books)
+      .where(eq(books.id, bookId))
+      .limit(1);
+
+    if (!book || book.userId !== session.user.id) {
+      return NextResponse.json({ error: "Book not found" }, { status: 404 });
+    }
+
+    const price = FEATURE_PRICES[featureType] ?? 0;
+
+    // Free features don't need payment
+    if (price === 0) {
+      return NextResponse.json({ 
+        error: "This feature is free. Use the direct unlock endpoint." 
+      }, { status: 400 });
+    }
+
+    // Check if we should force simulated purchases (for testing)
+    const useSimulatedPurchases = process.env.USE_SIMULATED_PURCHASES === "true";
+
+    // Check if Stripe is configured
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+
+    if (useSimulatedPurchases || !stripeSecretKey || !stripePublishableKey) {
+      // Simulated purchases forced or Stripe not configured, return error to use simulated purchase
+      return NextResponse.json({ 
+        error: useSimulatedPurchases 
+          ? "Simulated purchases enabled. Use simulated purchase." 
+          : "Stripe not configured. Use simulated purchase.",
+        useSimulated: true
+      }, { status: 503 }); // Service Unavailable
+    }
+
+    // Initialize Stripe
+    const Stripe = (await import("stripe")).default;
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: "2024-12-18.acacia",
+    });
+
+    // Create purchase record with pending status
+    const purchaseId = crypto.randomUUID();
+    await db.insert(purchases).values({
+      id: purchaseId,
+      userId: session.user.id,
+      bookId,
+      featureType,
+      amount: price,
+      currency: "USD",
+      paymentMethod: "stripe",
+      status: "pending",
+    });
+
+    // Create Stripe Checkout Session
+    const checkoutSession = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: getFeatureName(featureType),
+              description: `Purchase ${getFeatureName(featureType)} for "${book.title}"`,
+            },
+            unit_amount: price,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: `${request.nextUrl.origin}/dashboard?session_id={CHECKOUT_SESSION_ID}&purchase_id=${purchaseId}`,
+      cancel_url: `${request.nextUrl.origin}/dashboard/book/${bookId}`,
+      client_reference_id: purchaseId,
+      metadata: {
+        userId: session.user.id,
+        bookId,
+        featureType,
+        purchaseId,
+      },
+    });
+
+    return NextResponse.json({ 
+      sessionId: checkoutSession.id,
+      url: checkoutSession.url 
+    });
+  } catch (error) {
+    console.error("Failed to create checkout session:", error);
+    return NextResponse.json(
+      { error: "Failed to create checkout session" },
+      { status: 500 }
+    );
+  }
+}
+

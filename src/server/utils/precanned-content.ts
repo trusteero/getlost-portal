@@ -6,6 +6,7 @@ import {
   marketingAssets,
   bookCovers,
   landingPages,
+  books,
 } from "@/server/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -297,14 +298,22 @@ const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$
 const rewriteAssetReferences = (html: string, replacements: Map<string, string>) => {
   let output = html;
   
-  // First pass: replace full paths
+  // First pass: replace full paths in HTML attributes (exact matches)
+  // This handles cases like poster="Landing page/The Broken Crown UI.png"
   for (const [search, replacement] of replacements.entries()) {
     if (!search || !replacement) continue;
-    output = output.replace(new RegExp(escapeRegex(search), "gi"), replacement);
+    // Match the full path in HTML attributes: src="full/path", poster="full/path", etc.
+    const fullPathInAttributeRegex = new RegExp(
+      `(src|poster|href|data-src)=(["'])${escapeRegex(search)}["']`,
+      "gi"
+    );
+    output = output.replace(fullPathInAttributeRegex, (match, attr, quote) => {
+      return `${attr}=${quote}${replacement}${quote}`;
+    });
   }
   
-  // Second pass: replace filenames in HTML attributes (src, poster, href, etc.)
-  // This handles cases where HTML has relative paths like src="Video1.mp4"
+  // Second pass: replace paths in HTML attributes where the path contains the filename
+  // This handles cases like poster="Landing page/image.png" where we need to match just the filename
   for (const [search, replacement] of replacements.entries()) {
     if (!search || !replacement) continue;
     const filename = path.basename(search);
@@ -312,8 +321,8 @@ const rewriteAssetReferences = (html: string, replacements: Map<string, string>)
     // Skip if filename is the same as search (already handled in first pass)
     if (filename === search) continue;
     
-    // Match filename in HTML attributes: src="Video1.mp4", poster="image.png", etc.
-    // This regex matches: attribute="path/to/filename.ext" or attribute='path/to/filename.ext'
+    // Match paths in HTML attributes that end with the filename
+    // e.g., poster="Landing page/The Broken Crown UI.png" should match "The Broken Crown UI.png"
     const attributeRegex = new RegExp(
       `(src|poster|href|data-src)=(["'])([^"']*${escapeRegex(filename)})["']`,
       "gi"
@@ -321,12 +330,21 @@ const rewriteAssetReferences = (html: string, replacements: Map<string, string>)
     
     output = output.replace(attributeRegex, (match, attr, quote, pathPart) => {
       // Only replace if it's a relative path (doesn't start with http/https/data/)
+      // And if the pathPart ends with the filename (to ensure we're matching the right path)
+      // And if it hasn't already been replaced (doesn't start with /api/)
       if (
         !pathPart.startsWith("http://") &&
         !pathPart.startsWith("https://") &&
         !pathPart.startsWith("data:") &&
-        !pathPart.startsWith("/")
+        !pathPart.startsWith("/api/") &&
+        !pathPart.startsWith("/") &&
+        pathPart.endsWith(filename)
       ) {
+        // Check if this exact pathPart is in our replacements map (for full path matches)
+        if (replacements.has(pathPart)) {
+          return `${attr}=${quote}${replacements.get(pathPart)}${quote}`;
+        }
+        // Otherwise, use the replacement for the filename (which should be an absolute path)
         return `${attr}=${quote}${replacement}${quote}`;
       }
       return match;
@@ -407,8 +425,9 @@ async function importReportsFromPackage(bookVersionId: string, pkg: PrecannedMan
     analyzedBy: "system@getlost.com",
   });
 
+  const reportId = randomUUID();
   await db.insert(reports).values({
-    id: randomUUID(),
+    id: reportId,
     bookVersionId,
     status: "completed",
     htmlContent: reportHtml,
@@ -418,6 +437,7 @@ async function importReportsFromPackage(bookVersionId: string, pkg: PrecannedMan
       seededFileName: path.basename(pkg.report),
       sourcePath: pkg.report,
       coverImageData: extractCoverImageData(reportHtml),
+      isActive: true, // Mark precanned report as active so it shows up
     }),
     requestedAt: timestamp,
     completedAt: timestamp,
@@ -450,6 +470,11 @@ async function importMarketingAssetsFromPackage(bookId: string, pkg: PrecannedMa
       assetReplacements.set(video.file, fileUrl);
       const videoBasename = path.basename(video.file);
       assetReplacements.set(videoBasename, fileUrl);
+      // Also map just the filename without extension (in case HTML uses it)
+      const videoNameNoExt = parsedName.name;
+      if (videoNameNoExt) {
+        assetReplacements.set(videoNameNoExt + ext, fileUrl);
+      }
 
       let thumbnailUrl: string | null = null;
       if (video.poster) {
@@ -458,17 +483,17 @@ async function importMarketingAssetsFromPackage(bookId: string, pkg: PrecannedMa
         const posterSlug = `${slugify(pkg.key)}-${slugify(posterParsed.name || `${baseName}-poster`)}${posterExt}`;
         const posterCopy = await copyPrecannedAsset(video.poster, [pkg.key, "videos", posterSlug]);
         thumbnailUrl = posterCopy.fileUrl;
-        // Map both full path and just the filename for replacement
-        assetReplacements.set(video.poster, posterCopy.fileUrl);
-        assetReplacements.set(path.basename(video.poster), posterCopy.fileUrl);
-        // Also map the original poster filename (e.g., "Wool UI.png") to the new URL
-        const originalPosterFilename = path.basename(video.poster);
-        assetReplacements.set(originalPosterFilename, posterCopy.fileUrl);
-        // Handle relative paths like "Landing page/Wool UI.png"
-        const posterRelativePath = video.poster.replace(/^[^/]+\//, "");
-        if (posterRelativePath !== video.poster) {
-          assetReplacements.set(posterRelativePath, posterCopy.fileUrl);
-        }
+      // Map both full path and just the filename for replacement
+      assetReplacements.set(video.poster, posterCopy.fileUrl);
+      const posterBasename = path.basename(video.poster);
+      assetReplacements.set(posterBasename, posterCopy.fileUrl);
+      
+      // Handle relative paths like "Landing page/Wool UI.png" or "Landing page/The Broken Crown UI.png"
+      // The HTML uses paths without the book prefix, so we need to map those
+      const posterRelativePath = video.poster.replace(/^[^/]+\//, "");
+      if (posterRelativePath !== video.poster && posterRelativePath !== posterBasename) {
+        assetReplacements.set(posterRelativePath, posterCopy.fileUrl);
+      }
       }
 
       await db.insert(marketingAssets).values({
@@ -496,6 +521,7 @@ async function importMarketingAssetsFromPackage(bookId: string, pkg: PrecannedMa
     const rawHtml = await readHtmlFile(pkg.marketingHtml);
     if (rawHtml) {
       const adjustedHtml = rewriteAssetReferences(rawHtml, assetReplacements);
+      
       await db.insert(marketingAssets).values({
         id: randomUUID(),
         bookId,
@@ -839,6 +865,19 @@ export async function importPrecannedContentForBook(options: {
 
   if (flags.reports && bookVersionId) {
     reportsLinked = await importReportsFromPackage(bookVersionId, pkg);
+    
+    // If reports were imported, automatically set the manuscript status to "ready_to_purchase"
+    // This allows precanned books to work without admin actions
+    if (reportsLinked > 0) {
+      await db
+        .update(books)
+        .set({
+          manuscriptStatus: "ready_to_purchase",
+          updatedAt: new Date(),
+        })
+        .where(eq(books.id, bookId));
+      console.log(`[Precanned] Set manuscript status to "ready_to_purchase" for book ${bookId}`);
+    }
   }
 
   if (flags.marketing) {

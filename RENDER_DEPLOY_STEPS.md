@@ -65,9 +65,9 @@ NEXT_PUBLIC_SUPER_ADMIN_EMAILS=your-email@example.com
 # BookDigest Service (for book processing)
 BOOKDIGEST_API_KEY=your-bookdigest-api-key
 
-# Email Service (MailerSend)
-MAILERSEND_API_KEY=your-mailersend-api-key
-MAILERSEND_FROM_EMAIL=noreply@yourdomain.com
+# Email Service (Resend)
+RESEND_API_KEY=your-resend-api-key
+RESEND_FROM_EMAIL=noreply@yourdomain.com  # or onboarding@resend.dev for testing
 
 # AI Services (if using)
 OPENAI_API_KEY=your-openai-key
@@ -181,7 +181,7 @@ Before deploying:
 - [ ] Google OAuth credentials ready
 - [ ] Admin email address ready
 - [ ] Optional: BookDigest API key
-- [ ] Optional: MailerSend API key
+- [ ] Optional: Resend API key
 
 After deploying:
 - [ ] Build succeeded

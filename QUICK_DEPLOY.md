@@ -57,9 +57,9 @@ NEXT_PUBLIC_SUPER_ADMIN_EMAILS=your-email@example.com
 # BookDigest API (for book processing)
 BOOKDIGEST_API_KEY=your-key
 
-# Email Service (MailerSend)
-MAILERSEND_API_KEY=your-key
-MAILERSEND_FROM_EMAIL=noreply@yourdomain.com
+# Email Service (Resend)
+RESEND_API_KEY=your-key
+RESEND_FROM_EMAIL=noreply@yourdomain.com  # or onboarding@resend.dev for testing
 ```
 
 ### Already Auto-Configured:

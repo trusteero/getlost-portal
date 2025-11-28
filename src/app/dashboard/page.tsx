@@ -20,6 +20,7 @@ interface Book {
   title: string;
   description: string;
   coverImageUrl?: string;
+  manuscriptStatus?: "queued" | "working_on" | "ready_to_purchase";
   createdAt: string;
   isProcessing?: boolean;
   features?: Array<{
@@ -46,6 +47,14 @@ interface Book {
     summary?: string;
     coverUrl?: string;
   } | null;
+  assetStatuses?: {
+    report: "not_requested" | "requested" | "uploaded" | "viewed";
+    marketing: "not_requested" | "requested" | "uploaded" | "viewed";
+    covers: "not_requested" | "requested" | "uploaded" | "viewed";
+    landingPage: "not_requested" | "requested" | "uploaded" | "viewed";
+  };
+  hasPrecannedContent?: boolean;
+  hasPreviewReport?: boolean;
 }
 
 export default function Dashboard() {
@@ -55,6 +64,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadTitle, setUploadTitle] = useState("");
+  const [uploadAuthorName, setUploadAuthorName] = useState("");
+  const [uploadAuthorBio, setUploadAuthorBio] = useState("");
+  const [uploadCoverImage, setUploadCoverImage] = useState<File | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -68,24 +80,60 @@ export default function Dashboard() {
       checkProcessingJobs();
     }
 
+    // Check for Stripe return (after successful payment)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('session_id');
+      const purchaseId = params.get('purchase_id');
+
+      if (sessionId && purchaseId) {
+        // Payment was successful, refresh books
+        fetchBooks();
+        
+        // Clean up URL
+        window.history.replaceState({}, '', '/dashboard');
+        
+        // Show success message (you can add a toast notification here)
+        console.log('Payment successful! Feature unlocked.');
+      }
+    }
+
     // Listen for upload modal open event from condensed library
     const handleOpenUploadModal = () => {
       setShowUploadModal(true);
     };
     window.addEventListener('openUploadModal', handleOpenUploadModal);
+    
+    // Listen for refresh books event (triggered after feature unlock)
+    const handleRefreshBooks = () => {
+      fetchBooks();
+    };
+    window.addEventListener('refreshBooks', handleRefreshBooks);
+    
     return () => {
       window.removeEventListener('openUploadModal', handleOpenUploadModal);
+      window.removeEventListener('refreshBooks', handleRefreshBooks);
     };
   }, [session, isPending]);
 
   useEffect(() => {
-    // Check for processing jobs periodically
-    const hasProcessing = books.some(book => book.isProcessing);
+    // Check for processing jobs or processing assets periodically
+    const hasProcessing = books.some(book => {
+      if (book.isProcessing) return true;
+      // Check if any asset is in processing state
+      if (book.assetStatuses) {
+        return Object.values(book.assetStatuses).some(status => status === 'requested');
+      }
+      return false;
+    });
+    
     if (hasProcessing) {
+      // Poll more frequently (every 2 seconds) when assets are processing
+      // This ensures we catch the 10-second delay transition quickly
       const interval = setInterval(() => {
         fetchBooks();
         checkProcessingJobs();
-      }, 10000); // Check every 10 seconds
+      }, 2000); // Check every 2 seconds for faster updates
 
       return () => clearInterval(interval);
     }
@@ -168,11 +216,6 @@ export default function Dashboard() {
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!uploadTitle.trim()) {
-      setUploadError("Please enter a book title");
-      return;
-    }
-
     if (!uploadFile) {
       setUploadError("Please upload a manuscript file");
       return;
@@ -183,7 +226,22 @@ export default function Dashboard() {
 
     try {
       const formData = new FormData();
-      formData.append("title", uploadTitle);
+      // Title is optional - will use filename if not provided
+      if (uploadTitle.trim()) {
+        formData.append("title", uploadTitle.trim());
+      }
+      // Author name is optional
+      if (uploadAuthorName.trim()) {
+        formData.append("authorName", uploadAuthorName.trim());
+      }
+      // Author bio is optional
+      if (uploadAuthorBio.trim()) {
+        formData.append("authorBio", uploadAuthorBio.trim());
+      }
+      // Cover image is optional
+      if (uploadCoverImage) {
+        formData.append("coverImage", uploadCoverImage);
+      }
       formData.append("file", uploadFile);
 
       const response = await fetch("/api/books", {
@@ -198,6 +256,9 @@ export default function Dashboard() {
       const data = await response.json();
       setShowUploadModal(false);
       setUploadTitle("");
+      setUploadAuthorName("");
+      setUploadAuthorBio("");
+      setUploadCoverImage(null);
       setUploadFile(null);
       await fetchBooks();
       // Scroll to the newly uploaded book
@@ -217,6 +278,9 @@ export default function Dashboard() {
   const closeUploadModal = () => {
     setShowUploadModal(false);
     setUploadTitle("");
+    setUploadAuthorName("");
+    setUploadAuthorBio("");
+    setUploadCoverImage(null);
     setUploadFile(null);
     setUploadError("");
     setDragActive(false);
@@ -234,15 +298,38 @@ export default function Dashboard() {
   // Calculate statistics for welcome message
   const calculateStats = () => {
     let unlockedInsights = 0;
-    const totalInsights = 5; // 5 features per book
+    const totalInsights = 5; // 5 features per book: summary, manuscript-report, marketing-assets, book-covers, landing-page
     
     books.forEach((book) => {
+      // 1. Summary (free when digest completes or book version has summary)
       const hasSummary = (book.digestJob?.summary && book.digestJob.status === "completed") || 
                          (book.latestVersion?.summary !== undefined && book.latestVersion.summary !== null);
-      const hasReport = book.latestReport?.status === "completed";
-      
       if (hasSummary) unlockedInsights++;
+      
+      // 2. Manuscript Report (check assetStatuses or feature status)
+      const hasReport = book.assetStatuses?.report === "uploaded" || 
+                        book.assetStatuses?.report === "viewed" ||
+                        book.latestReport?.status === "completed" ||
+                        book.features?.some(f => f.featureType === "manuscript-report" && (f.status === "purchased" || f.status === "unlocked"));
       if (hasReport) unlockedInsights++;
+      
+      // 3. Marketing Assets
+      const hasMarketing = book.assetStatuses?.marketing === "uploaded" || 
+                           book.assetStatuses?.marketing === "viewed" ||
+                           book.features?.some(f => f.featureType === "marketing-assets" && (f.status === "purchased" || f.status === "unlocked"));
+      if (hasMarketing) unlockedInsights++;
+      
+      // 4. Book Covers
+      const hasCovers = book.assetStatuses?.covers === "uploaded" || 
+                       book.assetStatuses?.covers === "viewed" ||
+                       book.features?.some(f => f.featureType === "book-covers" && (f.status === "purchased" || f.status === "unlocked"));
+      if (hasCovers) unlockedInsights++;
+      
+      // 5. Landing Page
+      const hasLandingPage = book.assetStatuses?.landingPage === "uploaded" || 
+                             book.assetStatuses?.landingPage === "viewed" ||
+                             book.features?.some(f => f.featureType === "landing-page" && (f.status === "purchased" || f.status === "unlocked"));
+      if (hasLandingPage) unlockedInsights++;
     });
     
     return {
@@ -267,18 +354,24 @@ export default function Dashboard() {
       if (feature && feature.status !== 'locked') {
         return 'complete';
       }
-      // For summary only, check existing logic (summary is free when digest completes)
-      if (featureType === 'summary' && hasSummary) return 'complete';
+      // For summary only, check if preview report exists (not just summary text)
+      if (featureType === 'summary') {
+        // Only show as complete if preview report exists
+        if (book.hasPreviewReport) {
+          return 'complete';
+        }
+        return 'locked';
+      }
       // For manuscript-report, require explicit unlock via purchase
       return 'locked';
     };
     
     const steps = [
-      { id: "summary", status: getFeatureStatus("summary") },
-      { id: "manuscript-report", status: getFeatureStatus("manuscript-report") },
-      { id: "marketing-assets", status: getFeatureStatus("marketing-assets") },
-      { id: "book-covers", status: getFeatureStatus("book-covers") },
-      { id: "landing-page", status: getFeatureStatus("landing-page") },
+      { id: "summary", status: getFeatureStatus("summary") as 'complete' | 'locked' | 'processing' },
+      { id: "manuscript-report", status: getFeatureStatus("manuscript-report") as 'complete' | 'locked' | 'processing' },
+      { id: "marketing-assets", status: getFeatureStatus("marketing-assets") as 'complete' | 'locked' | 'processing' },
+      { id: "book-covers", status: getFeatureStatus("book-covers") as 'complete' | 'locked' | 'processing' },
+      { id: "landing-page", status: getFeatureStatus("landing-page") as 'complete' | 'locked' | 'processing' },
     ];
 
     const coverImage = book.digestJob?.coverUrl || book.coverImageUrl || "/placeholder.svg";
@@ -295,21 +388,114 @@ export default function Dashboard() {
 
   // Map book data to ManuscriptCard format
   const mapBookToManuscriptCard = (book: Book) => {
+    // Get manuscript status
+    const manuscriptStatus = book.manuscriptStatus || "queued";
+    const isManuscriptReady = manuscriptStatus === "ready_to_purchase";
+    const hasViewedReport = book.assetStatuses?.report === "viewed";
+    
     // Determine feature statuses - check digest job summary first, then book version summary
     const hasSummary = (book.digestJob?.summary && book.digestJob.status === "completed") || 
                        (book.latestVersion?.summary !== undefined && book.latestVersion.summary !== null);
     const hasReport = book.latestReport?.status === "completed";
     
     // Check feature unlock statuses from database
-    const getFeatureStatus = (featureType: string): 'complete' | 'locked' => {
+    const getFeatureStatus = (featureType: string): 'complete' | 'locked' | 'processing' => {
+      // For manuscript-report, use manuscriptStatus
+      if (featureType === 'manuscript-report') {
+        if (manuscriptStatus === "queued") {
+          return 'processing'; // Show as processing with "Queued" text
+        } else if (manuscriptStatus === "working_on") {
+          return 'processing'; // Show as processing with "Working on Report" text
+        } else if (manuscriptStatus === "ready_to_purchase") {
+          // Check if report is actually uploaded
+          if (book.assetStatuses?.report === 'uploaded' || book.assetStatuses?.report === 'viewed') {
+            return 'complete';
+          }
+          // Ready to purchase but not uploaded yet
+          return 'locked';
+        }
+        return 'locked';
+      }
+      
+      // For all other features, dim them until manuscript is ready
+      if (!isManuscriptReady) {
+        return 'locked';
+      }
+      
+      // For summary only, check if preview report exists (not just summary text)
+      if (featureType === 'summary') {
+        // Only show as complete if preview report exists
+        if (book.hasPreviewReport) {
+          return 'complete';
+        }
+        return 'locked';
+      }
+      
+      // For marketing, covers, and landing pages: keep dimmed until user has viewed the report
+      if (featureType === 'marketing-assets' || featureType === 'book-covers' || featureType === 'landing-page') {
+        if (!hasViewedReport) {
+          return 'locked';
+        }
+      }
+      
+      // Check asset statuses from API
+      if (book.assetStatuses) {
+        let status: "not_requested" | "requested" | "uploaded" | "viewed" | undefined;
+        if (featureType === 'marketing-assets') {
+          status = book.assetStatuses.marketing;
+        } else if (featureType === 'book-covers') {
+          status = book.assetStatuses.covers;
+        } else if (featureType === 'landing-page') {
+          status = book.assetStatuses.landingPage;
+        }
+        
+        if (status === 'requested') {
+          return 'processing';
+        } else if (status === 'uploaded' || status === 'viewed') {
+          return 'complete';
+        }
+      }
+      
+      // Fallback to feature status from database
       const feature = book.features?.find(f => f.featureType === featureType);
       if (feature && feature.status !== 'locked') {
+        // If feature is purchased/requested but no asset uploaded yet, show processing
+        if (feature.status === 'purchased' || feature.status === 'requested') {
+          return 'processing';
+        }
         return 'complete';
       }
-      // For summary only, check existing logic (summary is free when digest completes)
-      if (featureType === 'summary' && hasSummary) return 'complete';
-      // For manuscript-report, require explicit unlock via purchase
+      
       return 'locked';
+    };
+    
+    const getButtonText = (featureType: string, status: 'complete' | 'locked' | 'processing'): string => {
+      // Special handling for manuscript-report based on status
+      if (featureType === 'manuscript-report') {
+        if (manuscriptStatus === "queued") {
+          return 'Queued';
+        } else if (manuscriptStatus === "working_on") {
+          return 'Working on Report';
+        } else if (manuscriptStatus === "ready_to_purchase") {
+          if (status === 'complete') {
+            return 'View Report';
+          }
+          return 'Purchase';
+        }
+      }
+      
+      if (status === 'processing') {
+        return 'Processing...';
+      }
+      if (status === 'complete') {
+        if (featureType === 'summary') return 'View Summary';
+        return 'View';
+      }
+      // For summary, don't show unlock button - keep it dimmed
+      if (featureType === 'summary') {
+        return ''; // Empty string means no button will be shown
+      }
+      return 'Unlock';
     };
     
     const steps = [
@@ -319,7 +505,7 @@ export default function Dashboard() {
         status: getFeatureStatus("summary"),
         action: "View a basic summary of your manuscript.",
         price: "Free",
-        buttonText: getFeatureStatus("summary") === 'complete' ? "View Summary" : "Unlock",
+        buttonText: getButtonText("summary", getFeatureStatus("summary")),
       },
       {
         id: "manuscript-report",
@@ -327,7 +513,7 @@ export default function Dashboard() {
         status: getFeatureStatus("manuscript-report"),
         action: "View a comprehensive review and marketing report.",
         price: getFeatureStatus("manuscript-report") === 'complete' ? "Unlocked" : "$149.99",
-        buttonText: getFeatureStatus("manuscript-report") === 'complete' ? "View Report" : "Unlock",
+        buttonText: getButtonText("manuscript-report", getFeatureStatus("manuscript-report")),
       },
       {
         id: "marketing-assets",
@@ -335,7 +521,7 @@ export default function Dashboard() {
         status: getFeatureStatus("marketing-assets"),
         action: "Video assets to advertise your book to your audience.",
         price: getFeatureStatus("marketing-assets") === 'complete' ? "Unlocked" : "$149.99",
-        buttonText: getFeatureStatus("marketing-assets") === 'complete' ? "View" : "Unlock",
+        buttonText: getButtonText("marketing-assets", getFeatureStatus("marketing-assets")),
       },
       {
         id: "book-covers",
@@ -343,7 +529,7 @@ export default function Dashboard() {
         status: getFeatureStatus("book-covers"),
         action: "Access book covers that appeal to your core audience.",
         price: getFeatureStatus("book-covers") === 'complete' ? "Unlocked" : "$149.99",
-        buttonText: getFeatureStatus("book-covers") === 'complete' ? "View" : "Unlock",
+        buttonText: getButtonText("book-covers", getFeatureStatus("book-covers")),
       },
       {
         id: "landing-page",
@@ -351,7 +537,7 @@ export default function Dashboard() {
         status: getFeatureStatus("landing-page"),
         action: "Access a landing page for your book that converts.",
         price: getFeatureStatus("landing-page") === 'complete' ? "Unlocked" : "$149.99",
-        buttonText: getFeatureStatus("landing-page") === 'complete' ? "View" : "Unlock",
+        buttonText: getButtonText("landing-page", getFeatureStatus("landing-page")),
       },
     ];
 
@@ -373,6 +559,9 @@ export default function Dashboard() {
       genre: "FICTION", // Default genre, could be enhanced with actual genre data
       steps,
       coverImage,
+      hasPrecannedContent: book.hasPrecannedContent || false,
+      manuscriptStatus: manuscriptStatus as "queued" | "working_on" | "ready_to_purchase",
+      hasViewedReport,
     };
   };
 
@@ -473,17 +662,63 @@ export default function Dashboard() {
 
                 <form onSubmit={handleUploadSubmit} className="space-y-6">
                   <div>
-                    <Label htmlFor="title">Book Title</Label>
+                    <Label htmlFor="title">Book Title <span className="text-gray-400 font-normal">(optional)</span></Label>
                     <Input
                       id="title"
                       type="text"
                       value={uploadTitle}
                       onChange={(e) => setUploadTitle(e.target.value)}
-                      placeholder="Enter your book title"
+                      placeholder="Enter your book title (will use filename if not provided)"
                       className="mt-1"
                       disabled={uploading}
-                      required
                     />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="authorName">Author Name <span className="text-gray-400 font-normal">(optional)</span></Label>
+                    <Input
+                      id="authorName"
+                      type="text"
+                      value={uploadAuthorName}
+                      onChange={(e) => setUploadAuthorName(e.target.value)}
+                      placeholder="Enter author name"
+                      className="mt-1"
+                      disabled={uploading}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="authorBio">Author Bio <span className="text-gray-400 font-normal">(optional)</span></Label>
+                    <textarea
+                      id="authorBio"
+                      value={uploadAuthorBio}
+                      onChange={(e) => setUploadAuthorBio(e.target.value)}
+                      placeholder="Enter author biography"
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      rows={3}
+                      disabled={uploading}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="coverImage">Cover Image <span className="text-gray-400 font-normal">(optional)</span></Label>
+                    <Input
+                      id="coverImage"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          setUploadCoverImage(e.target.files[0]);
+                        }
+                      }}
+                      className="mt-1"
+                      disabled={uploading}
+                    />
+                    {uploadCoverImage && (
+                      <p className="mt-1 text-sm text-gray-600">
+                        Selected: {uploadCoverImage.name}
+                      </p>
+                    )}
                   </div>
 
                   <div>

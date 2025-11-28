@@ -128,10 +128,29 @@ export async function POST(
 
     const price = FEATURE_PRICES[featureType] ?? 0;
 
-    // For now, we'll unlock features without payment processing
-    // In production, you would integrate with Stripe/PayPal here
-    // TODO: Add payment processing integration
+    // Check if we should force simulated purchases (for testing)
+    const useSimulatedPurchases = process.env.USE_SIMULATED_PURCHASES === "true";
 
+    // Check if Stripe is configured
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    const useStripe = !!(stripeSecretKey && stripePublishableKey) && !useSimulatedPurchases;
+
+    // For paid features, check if we should use Stripe or simulated purchase
+    if (price > 0 && useStripe) {
+      // Stripe is configured, redirect to checkout
+      return NextResponse.json(
+        { 
+          error: "Payment required",
+          redirectToCheckout: true,
+          price,
+          message: "Please use the checkout endpoint to complete payment"
+        },
+        { status: 402 } // Payment Required
+      );
+    }
+
+    // Simulated purchase (Stripe not configured or free feature)
     // Create purchase record
     const purchaseId = crypto.randomUUID();
     await db.insert(purchases).values({
@@ -141,7 +160,8 @@ export async function POST(
       featureType,
       amount: price,
       currency: "USD",
-      status: price === 0 ? "completed" : "completed", // For now, auto-complete
+      paymentMethod: useSimulatedPurchases ? "simulated" : (useStripe ? "stripe" : "simulated"),
+      status: "completed", // Auto-complete for simulated purchases
       completedAt: new Date(),
     });
 
@@ -154,7 +174,7 @@ export async function POST(
       await db
         .update(bookFeatures)
         .set({
-          status: "unlocked",
+          status: "purchased", // Changed from "unlocked" to "purchased" to indicate asset is requested
           unlockedAt: new Date(),
           purchasedAt: new Date(),
           price,
@@ -166,7 +186,7 @@ export async function POST(
         id: featureId,
         bookId: id,
         featureType,
-        status: "unlocked",
+        status: "purchased", // Changed from "unlocked" to "purchased" to indicate asset is requested
         unlockedAt: new Date(),
         purchasedAt: new Date(),
         price,
@@ -180,55 +200,58 @@ export async function POST(
       .where(eq(bookFeatures.id, featureId))
       .limit(1);
 
-    // For manuscript-report, attempt to import precanned content if missing
-    if (featureType === "manuscript-report") {
-      try {
-        const [latestVersion] = await db
-          .select()
-          .from(bookVersions)
-          .where(eq(bookVersions.bookId, id))
-          .orderBy(desc(bookVersions.uploadedAt))
-          .limit(1);
+    // Don't import precanned content automatically when user purchases a feature
+    // This ensures the asset stays in "requested" (processing) state until admin uploads
+    // Precanned content should only be imported when the book is first uploaded (for demo purposes)
+    // if (featureType === "manuscript-report") {
+    //   try {
+    //     const [latestVersion] = await db
+    //       .select()
+    //       .from(bookVersions)
+    //       .where(eq(bookVersions.bookId, id))
+    //       .orderBy(desc(bookVersions.uploadedAt))
+    //       .limit(1);
+    //
+    //     if (latestVersion) {
+    //       const existingReports = await db
+    //         .select()
+    //         .from(reports)
+    //         .where(eq(reports.bookVersionId, latestVersion.id))
+    //         .limit(1);
+    //
+    //       if (existingReports.length === 0) {
+    //         const importResult = await importPrecannedContentForBook({
+    //           bookId: id,
+    //           bookVersionId: latestVersion.id,
+    //           fileName: latestVersion.fileName,
+    //           features: { reports: true, marketing: false, covers: false, landingPage: false },
+    //         });
+    //
+    //         if (importResult) {
+    //           console.log(
+    //             `[Purchase] Imported precanned report package "${importResult.packageKey}" for book ${id}`
+    //           );
+    //         } else {
+    //           console.log(`[Purchase] No precanned report matched "${latestVersion.fileName}"`);
+    //         }
+    //       } else {
+    //         console.log(`[Purchase] Report already exists for book ${id}, skipping precanned import`);
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.error(`[Purchase] Failed to import precanned report:`, error);
+    //   }
+    // }
 
-        if (latestVersion) {
-          const existingReports = await db
-            .select()
-            .from(reports)
-            .where(eq(reports.bookVersionId, latestVersion.id))
-            .limit(1);
-
-          if (existingReports.length === 0) {
-            const importResult = await importPrecannedContentForBook({
-              bookId: id,
-              bookVersionId: latestVersion.id,
-              fileName: latestVersion.fileName,
-              features: { reports: true, marketing: false, covers: false, landingPage: false },
-            });
-
-            if (importResult) {
-              console.log(
-                `[Purchase] Imported precanned report package "${importResult.packageKey}" for book ${id}`
-              );
-            } else {
-              console.log(`[Purchase] No precanned report matched "${latestVersion.fileName}"`);
-            }
-          } else {
-            console.log(`[Purchase] Report already exists for book ${id}, skipping precanned import`);
-          }
-        }
-      } catch (error) {
-        console.error(`[Purchase] Failed to import precanned report:`, error);
-      }
-    }
-
-    // Populate demo data for the unlocked feature
-    try {
-      await populateDemoDataForBook(id, featureType);
-      console.log(`[Purchase] Populated demo data for ${featureType} on book ${id}`);
-    } catch (error) {
-      console.error(`[Purchase] Failed to populate demo data:`, error);
-      // Don't fail the purchase if demo data population fails
-    }
+    // Don't populate demo data automatically - wait for admin to upload assets
+    // This ensures the asset stays in "requested" (processing) state until admin uploads
+    // try {
+    //   await populateDemoDataForBook(id, featureType);
+    //   console.log(`[Purchase] Populated demo data for ${featureType} on book ${id}`);
+    // } catch (error) {
+    //   console.error(`[Purchase] Failed to populate demo data:`, error);
+    //   // Don't fail the purchase if demo data population fails
+    // }
 
     return NextResponse.json({
       message: "Feature unlocked successfully",

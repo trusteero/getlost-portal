@@ -5,38 +5,32 @@ interface EmailOptions {
   text?: string;
 }
 
-const MAILERSEND_API_KEY = process.env.MAILERSEND_API_KEY;
-const MAILERSEND_FROM_EMAIL = process.env.MAILERSEND_FROM_EMAIL || "noreply@getlost.com";
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 export async function sendEmail({ to, subject, html, text }: EmailOptions) {
-  if (!MAILERSEND_API_KEY) {
-    console.error("MailerSend API key not configured");
+  if (!RESEND_API_KEY) {
+    console.error("Resend API key not configured");
     // In development, just log the email
     if (process.env.NODE_ENV === "development") {
-      console.log("Email would be sent:", { to, subject, html });
+      console.log("📧 [Email] Would be sent:", { to, subject });
+      console.log("📧 [Email] HTML preview:", html.substring(0, 200) + "...");
       return true;
     }
     return false;
   }
 
   try {
-    const response = await fetch("https://api.mailersend.com/v1/email", {
+    const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${MAILERSEND_API_KEY}`,
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: {
-          email: MAILERSEND_FROM_EMAIL,
-          name: "Get Lost",
-        },
-        to: [
-          {
-            email: to,
-          },
-        ],
+        from: RESEND_FROM_EMAIL,
+        to: [to],
         subject,
         html,
         text: text || html.replace(/<[^>]*>/g, ""), // Strip HTML tags for text version
@@ -44,11 +38,18 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions) {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error("MailerSend API error:", error);
+      let error;
+      try {
+        error = await response.json();
+      } catch {
+        error = { message: await response.text() };
+      }
+      console.error("Resend API error:", error);
       return false;
     }
 
+    const data = await response.json();
+    console.log("📧 [Email] Sent successfully:", { to, id: data.id });
     return true;
   } catch (error) {
     console.error("Failed to send email:", error);
@@ -391,6 +392,318 @@ export async function sendWelcomeEmail(email: string, name?: string) {
   return sendEmail({
     to: email,
     subject: "Welcome to Get Lost!",
+    html,
+  });
+}
+
+export async function sendManuscriptQueuedEmail(email: string, bookTitle: string, userName?: string) {
+  const dashboardUrl = `${APP_URL}/dashboard`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Manuscript Queued</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 20px;
+          }
+          .container {
+            background: white;
+            border-radius: 12px;
+            padding: 48px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: 0 auto;
+          }
+          .content {
+            text-align: center;
+          }
+          h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 16px;
+          }
+          p {
+            color: #6b7280;
+            margin: 0 0 24px;
+            font-size: 16px;
+          }
+          .book-title {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+            font-weight: 600;
+            color: #111827;
+            font-size: 18px;
+          }
+          .button {
+            display: inline-block;
+            padding: 16px 48px;
+            background-color: #ea580c;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 24px 0;
+            transition: background-color 0.2s;
+          }
+          .button:hover {
+            background-color: #dc2626;
+          }
+          .footer {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 13px;
+            color: #9ca3af;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="content">
+            <h2>Manuscript Queued</h2>
+            <p>${userName ? `Hi ${userName},` : 'Hi,'}</p>
+            <p>Your manuscript has been successfully uploaded and is now in our queue for processing.</p>
+            
+            <div class="book-title">"${bookTitle}"</div>
+            
+            <p>Our team will begin working on your report soon. You'll receive an email notification when we start processing your manuscript.</p>
+
+            <a href="${dashboardUrl}" class="button" style="color: white !important;">View Dashboard</a>
+          </div>
+
+          <div class="footer">
+            <p style="margin: 0;">Thank you for using Get Lost!</p>
+            <p style="margin: 8px 0 0;">&copy; ${new Date().getFullYear()} Get Lost. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: `Your manuscript "${bookTitle}" has been queued`,
+    html,
+  });
+}
+
+export async function sendManuscriptInProgressEmail(email: string, bookTitle: string, userName?: string) {
+  const dashboardUrl = `${APP_URL}/dashboard`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Manuscript In Progress</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 20px;
+          }
+          .container {
+            background: white;
+            border-radius: 12px;
+            padding: 48px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: 0 auto;
+          }
+          .content {
+            text-align: center;
+          }
+          h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 16px;
+          }
+          p {
+            color: #6b7280;
+            margin: 0 0 24px;
+            font-size: 16px;
+          }
+          .book-title {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+            font-weight: 600;
+            color: #111827;
+            font-size: 18px;
+          }
+          .button {
+            display: inline-block;
+            padding: 16px 48px;
+            background-color: #ea580c;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 24px 0;
+            transition: background-color 0.2s;
+          }
+          .button:hover {
+            background-color: #dc2626;
+          }
+          .footer {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 13px;
+            color: #9ca3af;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="content">
+            <h2>We're Working on Your Report</h2>
+            <p>${userName ? `Hi ${userName},` : 'Hi,'}</p>
+            <p>Great news! Our team has started working on your manuscript report.</p>
+            
+            <div class="book-title">"${bookTitle}"</div>
+            
+            <p>We're analyzing your manuscript and preparing a comprehensive report. You'll receive another email notification once your report is ready.</p>
+
+            <a href="${dashboardUrl}" class="button" style="color: white !important;">View Dashboard</a>
+          </div>
+
+          <div class="footer">
+            <p style="margin: 0;">Thank you for using Get Lost!</p>
+            <p style="margin: 8px 0 0;">&copy; ${new Date().getFullYear()} Get Lost. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: `We're working on your report for "${bookTitle}"`,
+    html,
+  });
+}
+
+export async function sendReportReadyEmail(email: string, bookTitle: string, bookId: string, userName?: string) {
+  const reportUrl = `${APP_URL}/dashboard/book/${bookId}#report`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Report Ready</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 20px;
+          }
+          .container {
+            background: white;
+            border-radius: 12px;
+            padding: 48px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: 0 auto;
+          }
+          .content {
+            text-align: center;
+          }
+          h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 16px;
+          }
+          p {
+            color: #6b7280;
+            margin: 0 0 24px;
+            font-size: 16px;
+          }
+          .book-title {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+            font-weight: 600;
+            color: #111827;
+            font-size: 18px;
+          }
+          .button {
+            display: inline-block;
+            padding: 16px 48px;
+            background-color: #ea580c;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 24px 0;
+            transition: background-color 0.2s;
+          }
+          .button:hover {
+            background-color: #dc2626;
+          }
+          .footer {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 13px;
+            color: #9ca3af;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="content">
+            <h2>Your Report is Ready!</h2>
+            <p>${userName ? `Hi ${userName},` : 'Hi,'}</p>
+            <p>Your comprehensive manuscript report has been completed and is ready for you to view.</p>
+            
+            <div class="book-title">"${bookTitle}"</div>
+            
+            <p>Click the button below to view your report and discover insights about your manuscript.</p>
+
+            <a href="${reportUrl}" class="button" style="color: white !important;">View Report</a>
+          </div>
+
+          <div class="footer">
+            <p style="margin: 0;">Thank you for using Get Lost!</p>
+            <p style="margin: 8px 0 0;">&copy; ${new Date().getFullYear()} Get Lost. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: `Your report for "${bookTitle}" is ready!`,
     html,
   });
 }

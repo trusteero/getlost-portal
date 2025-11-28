@@ -51,7 +51,7 @@ SUPER_ADMIN_EMAILS=admin@example.com
 
 # Optional Services
 BOOKDIGEST_API_KEY=your-key
-MAILERSEND_API_KEY=your-key
+RESEND_API_KEY=your-key
 ```
 
 ### Render Production (Dashboard Settings)
@@ -80,7 +80,7 @@ SUPER_ADMIN_EMAILS=admin@example.com
 
 # Services
 BOOKDIGEST_API_KEY=your-key
-MAILERSEND_API_KEY=your-key
+RESEND_API_KEY=your-key
 ```
 
 ---

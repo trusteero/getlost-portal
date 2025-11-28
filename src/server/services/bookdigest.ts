@@ -258,48 +258,75 @@ export async function checkBookDigestStatus(jobId: string) {
         })
         .where(eq(digestJobs.id, jobId));
 
-      // Update book with cover if extracted
-      if (coverImageUrl && job.bookId) {
+      // Update book with extracted metadata
+      if (job.bookId) {
         const [existingBook] = await db
-          .select({ coverImageUrl: books.coverImageUrl })
+          .select({
+            title: books.title,
+            coverImageUrl: books.coverImageUrl,
+            description: books.description,
+          })
           .from(books)
           .where(eq(books.id, job.bookId))
           .limit(1);
 
-        if (!existingBook?.coverImageUrl) {
-          console.log(`Updating book ${job.bookId} with cover URL: ${coverImageUrl}`);
-          await db
-            .update(books)
-            .set({
-              coverImageUrl,
-              updatedAt: new Date(),
-            })
-            .where(eq(books.id, job.bookId));
-          console.log(`Successfully updated book ${job.bookId} with cover`);
-        } else {
-          console.log(`Book ${job.bookId} already has a cover, skipping BookDigest cover update`);
-        }
-      } else {
-        console.log(`No cover URL to update for book ${job.bookId}`);
-      }
+        if (existingBook) {
+          const updates: {
+            title?: string;
+            coverImageUrl?: string;
+            description?: string;
+            updatedAt: Date;
+          } = {
+            updatedAt: new Date(),
+          };
+          let hasUpdates = false;
 
-      // Update book with brief as description if extracted and empty
-      if (result.brief && job.bookId) {
-        const [book] = await db
-          .select()
-          .from(books)
-          .where(eq(books.id, job.bookId))
-          .limit(1);
+          // Update title if extracted from digest
+          // Always prefer digest title as it's extracted from book metadata (more accurate than filename)
+          if (result.meta?.title && result.meta.title.trim()) {
+            const extractedTitle = result.meta.title.trim();
+            const currentTitle = existingBook.title;
+            
+            // Always update if digest extracted a title and it's different from current
+            // The current title likely came from filename, so digest title is more accurate
+            if (extractedTitle !== currentTitle) {
+              updates.title = extractedTitle;
+              hasUpdates = true;
+              console.log(`[Digest] Updating book ${job.bookId} title: "${currentTitle}" -> "${extractedTitle}"`);
+            } else {
+              console.log(`[Digest] Title unchanged: "${currentTitle}" matches digest title`);
+            }
+          }
 
-        // Update the book's description if empty
-        if (book && !book.description) {
-          await db
-            .update(books)
-            .set({
-              description: result.brief,
-              updatedAt: new Date(),
-            })
-            .where(eq(books.id, job.bookId));
+          // Update cover image if extracted and not already set
+          if (coverImageUrl && !existingBook.coverImageUrl) {
+            updates.coverImageUrl = coverImageUrl;
+            hasUpdates = true;
+            console.log(`Updating book ${job.bookId} with cover URL: ${coverImageUrl}`);
+          }
+
+          // Update description with brief if extracted and empty
+          if (result.brief && result.brief.trim() && !existingBook.description) {
+            updates.description = result.brief.trim();
+            hasUpdates = true;
+            console.log(`Updating book ${job.bookId} description with brief`);
+          }
+
+          // Apply all updates at once
+          if (hasUpdates) {
+            // Remove updatedAt from the set call since it's already in the object
+            const { updatedAt, ...updateFields } = updates;
+            await db
+              .update(books)
+              .set({
+                ...updateFields,
+                updatedAt,
+              })
+              .where(eq(books.id, job.bookId));
+            console.log(`Successfully updated book ${job.bookId} with extracted metadata`);
+          } else {
+            console.log(`No metadata updates needed for book ${job.bookId}`);
+          }
         }
       }
 

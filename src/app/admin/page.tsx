@@ -21,6 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { AssetUploadSection } from "@/components/admin/asset-upload-section";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,6 +60,7 @@ interface Book {
   title: string;
   description?: string;
   coverImageUrl?: string;
+  manuscriptStatus?: "queued" | "working_on" | "ready_to_purchase";
   createdAt: string;
   updatedAt: string;
   user: {
@@ -74,6 +76,10 @@ interface Book {
     uploadedAt: string;
   };
   latestReport?: Report;
+  reportStatus?: "not_requested" | "requested" | "uploaded" | "viewed";
+  marketingStatus?: "not_requested" | "requested" | "uploaded" | "viewed";
+  coversStatus?: "not_requested" | "requested" | "uploaded" | "viewed";
+  landingPageStatus?: "not_requested" | "requested" | "uploaded" | "viewed";
 }
 
 interface Analytics {
@@ -119,6 +125,14 @@ export default function AdminDashboard() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [uploadingReport, setUploadingReport] = useState(false);
   const [activeView, setActiveView] = useState<"books" | "users">("books");
+  
+  // Asset management state
+  const [reports, setReports] = useState<any[]>([]);
+  const [previewReports, setPreviewReports] = useState<any[]>([]);
+  const [marketingAssets, setMarketingAssets] = useState<any[]>([]);
+  const [covers, setCovers] = useState<any[]>([]);
+  const [landingPages, setLandingPages] = useState<any[]>([]);
+  const [uploadingAsset, setUploadingAsset] = useState<string | null>(null);
 
   // Debug users data
   useEffect(() => {
@@ -265,12 +279,87 @@ export default function AdminDashboard() {
     }
   };
 
+  const getAssetStatusIcon = (status?: "not_requested" | "requested" | "uploaded" | "viewed") => {
+    if (!status || status === "not_requested") {
+      return <XCircle className="w-4 h-4 text-gray-400" />;
+    }
+
+    switch (status) {
+      case "requested":
+        return <Clock className="w-4 h-4 text-yellow-600" />;
+      case "uploaded":
+        return <CheckCircle className="w-4 h-4 text-blue-600" />;
+      case "viewed":
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
+      default:
+        return <XCircle className="w-4 h-4 text-gray-400" />;
+    }
+  };
+
+  const getAssetStatusText = (status?: "not_requested" | "requested" | "uploaded" | "viewed") => {
+    if (!status || status === "not_requested") {
+      return "Not Requested";
+    }
+
+    switch (status) {
+      case "requested":
+        return "Requested";
+      case "uploaded":
+        return "Uploaded";
+      case "viewed":
+        return "Viewed";
+      default:
+        return "Not Requested";
+    }
+  };
+
+  const fetchBookAssets = async (bookId: string) => {
+    try {
+      // Fetch all assets in parallel
+      const [reportsRes, marketingRes, coversRes, landingRes] = await Promise.all([
+        fetch(`/api/admin/books/${bookId}/reports`),
+        fetch(`/api/admin/books/${bookId}/marketing-assets`),
+        fetch(`/api/admin/books/${bookId}/covers`),
+        fetch(`/api/admin/books/${bookId}/landing-page`),
+      ]);
+
+      if (reportsRes.ok) {
+        const allReports = await reportsRes.json();
+        // Separate full reports from preview reports
+        const fullReports = allReports.filter((r: any) => r.status !== "preview");
+        const preview = allReports.filter((r: any) => r.status === "preview");
+        setReports(fullReports);
+        setPreviewReports(preview);
+      }
+
+      if (marketingRes.ok) {
+        setMarketingAssets(await marketingRes.json());
+      }
+
+      if (coversRes.ok) {
+        setCovers(await coversRes.json());
+      }
+
+      if (landingRes.ok) {
+        setLandingPages(await landingRes.json());
+      }
+    } catch (error) {
+      console.error("Failed to fetch book assets:", error);
+    }
+  };
+
+  // Fetch assets when a book is selected
+  useEffect(() => {
+    if (selectedBook) {
+      fetchBookAssets(selectedBook.id);
+    }
+  }, [selectedBook]);
+
   const handleReportUpload = async (bookId: string, file: File) => {
     setUploadingReport(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("bookId", bookId);
 
       const response = await fetch(`/api/admin/books/${bookId}/report`, {
         method: "POST",
@@ -278,16 +367,216 @@ export default function AdminDashboard() {
       });
 
       if (response.ok) {
-        await fetchData();
+        await fetchBookAssets(bookId);
+        await fetchData(); // Refresh main book list to update statuses
         alert("Report uploaded successfully");
       } else {
-        alert("Failed to upload report");
+        const error = await response.json();
+        alert(error.error || "Failed to upload report");
       }
     } catch (error) {
       console.error("Failed to upload report:", error);
       alert("Failed to upload report");
     } finally {
       setUploadingReport(false);
+    }
+  };
+
+  const handlePreviewReportUpload = async (bookId: string, file: File) => {
+    setUploadingAsset("preview-report");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(`/api/admin/books/${bookId}/preview-report`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        await fetchBookAssets(bookId);
+        await fetchData(); // Refresh main book list to update statuses
+        alert("Preview report uploaded successfully");
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to upload preview report");
+      }
+    } catch (error) {
+      console.error("Failed to upload preview report:", error);
+      alert("Failed to upload preview report");
+    } finally {
+      setUploadingAsset(null);
+    }
+  };
+
+  const handleMarketingAssetUpload = async (bookId: string, file: File) => {
+    setUploadingAsset("marketing");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("title", `Marketing Asset ${new Date().toLocaleDateString()}`);
+
+      const response = await fetch(`/api/admin/books/${bookId}/marketing-assets`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        await fetchBookAssets(bookId);
+        await fetchData(); // Refresh main book list to update statuses
+        const message = result.uploadedAsZip 
+          ? `Marketing asset uploaded successfully (ZIP with ${result.extractedFilesCount} file(s))`
+          : "Marketing asset uploaded successfully";
+        alert(message);
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to upload marketing asset");
+      }
+    } catch (error) {
+      console.error("Failed to upload marketing asset:", error);
+      alert("Failed to upload marketing asset");
+    } finally {
+      setUploadingAsset(null);
+    }
+  };
+
+  const handleCoverUpload = async (bookId: string, file: File) => {
+    setUploadingAsset("cover");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(`/api/admin/books/${bookId}/covers`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        await fetchBookAssets(bookId);
+        await fetchData(); // Refresh main book list to update statuses
+        alert("Cover uploaded successfully");
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to upload cover");
+      }
+    } catch (error) {
+      console.error("Failed to upload cover:", error);
+      alert("Failed to upload cover");
+    } finally {
+      setUploadingAsset(null);
+    }
+  };
+
+  const handleLandingPageUpload = async (bookId: string, file: File) => {
+    setUploadingAsset("landing-page");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(`/api/admin/books/${bookId}/landing-page`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        await fetchBookAssets(bookId);
+        await fetchData(); // Refresh main book list to update statuses
+        alert("Landing page uploaded successfully");
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to upload landing page");
+      }
+    } catch (error) {
+      console.error("Failed to upload landing page:", error);
+      alert("Failed to upload landing page");
+    } finally {
+      setUploadingAsset(null);
+    }
+  };
+
+  const handleDeleteAsset = async (bookId: string, assetType: string, assetId: string) => {
+    if (!confirm("Are you sure you want to delete this asset?")) return;
+
+    try {
+      const response = await fetch(`/api/admin/books/${bookId}/${assetType}/${assetId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        await fetchBookAssets(bookId);
+        await fetchData(); // Refresh main book list to update statuses
+        alert("Asset deleted successfully");
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to delete asset");
+      }
+    } catch (error) {
+      console.error("Failed to delete asset:", error);
+      alert("Failed to delete asset");
+    }
+  };
+
+  const handleSetActive = async (bookId: string, assetType: string, assetId: string) => {
+    try {
+      const response = await fetch(`/api/admin/books/${bookId}/${assetType}/${assetId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: true }),
+      });
+
+      if (response.ok) {
+        await fetchBookAssets(bookId);
+        await fetchData(); // Refresh main book list to update statuses
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to set active asset");
+      }
+    } catch (error) {
+      console.error("Failed to set active asset:", error);
+      alert("Failed to set active asset");
+    }
+  };
+
+  const handleSetPrimary = async (bookId: string, assetId: string) => {
+    try {
+      const response = await fetch(`/api/admin/books/${bookId}/covers/${assetId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPrimary: true }),
+      });
+
+      if (response.ok) {
+        await fetchBookAssets(bookId);
+        await fetchData(); // Refresh main book list to update statuses
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to set primary cover");
+      }
+    } catch (error) {
+      console.error("Failed to set primary cover:", error);
+      alert("Failed to set primary cover");
+    }
+  };
+
+  const handleSetReportActive = async (bookId: string, reportId: string) => {
+    try {
+      const response = await fetch(`/api/admin/books/${bookId}/reports/${reportId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: true }),
+      });
+
+      if (response.ok) {
+        await fetchBookAssets(bookId);
+        await fetchData(); // Refresh main book list to update statuses
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to set active report");
+      }
+    } catch (error) {
+      console.error("Failed to set active report:", error);
+      alert("Failed to set active report");
     }
   };
 
@@ -310,6 +599,29 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error("Failed to update user role:", error);
       alert("Failed to update user role");
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
+    if (!confirm(`Are you sure you want to delete user "${userEmail}"? This will permanently delete:\n\n- All their books and related data\n- All their purchases\n- All their sessions\n- Their account\n\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        await fetchData();
+        alert("User deleted successfully");
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to delete user");
+      }
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      alert("Failed to delete user");
     }
   };
 
@@ -610,12 +922,6 @@ export default function AdminDashboard() {
             <Users className="w-4 h-4 mr-2" />
             Users
           </Button>
-          <Link href="/admin/system-books">
-            <Button variant="outline">
-              <FileText className="w-4 h-4 mr-2" />
-              System Books
-            </Button>
-          </Link>
           <Button 
             variant="outline" 
             onClick={async () => {
@@ -719,6 +1025,15 @@ export default function AdminDashboard() {
                         <th className="text-left py-2 px-2">
                           <span>Report Status</span>
                         </th>
+                        <th className="text-left py-2 px-2">
+                          <span>Marketing Status</span>
+                        </th>
+                        <th className="text-left py-2 px-2">
+                          <span>Covers Status</span>
+                        </th>
+                        <th className="text-left py-2 px-2">
+                          <span>Landing Page Status</span>
+                        </th>
                         <th
                           className="text-left py-2 px-2 cursor-pointer hover:bg-gray-50"
                           onClick={() => handleSort("createdAt")}
@@ -777,9 +1092,69 @@ export default function AdminDashboard() {
                             </td>
                             <td className="py-2 px-2">
                               <div className="flex items-center space-x-1">
-                                {getReportStatusIcon(book.latestReport?.status)}
+                                {book.manuscriptStatus === "queued" && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={async () => {
+                                      try {
+                                        const response = await fetch(`/api/admin/books/${book.id}/manuscript-status`, {
+                                          method: "PATCH",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ status: "working_on" }),
+                                        });
+                                        if (response.ok) {
+                                          await fetchData();
+                                        }
+                                      } catch (error) {
+                                        console.error("Failed to update manuscript status:", error);
+                                      }
+                                    }}
+                                    className="text-xs"
+                                  >
+                                    Start Working
+                                  </Button>
+                                )}
+                                {book.manuscriptStatus === "working_on" && (
+                                  <span className="text-xs text-blue-600">Working on Report</span>
+                                )}
+                                {book.manuscriptStatus === "ready_to_purchase" && (
+                                  <span className="text-xs text-green-600">Ready to Purchase</span>
+                                )}
+                                {!book.manuscriptStatus && (
+                                  <span className="text-xs text-gray-500">Queued</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2 px-2">
+                              <div className="flex items-center space-x-1">
+                                {getAssetStatusIcon(book.reportStatus)}
                                 <span className="text-xs">
-                                  {getReportStatusText(book.latestReport?.status)}
+                                  {getAssetStatusText(book.reportStatus)}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-2 px-2">
+                              <div className="flex items-center space-x-1">
+                                {getAssetStatusIcon(book.marketingStatus)}
+                                <span className="text-xs">
+                                  {getAssetStatusText(book.marketingStatus)}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-2 px-2">
+                              <div className="flex items-center space-x-1">
+                                {getAssetStatusIcon(book.coversStatus)}
+                                <span className="text-xs">
+                                  {getAssetStatusText(book.coversStatus)}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-2 px-2">
+                              <div className="flex items-center space-x-1">
+                                {getAssetStatusIcon(book.landingPageStatus)}
+                                <span className="text-xs">
+                                  {getAssetStatusText(book.landingPageStatus)}
                                 </span>
                               </div>
                             </td>
@@ -792,16 +1167,47 @@ export default function AdminDashboard() {
                               {new Date(book.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </td>
                             <td className="py-2 px-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedBook(book);
-                                  setSheetOpen(true);
-                                }}
-                              >
-                                <ExternalLink className="w-3 h-3" />
-                              </Button>
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedBook(book);
+                                    setSheetOpen(true);
+                                  }}
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    if (!confirm(`Are you sure you want to delete "${book.title}"? This will permanently delete the book and all its related data (reports, marketing assets, covers, landing pages, etc.). This action cannot be undone.`)) {
+                                      return;
+                                    }
+                                    try {
+                                      const response = await fetch(`/api/admin/books/${book.id}`, {
+                                        method: "DELETE",
+                                      });
+                                      if (response.ok) {
+                                        await fetchData();
+                                        setSheetOpen(false);
+                                        setSelectedBook(null);
+                                        alert("Book deleted successfully");
+                                      } else {
+                                        const error = await response.json();
+                                        alert(error.error || "Failed to delete book");
+                                      }
+                                    } catch (error) {
+                                      console.error("Failed to delete book:", error);
+                                      alert("Failed to delete book");
+                                    }
+                                  }}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <XCircle className="w-3 h-3" />
+                                </Button>
+                              </div>
                             </td>
                           </tr>
                       ))}
@@ -1027,6 +1433,17 @@ export default function AdminDashboard() {
                                           </DropdownMenuItem>
                                         </>
                                       )}
+                                      {(session?.user as any)?.role === "super_admin" && user.id !== session?.user?.id && (
+                                        <>
+                                          <DropdownMenuItem
+                                            onClick={() => handleDeleteUser(user.id, user.email)}
+                                            className="text-red-600"
+                                          >
+                                            <XCircle className="w-4 h-4 mr-2" />
+                                            Delete User
+                                          </DropdownMenuItem>
+                                        </>
+                                      )}
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 ) : (session?.user as any)?.role === "super_admin" && user.role === "super_admin" ? (
@@ -1044,6 +1461,15 @@ export default function AdminDashboard() {
                                         <UserX className="w-4 h-4 mr-2" />
                                         Demote to Admin
                                       </DropdownMenuItem>
+                                      {user.id !== session?.user?.id && (
+                                        <DropdownMenuItem
+                                          onClick={() => handleDeleteUser(user.id, user.email)}
+                                          className="text-red-600"
+                                        >
+                                          <XCircle className="w-4 h-4 mr-2" />
+                                          Delete User
+                                        </DropdownMenuItem>
+                                      )}
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 ) : (session?.user as any)?.role === "admin" && user.role === "user" ? (
@@ -1134,12 +1560,48 @@ export default function AdminDashboard() {
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetContent side="right" className="w-[65vw] sm:w-[65vw] sm:max-w-[65vw] overflow-y-auto">
             <SheetHeader>
-              <SheetTitle className="text-xl truncate max-w-full" title={selectedBook?.title}>
-                {selectedBook?.title}
-              </SheetTitle>
-              <SheetDescription>
-                Manage book details and reports
-              </SheetDescription>
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <SheetTitle className="text-xl truncate max-w-full" title={selectedBook?.title}>
+                    {selectedBook?.title}
+                  </SheetTitle>
+                  <SheetDescription>
+                    Manage book details and reports
+                  </SheetDescription>
+                </div>
+                {selectedBook && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="ml-4 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-300"
+                    onClick={async () => {
+                      if (!confirm(`Are you sure you want to delete "${selectedBook.title}"? This will permanently delete the book and all its related data (reports, marketing assets, covers, landing pages, etc.). This action cannot be undone.`)) {
+                        return;
+                      }
+                      try {
+                        const response = await fetch(`/api/admin/books/${selectedBook.id}`, {
+                          method: "DELETE",
+                        });
+                        if (response.ok) {
+                          await fetchData();
+                          setSheetOpen(false);
+                          setSelectedBook(null);
+                          alert("Book deleted successfully");
+                        } else {
+                          const error = await response.json();
+                          alert(error.error || "Failed to delete book");
+                        }
+                      } catch (error) {
+                        console.error("Failed to delete book:", error);
+                        alert("Failed to delete book");
+                      }
+                    }}
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Delete Book
+                  </Button>
+                )}
+              </div>
             </SheetHeader>
 
             {selectedBook && (
@@ -1274,70 +1736,68 @@ export default function AdminDashboard() {
                 )}
 
                 {/* Report Management */}
-                <div>
-                  <h3 className="font-semibold mb-2">Report Management</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600">Status:</span>
-                        {getReportStatusIcon(selectedBook.latestReport?.status)}
-                        <span className="text-sm font-medium">{getReportStatusText(selectedBook.latestReport?.status)}</span>
-                      </div>
+                <AssetUploadSection
+                  title="Report"
+                  assetType="report"
+                  items={reports.map(r => ({ ...r, adminNotes: r.adminNotes }))}
+                  isUploading={uploadingReport}
+                  onUpload={(file) => handleReportUpload(selectedBook.id, file)}
+                  onSetActive={(itemId) => handleSetReportActive(selectedBook.id, itemId)}
+                  onDelete={(itemId) => handleDeleteAsset(selectedBook.id, "reports", itemId)}
+                  activeLabel="Active"
+                  uploadButtonColor="bg-blue-600 hover:bg-blue-700"
+                />
 
-                      <select
-                        className="text-sm border rounded px-2 py-1"
-                        value={selectedBook.latestReport?.status || "not_requested"}
-                        onChange={(e) => handleReportStatusChange(selectedBook.id, e.target.value)}
-                      >
-                        <option value="not_requested">Not Requested</option>
-                        <option value="requested">Requested</option>
-                        <option value="analyzing">Analyzing</option>
-                        <option value="completed">Completed</option>
-                      </select>
-                    </div>
+                {/* Preview Report (Free Report) */}
+                <AssetUploadSection
+                  title="Preview Report (Free Report)"
+                  assetType="preview-report"
+                  items={previewReports.map(r => ({ ...r, adminNotes: r.adminNotes }))}
+                  isUploading={uploadingAsset === "preview-report"}
+                  onUpload={(file) => handlePreviewReportUpload(selectedBook.id, file)}
+                  onDelete={(itemId) => handleDeleteAsset(selectedBook.id, "reports", itemId)}
+                  activeLabel="Active"
+                  uploadButtonColor="bg-green-600 hover:bg-green-700"
+                />
 
-                    {selectedBook.latestReport?.requestedAt && (
-                      <div className="text-sm">
-                        <span className="text-gray-600">Requested:</span> {new Date(selectedBook.latestReport.requestedAt).toLocaleString()}
-                      </div>
-                    )}
+                {/* Marketing Assets */}
+                <AssetUploadSection
+                  title="Marketing Assets"
+                  assetType="marketing-assets"
+                  items={marketingAssets}
+                  isUploading={uploadingAsset === "marketing"}
+                  onUpload={(file) => handleMarketingAssetUpload(selectedBook.id, file)}
+                  onSetActive={(itemId) => handleSetActive(selectedBook.id, "marketing-assets", itemId)}
+                  onDelete={(itemId) => handleDeleteAsset(selectedBook.id, "marketing-assets", itemId)}
+                  activeLabel="Active"
+                  uploadButtonColor="bg-purple-600 hover:bg-purple-700"
+                />
 
-                    {selectedBook.latestReport?.completedAt && (
-                      <div className="text-sm">
-                        <span className="text-gray-600">Completed:</span> {new Date(selectedBook.latestReport.completedAt).toLocaleString()}
-                      </div>
-                    )}
+                {/* Book Covers */}
+                <AssetUploadSection
+                  title="Book Covers"
+                  assetType="covers"
+                  items={covers}
+                  isUploading={uploadingAsset === "cover"}
+                  onUpload={(file) => handleCoverUpload(selectedBook.id, file)}
+                  onSetActive={(itemId) => handleSetPrimary(selectedBook.id, itemId)}
+                  onDelete={(itemId) => handleDeleteAsset(selectedBook.id, "covers", itemId)}
+                  activeLabel="Active"
+                  uploadButtonColor="bg-orange-600 hover:bg-orange-700"
+                />
 
-                    <div className="flex items-center space-x-4">
-                      <label className="inline-flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer">
-                        <FileUp className="w-4 h-4 mr-2" />
-                        {uploadingReport ? "Uploading..." : "Upload Report"}
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept=".pdf,.html"
-                          disabled={uploadingReport}
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              handleReportUpload(selectedBook.id, e.target.files[0]);
-                            }
-                          }}
-                        />
-                      </label>
-
-                      {selectedBook.latestReport?.fileName && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => window.location.href = `/api/admin/books/${selectedBook.id}/report/download`}
-                        >
-                          <Download className="w-3 h-3 mr-1" />
-                          Download Report
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                {/* Landing Pages */}
+                <AssetUploadSection
+                  title="Landing Pages"
+                  assetType="landing-page"
+                  items={landingPages}
+                  isUploading={uploadingAsset === "landing-page"}
+                  onUpload={(file) => handleLandingPageUpload(selectedBook.id, file)}
+                  onSetActive={(itemId) => handleSetActive(selectedBook.id, "landing-page", itemId)}
+                  onDelete={(itemId) => handleDeleteAsset(selectedBook.id, "landing-page", itemId)}
+                  activeLabel="Active"
+                  uploadButtonColor="bg-indigo-600 hover:bg-indigo-700"
+                />
               </div>
             )}
           </SheetContent>
