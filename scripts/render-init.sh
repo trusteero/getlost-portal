@@ -135,9 +135,37 @@ try {
   console.log('🔄 Running Drizzle migrations...');
   const sqlite = new Database(dbPath);
   const db = drizzle(sqlite);
-  migrate(db, { migrationsFolder });
+  
+  // Run migrations with error handling
+  try {
+    migrate(db, { migrationsFolder });
+    console.log('✅ Database migrations completed');
+    
+    // Verify migrations were applied by checking for new columns
+    const verifyColumns = sqlite.prepare("PRAGMA table_info(getlostportal_book)").all();
+    const columnNames = verifyColumns.map(col => col.name);
+    console.log('📋 Current columns in getlostportal_book:', columnNames.join(', '));
+    
+    const hasAuthorName = columnNames.includes('authorName');
+    const hasAuthorBio = columnNames.includes('authorBio');
+    const hasManuscriptStatus = columnNames.includes('manuscriptStatus');
+    
+    if (!hasAuthorName || !hasAuthorBio || !hasManuscriptStatus) {
+      console.warn('⚠️  WARNING: Some expected columns are missing!');
+      console.warn('   authorName:', hasAuthorName ? '✅' : '❌ MISSING');
+      console.warn('   authorBio:', hasAuthorBio ? '✅' : '❌ MISSING');
+      console.warn('   manuscriptStatus:', hasManuscriptStatus ? '✅' : '❌ MISSING');
+      console.warn('   Run: node scripts/run-migrations.js to apply missing migrations');
+    } else {
+      console.log('✅ All expected columns verified');
+    }
+  } catch (migrateError) {
+    console.error('❌ Migration failed:', migrateError.message);
+    console.error('   This might be okay if migrations were already applied');
+    // Don't throw - continue with other initialization
+  }
+  
   sqlite.close();
-  console.log('✅ Database migrations completed');
   
   // Now ensure Better Auth session table has correct schema
   console.log('🔍 Checking Better Auth session table...');

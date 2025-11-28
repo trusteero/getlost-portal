@@ -15,6 +15,8 @@
 		"db:studio": "drizzle-kit studio",
 		"db:init": "node scripts/init-db.js",
 		"db:setup": "node scripts/init-db-safe.js",
+		"db:run-migrations": "node scripts/run-migrations.js",
+		"db:fix-columns": "node scripts/fix-missing-columns.js",
 		"dev": "node scripts/kill-port.mjs 3000 && next dev --turbo --port 3000",
 		"preview": "next build && next start",
 		"start": "next start",
