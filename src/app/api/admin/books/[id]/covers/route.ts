@@ -84,7 +84,8 @@ export async function POST(
           console.warn(`[Cover Upload] Multiple HTML files found, using first: ${htmlFiles[0]}`);
         }
         
-        htmlFileName = htmlFiles[0];
+        // htmlFiles[0] is guaranteed to exist after length check
+        htmlFileName = htmlFiles[0]!;
         const htmlFilePath = path.join(tempDir, htmlFileName);
         
         // Read HTML content
