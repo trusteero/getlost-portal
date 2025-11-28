@@ -374,6 +374,9 @@ export const auth = betterAuth({
 
   // Base URL for auth (will be set via env)
   baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  
+  // Log the base URL for debugging
+  // Better Auth will use: {baseURL}/api/auth/callback/google
 
   // Email and password authentication
   emailAndPassword: {
@@ -525,6 +528,13 @@ export const auth = betterAuth({
     }
     
     console.log("✅ [Better Auth] Google OAuth configured");
+    
+    // Log the expected callback URL for debugging
+    const baseURL = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const expectedCallbackURL = `${baseURL}/api/auth/callback/google`;
+    console.log("🔍 [Better Auth] Expected Google OAuth callback URL:", expectedCallbackURL);
+    console.log("   ⚠️  Make sure this EXACT URL is in Google Cloud Console → Authorized redirect URIs");
+    
     return {
       google: {
         clientId: googleId,
