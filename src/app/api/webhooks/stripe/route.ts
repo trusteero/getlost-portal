@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
 import { purchases, bookFeatures } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
+import type Stripe from "stripe";
 
 export async function POST(request: NextRequest) {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -20,9 +21,9 @@ export async function POST(request: NextRequest) {
   }
 
   // Initialize Stripe
-  const Stripe = (await import("stripe")).default;
-  const stripe = new Stripe(stripeSecretKey, {
-    apiVersion: "2024-12-18.acacia",
+  const StripeLib = (await import("stripe")).default;
+  const stripe = new StripeLib(stripeSecretKey, {
+    apiVersion: "2025-11-17.clover",
   });
 
   let event: Stripe.Event;

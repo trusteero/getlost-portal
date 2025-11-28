@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     // Initialize Stripe
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2024-12-18.acacia",
+      apiVersion: "2025-11-17.clover",
     });
 
     // Create purchase record with pending status

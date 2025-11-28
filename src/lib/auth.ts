@@ -495,7 +495,8 @@ export const auth = betterAuth({
       });
 
       console.log("📧 [Better Auth] Email send result:", emailSent);
-      return emailSent;
+      // Better Auth expects void return, not boolean
+      return;
     },
   },
 
@@ -512,8 +513,8 @@ export const auth = betterAuth({
     console.log("✅ [Better Auth] Google OAuth configured");
     return {
       google: {
-        clientId: process.env.AUTH_GOOGLE_ID,
-        clientSecret: process.env.AUTH_GOOGLE_SECRET,
+        clientId: process.env.AUTH_GOOGLE_ID!,
+        clientSecret: process.env.AUTH_GOOGLE_SECRET!,
       },
     };
   })(),

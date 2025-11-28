@@ -366,12 +366,17 @@ export default function Dashboard() {
       return 'locked';
     };
     
+    // For condensed view, use the same status (getFeatureStatus only returns 'complete' | 'locked')
+    const getCondensedStatus = (featureType: string): 'complete' | 'locked' => {
+      return getFeatureStatus(featureType);
+    };
+    
     const steps = [
-      { id: "summary", status: getFeatureStatus("summary") as 'complete' | 'locked' | 'processing' },
-      { id: "manuscript-report", status: getFeatureStatus("manuscript-report") as 'complete' | 'locked' | 'processing' },
-      { id: "marketing-assets", status: getFeatureStatus("marketing-assets") as 'complete' | 'locked' | 'processing' },
-      { id: "book-covers", status: getFeatureStatus("book-covers") as 'complete' | 'locked' | 'processing' },
-      { id: "landing-page", status: getFeatureStatus("landing-page") as 'complete' | 'locked' | 'processing' },
+      { id: "summary", status: getCondensedStatus("summary") },
+      { id: "manuscript-report", status: getCondensedStatus("manuscript-report") },
+      { id: "marketing-assets", status: getCondensedStatus("marketing-assets") },
+      { id: "book-covers", status: getCondensedStatus("book-covers") },
+      { id: "landing-page", status: getCondensedStatus("landing-page") },
     ];
 
     const coverImage = book.digestJob?.coverUrl || book.coverImageUrl || "/placeholder.svg";

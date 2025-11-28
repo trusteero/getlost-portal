@@ -126,7 +126,9 @@ export function AssetUploadSection({
                       <div className="flex items-center space-x-2">
                         <div className="text-sm font-medium truncate">{displayTitle}</div>
                         {itemIsActive && (
-                          <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" title={activeLabel} />
+                          <div title={activeLabel}>
+                            <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                          </div>
                         )}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">

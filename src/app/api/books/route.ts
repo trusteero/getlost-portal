@@ -318,7 +318,7 @@ export async function GET(request: NextRequest) {
             
             // If no active report, use the latest one
             if (!activeReport && completedReports.length > 0) {
-              activeReport = completedReports[0] || null;
+              activeReport = completedReports[0] || undefined;
             }
             
             if (activeReport) {

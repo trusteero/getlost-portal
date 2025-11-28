@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 interface ProgressStep {
   id: string;
-  status: 'complete' | 'locked';
+  status: 'complete' | 'locked' | 'processing';
 }
 
 interface CondensedManuscript {

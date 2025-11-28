@@ -111,7 +111,7 @@ export async function GET(
 
     // If no active report, use the latest one
     if (!report) {
-      report = completedReports[0] || null;
+      report = completedReports[0] || undefined;
     }
 
     if (!report || !report.htmlContent) {
