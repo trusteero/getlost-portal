@@ -4,27 +4,17 @@
 /node_modules
 /.pnp
 .pnp.js
+.yarn/install-state.gz
 
 # testing
 /coverage
-
-# database
-/prisma/db.sqlite
-/prisma/db.sqlite-journal
-db.sqlite
-*.sqlite
-*.sqlite-journal
-*.db
-*.db-wal
-*.db-shm
-dev.db
-getlostportal.db
-data.db
+/test-results
+/playwright-report
+/playwright/.cache
 
 # next.js
 /.next/
 /out/
-next-env.d.ts
 
 # production
 /build
@@ -37,38 +27,45 @@ next-env.d.ts
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
 
 # local env files
-# do not commit any .env files to git, except for the .env.example file. https://create.t3.gg/en/usage/env-variables#using-environment-variables
 .env
 .env*.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
+next-env.d.ts
 
-# idea files
+# database
+*.db
+*.db-shm
+*.db-wal
+dev.db
+dev.db-shm
+dev.db-wal
+build-db.sqlite
+test.db
+
+# uploads
+/uploads
+/public/uploads
+
+# precanned content (if large)
+/precannedcontent
+
+# IDE
+.vscode
 .idea
+*.swp
+*.swo
+*~
 
-# upload directories
-uploads/
-# But allow precanned cover images
-!precannedcontent/uploads/
-!precannedcontent/uploads/*.jpg
-!precannedcontent/uploads/*.jpeg
-!precannedcontent/uploads/*.png
-!precannedcontent/uploads/*.webp
-# Allow API routes in src/app/api/uploads/
-!src/app/api/uploads/
-
-# design source files
-*.psd
-
-# archive files
-precannedcontent/zips/*.zip
-
-# large media files (optional - uncomment if you don't want to track videos)
-# precannedcontent/**/*.mp4
+# OS
+.DS_Store
+Thumbs.db

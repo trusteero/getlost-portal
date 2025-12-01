@@ -2,9 +2,14 @@
 
 ## Overview
 
-The project uses **Vitest** for unit and integration testing. Tests are located in `src/__tests__/`.
+The project uses **Vitest** for unit and integration testing, and **Playwright** for end-to-end (E2E) testing.
+
+- **Vitest**: Fast unit/integration tests for API routes, utilities, and business logic
+- **Playwright**: E2E tests that run in real browsers to test user flows
 
 ## Running Tests
+
+### Unit/Integration Tests (Vitest)
 
 ```bash
 # Run tests in watch mode (recommended for development)
@@ -20,17 +25,40 @@ npm run test:ui
 npm run test:coverage
 ```
 
+### E2E Tests (Playwright)
+
+```bash
+# Run E2E tests (starts dev server automatically)
+npm run test:e2e
+
+# Run E2E tests with UI mode
+npm run test:e2e:ui
+
+# Run E2E tests in headed mode (see browser)
+npm run test:e2e:headed
+
+# Debug E2E tests
+npm run test:e2e:debug
+
+# Run all tests (unit + E2E)
+npm run test:all
+```
+
 ## Test Structure
 
 ```
 src/__tests__/
-├── setup.ts              # Global test setup
+├── setup.ts              # Vitest global setup
 ├── helpers/
 │   ├── db.ts            # Test database utilities
 │   └── auth.ts          # Auth test helpers
-└── api/
-    ├── auth.test.ts     # Authentication tests
-    └── books.test.ts    # Books API tests
+├── api/                  # Unit/Integration tests
+│   ├── auth.test.ts     # Authentication tests
+│   └── books.test.ts    # Books API tests
+└── e2e/                  # E2E tests (Playwright)
+    ├── auth.spec.ts     # Authentication E2E tests
+    ├── dashboard.spec.ts # Dashboard E2E tests
+    └── book-upload.spec.ts # Book upload E2E tests
 ```
 
 ## Test Database
@@ -104,22 +132,25 @@ describe("My Feature", () => {
 
 ## What to Test
 
-### Priority 1: Critical Paths
+### Unit/Integration Tests (Vitest)
 - ✅ Authentication (sign up, login, email verification)
 - ✅ Book creation and management
 - ✅ API route authorization
 - ✅ Database operations
-
-### Priority 2: Business Logic
 - Feature purchases
 - Admin operations
 - File uploads
 - Email notifications
 
-### Priority 3: UI Components
-- Form validation
-- User interactions
-- Error handling
+### E2E Tests (Playwright)
+- ✅ User flows (sign up → verify → login → dashboard)
+- ✅ Book upload flow
+- ✅ Feature purchase flow
+- ✅ Admin panel access
+- ✅ Form validation
+- ✅ Navigation
+- ✅ Responsive design
+- ✅ Error handling in UI
 
 ## Coverage Goals
 
@@ -134,18 +165,67 @@ Tests should run automatically on:
 - Before deployment
 - On every commit (optional)
 
+## Writing E2E Tests
+
+### Example: Testing User Flow
+
+```typescript
+import { test, expect } from "@playwright/test";
+
+test("should complete sign up flow", async ({ page }) => {
+  // Navigate to sign up
+  await page.goto("/signup");
+  
+  // Fill form
+  await page.fill('input[name="name"]', "Test User");
+  await page.fill('input[name="email"]', "test@example.com");
+  await page.fill('input[name="password"]', "password123");
+  
+  // Submit
+  await page.click('button[type="submit"]');
+  
+  // Verify redirect or success message
+  await expect(page).toHaveURL(/.*verify|.*dashboard/);
+});
+```
+
+### Playwright Configuration
+
+- **Base URL**: `http://localhost:3000` (auto-starts dev server)
+- **Browsers**: Chromium (can add Firefox, Safari)
+- **Screenshots**: Taken on test failure
+- **Traces**: Collected on retry
+
 ## Troubleshooting
 
-### Tests failing with database errors
+### Vitest Issues
+
+**Tests failing with database errors**
 - Make sure test database is properly closed between tests
 - Check that tables are created correctly in `helpers/db.ts`
 
-### Tests failing with import errors
+**Tests failing with import errors**
 - Verify path aliases in `vitest.config.ts` match `tsconfig.json`
 - Check that all dependencies are installed
 
-### Slow tests
+**Slow tests**
 - Use in-memory database (`createTestDatabase(true)`)
 - Clean up test data properly
 - Avoid unnecessary setup/teardown
+
+### Playwright Issues
+
+**Tests failing to start**
+- Make sure dev server can start on port 3000
+- Check that no other process is using port 3000
+- Verify `npm run dev` works manually
+
+**Tests timing out**
+- Increase timeout in `playwright.config.ts`
+- Check that the app is actually running
+- Verify base URL is correct
+
+**Browser not found**
+- Run `npx playwright install` to install browsers
+- Or `npx playwright install chromium` for just Chromium
 
