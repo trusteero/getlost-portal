@@ -412,11 +412,15 @@ export default function Dashboard() {
         } else if (manuscriptStatus === "working_on") {
           return 'processing'; // Show as processing with "Working on Report" text
         } else if (manuscriptStatus === "ready_to_purchase") {
+          // Check asset status first
+          if (book.assetStatuses?.report === 'requested') {
+            return 'processing'; // User purchased, waiting for admin to upload
+          }
           // Check if report is actually uploaded
           if (book.assetStatuses?.report === 'uploaded' || book.assetStatuses?.report === 'viewed') {
             return 'complete';
           }
-          // Ready to purchase but not uploaded yet
+          // Ready to purchase but not purchased yet
           return 'locked';
         }
         return 'locked';
@@ -484,6 +488,9 @@ export default function Dashboard() {
         } else if (manuscriptStatus === "ready_to_purchase") {
           if (status === 'complete') {
             return 'View Report';
+          }
+          if (status === 'processing') {
+            return 'Processing...';
           }
           return 'Purchase';
         }
