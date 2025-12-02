@@ -140,6 +140,120 @@ function createTablesManually(sqlite: Database.Database): void {
       uploadedAt INTEGER DEFAULT (unixepoch()) NOT NULL
     )
   `);
+
+  // Create book_features table
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS getlostportal_book_feature (
+      id TEXT PRIMARY KEY,
+      bookId TEXT NOT NULL,
+      featureType TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'locked',
+      price INTEGER DEFAULT 0,
+      unlockedAt INTEGER,
+      purchasedAt INTEGER,
+      createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
+      updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
+    )
+  `);
+
+  // Create purchases table
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS getlostportal_purchase (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      bookId TEXT NOT NULL,
+      featureType TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      currency TEXT DEFAULT 'USD',
+      paymentMethod TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      paymentIntentId TEXT,
+      completedAt INTEGER,
+      createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
+      updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
+    )
+  `);
+
+  // Create reports table
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS getlostportal_report (
+      id TEXT PRIMARY KEY,
+      bookVersionId TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      htmlContent TEXT,
+      pdfUrl TEXT,
+      adminNotes TEXT,
+      requestedAt INTEGER DEFAULT (unixepoch()) NOT NULL,
+      startedAt INTEGER,
+      completedAt INTEGER,
+      analyzedBy TEXT,
+      viewedAt INTEGER,
+      createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
+      updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
+    )
+  `);
+
+  // Create marketing_assets table
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS getlostportal_marketing_asset (
+      id TEXT PRIMARY KEY,
+      bookId TEXT NOT NULL,
+      assetType TEXT NOT NULL,
+      title TEXT,
+      description TEXT,
+      fileUrl TEXT,
+      thumbnailUrl TEXT,
+      htmlContent TEXT,
+      metadata TEXT,
+      isActive INTEGER DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'pending',
+      viewedAt INTEGER,
+      createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
+      updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
+    )
+  `);
+
+  // Create book_covers table
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS getlostportal_book_cover (
+      id TEXT PRIMARY KEY,
+      bookId TEXT NOT NULL,
+      coverType TEXT NOT NULL,
+      title TEXT,
+      imageUrl TEXT,
+      thumbnailUrl TEXT,
+      htmlContent TEXT,
+      metadata TEXT,
+      isPrimary INTEGER DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'pending',
+      viewedAt INTEGER,
+      createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
+      updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
+    )
+  `);
+
+  // Create landing_pages table
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS getlostportal_landing_page (
+      id TEXT PRIMARY KEY,
+      bookId TEXT NOT NULL,
+      slug TEXT NOT NULL UNIQUE,
+      title TEXT,
+      headline TEXT,
+      subheadline TEXT,
+      description TEXT,
+      htmlContent TEXT,
+      customCss TEXT,
+      metadata TEXT,
+      isPublished INTEGER DEFAULT 0,
+      isActive INTEGER DEFAULT 0,
+      publishedAt INTEGER,
+      status TEXT NOT NULL DEFAULT 'draft',
+      viewedAt INTEGER,
+      createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
+      updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
+    )
+  `);
 }
 
 /**
