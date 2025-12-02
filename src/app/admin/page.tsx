@@ -1086,7 +1086,12 @@ export default function AdminDashboard() {
                               </div>
                             </td>
                             <td className="py-2 px-2 text-gray-600">
-                              {book.user.name || book.user.email.split('@')[0]}
+                              <div className="flex flex-col">
+                                {book.user.name && (
+                                  <span className="font-medium">{book.user.name}</span>
+                                )}
+                                <span className="text-xs text-gray-500">{book.user.email}</span>
+                              </div>
                             </td>
                             <td className="py-2 px-2">
                               <div className="flex items-center space-x-1">
@@ -1646,7 +1651,15 @@ export default function AdminDashboard() {
                           <span className="text-gray-600 flex-shrink-0">Description:</span>
                           <span className="ml-1 line-clamp-2">{selectedBook.description || "N/A"}</span>
                         </div>
-                        <div><span className="text-gray-600">User:</span> {selectedBook.user.name || selectedBook.user.email}</div>
+                        <div className="flex items-start">
+                          <span className="text-gray-600 flex-shrink-0">User:</span>
+                          <div className="ml-1">
+                            {selectedBook.user.name && (
+                              <div className="font-medium">{selectedBook.user.name}</div>
+                            )}
+                            <div className="text-xs text-gray-500">{selectedBook.user.email}</div>
+                          </div>
+                        </div>
                         <div><span className="text-gray-600">Created:</span> {new Date(selectedBook.createdAt).toLocaleString()}</div>
                       </div>
                     </div>
