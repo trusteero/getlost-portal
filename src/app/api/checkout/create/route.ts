@@ -23,6 +23,24 @@ function getFeatureName(featureType: string): string {
   return names[featureType] || featureType;
 }
 
+// Get base URL for redirects - prefer env vars over request origin
+function getBaseURL(request: NextRequest): string {
+  // Check for custom domain first (production)
+  const customDomain = process.env.CUSTOM_DOMAIN || process.env.NEXT_PUBLIC_CUSTOM_DOMAIN;
+  if (customDomain) {
+    return customDomain.startsWith("http") ? customDomain : `https://${customDomain}`;
+  }
+  
+  // Check for explicit app URL (from environment)
+  const appUrl = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
+  if (appUrl) {
+    return appUrl;
+  }
+  
+  // Fallback to request origin (for local development)
+  return request.nextUrl.origin;
+}
+
 export async function POST(request: NextRequest) {
   const session = await getSessionFromRequest(request);
   
@@ -89,6 +107,9 @@ export async function POST(request: NextRequest) {
       status: "pending",
     });
 
+    // Get base URL for redirects
+    const baseURL = getBaseURL(request);
+    
     // Create Stripe Checkout Session
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -106,8 +127,8 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: "payment",
-      success_url: `${request.nextUrl.origin}/dashboard?session_id={CHECKOUT_SESSION_ID}&purchase_id=${purchaseId}`,
-      cancel_url: `${request.nextUrl.origin}/dashboard/book/${bookId}`,
+      success_url: `${baseURL}/dashboard?session_id={CHECKOUT_SESSION_ID}&purchase_id=${purchaseId}`,
+      cancel_url: `${baseURL}/dashboard/book/${bookId}`,
       client_reference_id: purchaseId,
       metadata: {
         userId: session.user.id,
