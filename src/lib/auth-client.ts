@@ -124,11 +124,13 @@ const signInBase = {
   
   social: async (params: any) => {
     const signInObj = getSignIn();
-    if (!signInObj?.social) {
+    // Use type assertion to access social method which may exist at runtime
+    const signInAny = signInObj as any;
+    if (!signInAny?.social) {
       console.warn("[Auth] signIn.social not available");
       return { error: { message: "Auth client not available. Please refresh the page.", code: "CLIENT_NOT_INITIALIZED" } };
     }
-    return signInObj.social(params);
+    return signInAny.social(params);
   },
 };
 
@@ -165,11 +167,13 @@ const signUpBase = {
   
   social: async (params: any) => {
     const signUpObj = getSignUp();
-    if (!signUpObj?.social) {
+    // Use type assertion to access social method which may exist at runtime
+    const signUpAny = signUpObj as any;
+    if (!signUpAny?.social) {
       console.warn("[Auth] signUp.social not available");
       return { error: { message: "Auth client not available. Please refresh the page.", code: "CLIENT_NOT_INITIALIZED" } };
     }
-    return signUpObj.social(params);
+    return signUpAny.social(params);
   },
 };
 
