@@ -136,17 +136,61 @@ export const signUp = new Proxy({}, {
   },
 }) as any;
 
-export const {
-  getSession,
-  updateUser,
-  deleteUser,
-  forgetPassword,
-  resetPassword,
-  verifyEmail,
-  sendVerificationEmail,
-  linkSocial,
-  unlinkAccount,
-} = authClient;
+// Export methods individually to avoid destructuring issues with Proxy
+// Destructuring from a Proxy at module load time can cause issues
+export const getSession = (...args: Parameters<typeof authClient.getSession>) => {
+  const client = getAuthClient();
+  if (!client) return Promise.resolve(null);
+  return client.getSession(...args);
+};
+
+export const updateUser = (...args: Parameters<typeof authClient.updateUser>) => {
+  const client = getAuthClient();
+  if (!client) return Promise.resolve({ error: { message: "Auth client not available" } });
+  return client.updateUser(...args);
+};
+
+export const deleteUser = (...args: Parameters<typeof authClient.deleteUser>) => {
+  const client = getAuthClient();
+  if (!client) return Promise.resolve({ error: { message: "Auth client not available" } });
+  return client.deleteUser(...args);
+};
+
+export const forgetPassword = (...args: Parameters<typeof authClient.forgetPassword>) => {
+  const client = getAuthClient();
+  if (!client) return Promise.resolve({ error: { message: "Auth client not available" } });
+  return client.forgetPassword(...args);
+};
+
+export const resetPassword = (...args: Parameters<typeof authClient.resetPassword>) => {
+  const client = getAuthClient();
+  if (!client) return Promise.resolve({ error: { message: "Auth client not available" } });
+  return client.resetPassword(...args);
+};
+
+export const verifyEmail = (...args: Parameters<typeof authClient.verifyEmail>) => {
+  const client = getAuthClient();
+  if (!client) return Promise.resolve({ error: { message: "Auth client not available" } });
+  return client.verifyEmail(...args);
+};
+
+export const sendVerificationEmail = (...args: Parameters<typeof authClient.sendVerificationEmail>) => {
+  const client = getAuthClient();
+  if (!client) return Promise.resolve({ error: { message: "Auth client not available" } });
+  return client.sendVerificationEmail(...args);
+};
+
+export const linkSocial = (...args: Parameters<typeof authClient.linkSocial>) => {
+  const client = getAuthClient();
+  if (!client) return Promise.resolve({ error: { message: "Auth client not available" } });
+  return client.linkSocial(...args);
+};
+
+export const unlinkAccount = (...args: Parameters<typeof authClient.unlinkAccount>) => {
+  const client = getAuthClient();
+  if (!client) return Promise.resolve({ error: { message: "Auth client not available" } });
+  return client.unlinkAccount(...args);
+};
 
 // SignOut needs special handling to ensure it works correctly
 // This wrapper ensures the client is initialized before calling signOut
