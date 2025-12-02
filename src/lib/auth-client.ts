@@ -15,7 +15,8 @@ function getBaseURL(): string {
 let _authClient: ReturnType<typeof createAuthClient> | null = null;
 
 function getAuthClient() {
-  // During SSR/build, return null - hooks won't work but won't crash
+  // During SSR, we can't use the client, but we need to return something
+  // that won't crash during build
   if (typeof window === "undefined") {
     return null;
   }
@@ -29,41 +30,55 @@ function getAuthClient() {
   return _authClient;
 }
 
-// Create a safe proxy that handles SSR gracefully
-function createSafeProxy<T extends object>(factory: () => T | null): T {
-  return new Proxy({} as T, {
-    get(_target, prop) {
-      const client = factory();
-      if (!client) {
-        // During SSR, return a no-op function or undefined
-        // This prevents crashes during build/prerender
-        return () => {
-          if (typeof window !== "undefined") {
-            console.warn("Auth client not initialized. This should only happen during SSR.");
-          }
-        };
-      }
-      const value = client[prop as keyof typeof client];
-      
-      // If it's a function, bind it to the client
-      if (typeof value === "function") {
-        return value.bind(client);
-      }
-      
-      return value;
-    },
-  });
+// Export useSession hook directly - it needs special handling
+export function useSession() {
+  const client = getAuthClient();
+  if (!client) {
+    // During SSR, return a safe default
+    return { data: null, isPending: true };
+  }
+  return client.useSession();
 }
 
-// Export the client - it will be lazily initialized on first use
-export const authClient = createSafeProxy(getAuthClient);
+// Export client for direct access - this preserves the original structure
+// (e.g., signIn.email(), signIn.social(), etc.)
+export const authClient = new Proxy({} as ReturnType<typeof createAuthClient>, {
+  get(_target, prop) {
+    const client = getAuthClient();
+    if (!client) {
+      // During SSR, return a proxy that mimics the structure
+      if (prop === "useSession") {
+        return () => ({ data: null, isPending: true });
+      }
+      // Return a proxy for nested objects like signIn.email
+      return new Proxy({}, {
+        get() {
+          return () => {
+            if (typeof window !== "undefined") {
+              console.warn("Auth client not initialized");
+            }
+            return Promise.resolve({ error: { message: "Auth client not available" } });
+          };
+        },
+      });
+    }
+    const value = client[prop as keyof typeof client];
+    
+    // If it's a function, bind it to the client
+    if (typeof value === "function") {
+      return value.bind(client);
+    }
+    
+    // If it's an object (like signIn with .email, .social methods), return it as-is
+    return value;
+  },
+});
 
-// Export hooks and methods directly for convenience
+// Export methods directly for convenience (preserving structure)
 export const {
   signIn,
   signUp,
   signOut,
-  useSession,
   getSession,
   updateUser,
   deleteUser,
