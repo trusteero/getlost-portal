@@ -40,28 +40,46 @@ export function useSession() {
   return client.useSession();
 }
 
+// Helper to create a proxy for nested objects (like signIn with .email, .social)
+function createNestedProxy(getValue: () => any) {
+  return new Proxy({}, {
+    get(_target, nestedProp) {
+      const value = getValue();
+      if (!value) {
+        // Return a no-op function if value is not available
+        return () => Promise.resolve({ error: { message: "Auth client not available" } });
+      }
+      
+      const nestedValue = value[nestedProp as keyof typeof value];
+      
+      // If it's a function, bind it to the value (which might be an object with methods)
+      if (typeof nestedValue === "function") {
+        return nestedValue.bind(value);
+      }
+      
+      return nestedValue;
+    },
+  });
+}
+
 // Export client for direct access - this preserves the original structure
 // (e.g., signIn.email(), signIn.social(), etc.)
 export const authClient = new Proxy({} as ReturnType<typeof createAuthClient>, {
   get(_target, prop) {
     const client = getAuthClient();
     if (!client) {
-      // During SSR, return a proxy that mimics the structure
+      // During SSR, return appropriate defaults or proxies
       if (prop === "useSession") {
         return () => ({ data: null, isPending: true });
       }
-      // Return a proxy for nested objects like signIn.email
-      return new Proxy({}, {
-        get() {
-          return () => {
-            if (typeof window !== "undefined") {
-              console.warn("Auth client not initialized");
-            }
-            return Promise.resolve({ error: { message: "Auth client not available" } });
-          };
-        },
-      });
+      // For objects with nested methods (like signIn), return a proxy
+      if (prop === "signIn" || prop === "signUp") {
+        return createNestedProxy(() => null);
+      }
+      // Return a no-op function for other methods
+      return () => Promise.resolve({ error: { message: "Auth client not available" } });
     }
+    
     const value = client[prop as keyof typeof client];
     
     // If it's a function, bind it to the client
@@ -69,15 +87,123 @@ export const authClient = new Proxy({} as ReturnType<typeof createAuthClient>, {
       return value.bind(client);
     }
     
-    // If it's an object (like signIn with .email, .social methods), return it as-is
+    // If it's an object with nested methods (like signIn.email, signIn.social),
+    // wrap it in a proxy to ensure nested access works
+    if (value && typeof value === "object" && (prop === "signIn" || prop === "signUp")) {
+      return createNestedProxy(() => value);
+    }
+    
+    // Return other objects as-is
     return value;
   },
 });
 
+// Create a proxy that always returns an object with methods, never undefined
+function createSignInProxy() {
+  return new Proxy({} as any, {
+    get(_target, prop) {
+      // Always try to get fresh client reference (lazy evaluation)
+      const client = getAuthClient();
+      
+      if (!client) {
+        // Client not initialized - return a no-op function
+        // This ensures signIn.email exists as a function
+        console.warn("[Auth] Client not initialized, returning no-op for signIn." + String(prop));
+        return () => Promise.resolve({ 
+          error: { 
+            message: "Auth client not available. Please refresh the page.",
+            code: "CLIENT_NOT_INITIALIZED"
+          } 
+        });
+      }
+      
+      const signInObj = client.signIn;
+      if (!signInObj) {
+        // signIn object not available - return a no-op function
+        console.warn("[Auth] signIn object not available, returning no-op for signIn." + String(prop));
+        return () => Promise.resolve({ 
+          error: { 
+            message: "Sign in not available. Please refresh the page.",
+            code: "SIGNIN_NOT_AVAILABLE"
+          } 
+        });
+      }
+      
+      const method = signInObj[prop as keyof typeof signInObj];
+      
+      if (method === undefined || method === null) {
+        // Method doesn't exist - return a no-op function
+        console.warn(`[Auth] signIn.${String(prop)} not found, returning no-op`);
+        return () => Promise.resolve({ 
+          error: { 
+            message: `Sign in method ${String(prop)} not available.`,
+            code: "METHOD_NOT_AVAILABLE"
+          } 
+        });
+      }
+      
+      // If it's a function, bind it to the signInObj
+      if (typeof method === "function") {
+        return method.bind(signInObj);
+      }
+      
+      // Return the property value as-is
+      return method;
+    },
+  });
+}
+
+function createSignUpProxy() {
+  return new Proxy({} as any, {
+    get(_target, prop) {
+      const client = getAuthClient();
+      
+      if (!client) {
+        return () => Promise.resolve({ 
+          error: { 
+            message: "Auth client not available. Please refresh the page.",
+            code: "CLIENT_NOT_INITIALIZED"
+          } 
+        });
+      }
+      
+      const signUpObj = client.signUp;
+      if (!signUpObj) {
+        return () => Promise.resolve({ 
+          error: { 
+            message: "Sign up not available. Please refresh the page.",
+            code: "SIGNUP_NOT_AVAILABLE"
+          } 
+        });
+      }
+      
+      const method = signUpObj[prop as keyof typeof signUpObj];
+      
+      if (method === undefined || method === null) {
+        return () => Promise.resolve({ 
+          error: { 
+            message: `Sign up method ${String(prop)} not available.`,
+            code: "METHOD_NOT_AVAILABLE"
+          } 
+        });
+      }
+      
+      if (typeof method === "function") {
+        return method.bind(signUpObj);
+      }
+      
+      return method;
+    },
+  });
+}
+
 // Export methods directly for convenience (preserving structure)
+// Note: signIn and signUp are wrapped in proxies to ensure nested methods work
+// This ensures signIn.email() and signIn.social() work correctly
+export const signIn = createSignInProxy();
+export const signUp = createSignUpProxy();
+
 export const {
-  signIn,
-  signUp,
   getSession,
   updateUser,
   deleteUser,
