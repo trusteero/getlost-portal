@@ -9,7 +9,11 @@ export const POST = async (request: Request) => {
     // Log the request for debugging
     const url = new URL(request.url);
     const pathname = url.pathname;
+    const origin = request.headers.get("origin");
+    const referer = request.headers.get("referer");
     console.log("🔐 [Better Auth] POST request to:", pathname);
+    console.log("🔐 [Better Auth] Request origin:", origin || "none");
+    console.log("🔐 [Better Auth] Request referer:", referer || "none");
     
     // Log environment variables for debugging (development only)
     if (process.env.NODE_ENV === "development" && pathname.includes("/sign-in/social")) {

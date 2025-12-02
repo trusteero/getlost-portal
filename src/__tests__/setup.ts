@@ -1,3 +1,6 @@
+// Vitest setup file - only runs for Vitest tests
+// Playwright tests don't use this file
+
 import "@testing-library/jest-dom";
 import { expect, afterEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
@@ -20,7 +23,6 @@ vi.mock("next/navigation", () => ({
 }));
 
 // Mock environment variables for tests
-process.env.DATABASE_URL = "file:./test.db";
-process.env.AUTH_SECRET = "test-secret-key-for-testing-only";
-process.env.NODE_ENV = "test";
-
+process.env.DATABASE_URL = process.env.DATABASE_URL || "file:./test.db";
+process.env.AUTH_SECRET = process.env.AUTH_SECRET || "test-secret-key-for-testing-only";
+process.env.NODE_ENV = process.env.NODE_ENV || "test";

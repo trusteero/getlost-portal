@@ -25,6 +25,10 @@ services:
           type: web
           name: getlostportal
           property: url
+      - key: CUSTOM_DOMAIN
+        sync: false # Set to your custom domain (e.g., portal.getlost.ink) if using one
+      - key: NEXT_PUBLIC_CUSTOM_DOMAIN
+        sync: false # Set to your custom domain (e.g., portal.getlost.ink) if using one
       - key: AUTH_SECRET
         generateValue: true
       - key: TURSO_DATABASE_URL

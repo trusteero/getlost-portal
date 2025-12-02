@@ -357,23 +357,64 @@ export const auth = betterAuth({
   })(),
 
   // Trust the host in production
-  // Use BETTER_AUTH_URL if set, otherwise try to detect from environment
+  // Supports both Render URL and custom domain (e.g., portal.getlost.ink)
   trustedOrigins: (() => {
     if (process.env.NODE_ENV === "production") {
-      // In production, use BETTER_AUTH_URL or NEXT_PUBLIC_APP_URL
+      const origins: string[] = [];
+      
+      // Add Render URL (from BETTER_AUTH_URL or NEXT_PUBLIC_APP_URL)
       const productionUrl = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
       if (productionUrl) {
-        return [productionUrl];
+        origins.push(productionUrl);
       }
+      
+      // Add custom domain if set (e.g., portal.getlost.ink)
+      // Supports both with and without protocol
+      const customDomain = process.env.CUSTOM_DOMAIN || process.env.NEXT_PUBLIC_CUSTOM_DOMAIN;
+      if (customDomain) {
+        // Ensure it has https:// protocol
+        const domainUrl = customDomain.startsWith("http") 
+          ? customDomain 
+          : `https://${customDomain}`;
+        origins.push(domainUrl);
+      }
+      
+      if (origins.length > 0) {
+        console.log("🔒 [Better Auth] Trusted origins (production):", origins);
+        return origins;
+      }
+      
       // If no URL is set, trust all origins (less secure but works)
+      console.warn("⚠️  [Better Auth] No production URL set, trusting all origins");
       return undefined;
     }
-    // In development, don't restrict origins
-    return undefined;
+    // In development, explicitly allow localhost origins
+    const devOrigins = [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "http://localhost:3001",
+      "http://127.0.0.1:3001",
+    ];
+    console.log("🔓 [Better Auth] Trusted origins (development):", devOrigins);
+    return devOrigins;
   })(),
 
-  // Base URL for auth (will be set via env)
-  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  // Base URL for auth
+  // Prefer custom domain if set, otherwise use Render URL or localhost
+  baseURL: (() => {
+    const customDomain = process.env.CUSTOM_DOMAIN || process.env.NEXT_PUBLIC_CUSTOM_DOMAIN;
+    if (customDomain) {
+      // Ensure it has https:// protocol
+      const domainUrl = customDomain.startsWith("http") 
+        ? customDomain 
+        : `https://${customDomain}`;
+      console.log("🌐 [Better Auth] Using custom domain as baseURL:", domainUrl);
+      return domainUrl;
+    }
+    const fallback = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    console.log("🌐 [Better Auth] Using baseURL:", fallback);
+    return fallback;
+  })(),
   
   // Log the base URL for debugging
   // Better Auth will use: {baseURL}/api/auth/callback/google
@@ -530,10 +571,22 @@ export const auth = betterAuth({
     console.log("✅ [Better Auth] Google OAuth configured");
     
     // Log the expected callback URL for debugging
-    const baseURL = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    // Use the same logic as baseURL to get the actual callback URL
+    const customDomain = process.env.CUSTOM_DOMAIN || process.env.NEXT_PUBLIC_CUSTOM_DOMAIN;
+    const baseURL = customDomain 
+      ? (customDomain.startsWith("http") ? customDomain : `https://${customDomain}`)
+      : (process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
     const expectedCallbackURL = `${baseURL}/api/auth/callback/google`;
     console.log("🔍 [Better Auth] Expected Google OAuth callback URL:", expectedCallbackURL);
     console.log("   ⚠️  Make sure this EXACT URL is in Google Cloud Console → Authorized redirect URIs");
+    
+    // If custom domain is set, also mention the Render URL might be needed
+    if (customDomain) {
+      const renderUrl = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
+      if (renderUrl) {
+        console.log("   ℹ️  If users can access via both domains, also add:", `${renderUrl}/api/auth/callback/google`);
+      }
+    }
     
     return {
       google: {
