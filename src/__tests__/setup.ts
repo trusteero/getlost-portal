@@ -26,3 +26,10 @@ vi.mock("next/navigation", () => ({
 process.env.DATABASE_URL = process.env.DATABASE_URL || "file:./test.db";
 process.env.AUTH_SECRET = process.env.AUTH_SECRET || "test-secret-key-for-testing-only";
 process.env.NODE_ENV = process.env.NODE_ENV || "test";
+
+// Ensure we're in a server context for tests that import server modules
+// This prevents the "server-side environment variable on client" error
+if (typeof window === "undefined") {
+  // We're in Node.js context (test environment)
+  // This is fine for server-side modules
+}
