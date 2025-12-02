@@ -52,9 +52,19 @@ export const MobileAccountMenu = ({ isOpen, onClose }: MobileAccountMenuProps) =
   if (!isOpen) return null;
 
   const handleLogout = async () => {
-    await signOut();
-    router.push('/');
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Sign out error:", error);
+      // Continue with redirect even if signOut fails
+    }
     onClose();
+    // Always redirect after sign out attempt
+    router.push('/');
+    // Force a hard reload to ensure session is cleared
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 100);
   };
 
   return (

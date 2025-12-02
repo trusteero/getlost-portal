@@ -78,7 +78,6 @@ export const authClient = new Proxy({} as ReturnType<typeof createAuthClient>, {
 export const {
   signIn,
   signUp,
-  signOut,
   getSession,
   updateUser,
   deleteUser,
@@ -89,3 +88,59 @@ export const {
   linkSocial,
   unlinkAccount,
 } = authClient;
+
+// SignOut needs special handling to ensure it works correctly
+// This wrapper ensures the client is initialized before calling signOut
+export async function signOut() {
+  if (typeof window === "undefined") {
+    console.warn("signOut called on server side - this should only be called from client components");
+    return;
+  }
+
+  const client = getAuthClient();
+  if (!client) {
+    console.error("Auth client not available for sign out");
+    // Even if client isn't available, try to clear cookies
+    clearAuthCookies();
+    return;
+  }
+  
+  try {
+    console.log("🔄 [Auth] Signing out...");
+    // Call the actual signOut method from Better Auth
+    const result = await client.signOut();
+    console.log("✅ [Auth] Sign out successful");
+    return result;
+  } catch (error) {
+    console.error("❌ [Auth] Error during sign out:", error);
+    // Even on error, try to clear cookies as fallback
+    clearAuthCookies();
+    throw error;
+  }
+}
+
+// Helper function to clear auth cookies as fallback
+function clearAuthCookies() {
+  if (typeof window === "undefined") return;
+  
+  // Clear Better Auth cookies
+  const cookiesToClear = [
+    "better-auth.session_token",
+    "better-auth.session",
+    "better-auth.refresh_token",
+  ];
+  
+  cookiesToClear.forEach((cookieName) => {
+    document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+    document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=${window.location.hostname};`;
+  });
+  
+  // Also clear all cookies for the domain as fallback
+  document.cookie.split(";").forEach((c) => {
+    const cookieName = c.split("=")[0]?.trim();
+    if (cookieName && (cookieName.includes("auth") || cookieName.includes("session"))) {
+      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=${window.location.hostname};`;
+    }
+  });
+}
