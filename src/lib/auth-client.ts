@@ -98,27 +98,13 @@ export const authClient = new Proxy({} as ReturnType<typeof createAuthClient>, {
   },
 });
 
-// Helper to get signIn object from client
-function getSignIn() {
-  const client = getAuthClient();
-  return client?.signIn || null;
-}
-
-// Helper to get signUp object from client  
-function getSignUp() {
-  const client = getAuthClient();
-  return client?.signUp || null;
-}
-
-// Create signIn proxy that returns methods directly from Better Auth client
-// This ensures methods are called directly without wrapping, which is important for
-// methods like social() that need to work with fetch internally
-export const signIn = new Proxy({} as any, {
+// Export signIn and signUp - access them directly from the client to avoid double-proxying
+// This gets the actual Better Auth objects without additional proxy layers
+export const signIn = new Proxy({}, {
   get(_target, prop) {
-    const signInObj = getSignIn();
-    
-    if (!signInObj) {
-      // Return safe fallback functions if client not initialized
+    const client = getAuthClient();
+    if (!client || !client.signIn) {
+      // Return fallback if client not initialized
       if (prop === "email" || prop === "social") {
         return async (params: any) => {
           console.warn(`[Auth] signIn.${String(prop)} not available - client not initialized`);
@@ -127,29 +113,16 @@ export const signIn = new Proxy({} as any, {
       }
       return undefined;
     }
-    
-    // Check if property exists on signIn object
-    if (prop in signInObj) {
-      const value = (signInObj as any)[prop];
-      // Return functions directly (bound to signInObj) - don't wrap them
-      if (typeof value === "function") {
-        return value.bind(signInObj);
-      }
-      return value;
-    }
-    
-    return undefined;
+    // Return the property directly from the actual signIn object
+    return (client.signIn as any)[prop];
   },
 }) as any;
 
-// Create signUp proxy that returns methods directly from Better Auth client
-// Same approach as signIn - return methods directly without wrapping
-export const signUp = new Proxy({} as any, {
+export const signUp = new Proxy({}, {
   get(_target, prop) {
-    const signUpObj = getSignUp();
-    
-    if (!signUpObj) {
-      // Return safe fallback functions if client not initialized
+    const client = getAuthClient();
+    if (!client || !client.signUp) {
+      // Return fallback if client not initialized
       if (prop === "email" || prop === "social") {
         return async (params: any) => {
           console.warn(`[Auth] signUp.${String(prop)} not available - client not initialized`);
@@ -158,18 +131,8 @@ export const signUp = new Proxy({} as any, {
       }
       return undefined;
     }
-    
-    // Check if property exists on signUp object
-    if (prop in signUpObj) {
-      const value = (signUpObj as any)[prop];
-      // Return functions directly (bound to signUpObj) - don't wrap them
-      if (typeof value === "function") {
-        return value.bind(signUpObj);
-      }
-      return value;
-    }
-    
-    return undefined;
+    // Return the property directly from the actual signUp object
+    return (client.signUp as any)[prop];
   },
 }) as any;
 
