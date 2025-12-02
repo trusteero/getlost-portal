@@ -87,7 +87,7 @@ export default function Dashboard() {
       const purchaseId = params.get('purchase_id');
 
       if (sessionId && purchaseId) {
-        // Payment was successful, refresh books
+        // Payment was successful, refresh books immediately
         fetchBooks();
         
         // Clean up URL
@@ -95,6 +95,17 @@ export default function Dashboard() {
         
         // Show success message (you can add a toast notification here)
         console.log('Payment successful! Feature unlocked.');
+        
+        // Webhook might take a moment to process, so retry fetching after a short delay
+        // This ensures we catch the updated feature status even if webhook is delayed
+        setTimeout(() => {
+          fetchBooks();
+        }, 2000); // Retry after 2 seconds
+        
+        // Also retry after 5 seconds to catch any delayed webhook processing
+        setTimeout(() => {
+          fetchBooks();
+        }, 5000);
       }
     }
 

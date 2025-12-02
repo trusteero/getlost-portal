@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
-import { books, bookVersions, reports, bookFeatures, marketingAssets, bookCovers, landingPages } from "@/server/db/schema";
+import { books, bookVersions, reports, bookFeatures, marketingAssets, bookCovers, landingPages, purchases } from "@/server/db/schema";
 import { eq, desc, and, ne } from "drizzle-orm";
 import { extractEpubMetadata } from "@/server/utils/extract-epub-metadata";
 import { promises as fs } from "fs";
@@ -303,7 +303,23 @@ export async function GET(request: NextRequest) {
             )
             .limit(1);
 
-          const isRequested = reportFeature && (reportFeature.status === "purchased" || reportFeature.status === "requested");
+          // Also check if there's a completed purchase (webhook might not have processed yet)
+          const [completedPurchase] = await db
+            .select()
+            .from(purchases)
+            .where(
+              and(
+                eq(purchases.bookId, book.id),
+                eq(purchases.featureType, "manuscript-report"),
+                eq(purchases.status, "completed")
+              )
+            )
+            .orderBy(desc(purchases.completedAt))
+            .limit(1);
+
+          // Feature is requested if it's marked as purchased/requested OR if there's a completed purchase
+          const isRequested = (reportFeature && (reportFeature.status === "purchased" || reportFeature.status === "requested")) || 
+                             (completedPurchase !== undefined);
 
           if (isRequested) {
             // Get all completed reports for this version (same logic as view route)
