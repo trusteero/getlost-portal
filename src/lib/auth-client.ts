@@ -98,110 +98,97 @@ export const authClient = new Proxy({} as ReturnType<typeof createAuthClient>, {
   },
 });
 
-// Create a proxy that always returns an object with methods, never undefined
-function createSignInProxy() {
-  return new Proxy({} as any, {
-    get(_target, prop) {
-      // Always try to get fresh client reference (lazy evaluation)
-      const client = getAuthClient();
-      
-      if (!client) {
-        // Client not initialized - return a no-op function
-        // This ensures signIn.email exists as a function
-        console.warn("[Auth] Client not initialized, returning no-op for signIn." + String(prop));
-        return () => Promise.resolve({ 
-          error: { 
-            message: "Auth client not available. Please refresh the page.",
-            code: "CLIENT_NOT_INITIALIZED"
-          } 
-        });
-      }
-      
-      const signInObj = client.signIn;
-      if (!signInObj) {
-        // signIn object not available - return a no-op function
-        console.warn("[Auth] signIn object not available, returning no-op for signIn." + String(prop));
-        return () => Promise.resolve({ 
-          error: { 
-            message: "Sign in not available. Please refresh the page.",
-            code: "SIGNIN_NOT_AVAILABLE"
-          } 
-        });
-      }
-      
-      const method = signInObj[prop as keyof typeof signInObj];
-      
-      if (method === undefined || method === null) {
-        // Method doesn't exist - return a no-op function
-        console.warn(`[Auth] signIn.${String(prop)} not found, returning no-op`);
-        return () => Promise.resolve({ 
-          error: { 
-            message: `Sign in method ${String(prop)} not available.`,
-            code: "METHOD_NOT_AVAILABLE"
-          } 
-        });
-      }
-      
-      // If it's a function, bind it to the signInObj
-      if (typeof method === "function") {
-        return method.bind(signInObj);
-      }
-      
-      // Return the property value as-is
-      return method;
-    },
-  });
+// Helper to get signIn object from client
+function getSignIn() {
+  const client = getAuthClient();
+  return client?.signIn || null;
 }
 
-function createSignUpProxy() {
-  return new Proxy({} as any, {
-    get(_target, prop) {
-      const client = getAuthClient();
-      
-      if (!client) {
-        return () => Promise.resolve({ 
-          error: { 
-            message: "Auth client not available. Please refresh the page.",
-            code: "CLIENT_NOT_INITIALIZED"
-          } 
-        });
-      }
-      
-      const signUpObj = client.signUp;
-      if (!signUpObj) {
-        return () => Promise.resolve({ 
-          error: { 
-            message: "Sign up not available. Please refresh the page.",
-            code: "SIGNUP_NOT_AVAILABLE"
-          } 
-        });
-      }
-      
-      const method = signUpObj[prop as keyof typeof signUpObj];
-      
-      if (method === undefined || method === null) {
-        return () => Promise.resolve({ 
-          error: { 
-            message: `Sign up method ${String(prop)} not available.`,
-            code: "METHOD_NOT_AVAILABLE"
-          } 
-        });
-      }
-      
-      if (typeof method === "function") {
-        return method.bind(signUpObj);
-      }
-      
-      return method;
-    },
-  });
+// Helper to get signUp object from client  
+function getSignUp() {
+  const client = getAuthClient();
+  return client?.signUp || null;
 }
 
-// Export methods directly for convenience (preserving structure)
-// Note: signIn and signUp are wrapped in proxies to ensure nested methods work
-// This ensures signIn.email() and signIn.social() work correctly
-export const signIn = createSignInProxy();
-export const signUp = createSignUpProxy();
+// Create signIn base object with explicit methods that Turbopack can statically analyze
+// These are defined as direct properties so they're always visible to static analysis
+const signInBase = {
+  email: async (params: any) => {
+    const signInObj = getSignIn();
+    if (!signInObj?.email) {
+      console.warn("[Auth] signIn.email not available");
+      return { error: { message: "Auth client not available. Please refresh the page.", code: "CLIENT_NOT_INITIALIZED" } };
+    }
+    return signInObj.email(params);
+  },
+  
+  social: async (params: any) => {
+    const signInObj = getSignIn();
+    if (!signInObj?.social) {
+      console.warn("[Auth] signIn.social not available");
+      return { error: { message: "Auth client not available. Please refresh the page.", code: "CLIENT_NOT_INITIALIZED" } };
+    }
+    return signInObj.social(params);
+  },
+};
+
+// Use Proxy as fallback for any other properties that might exist
+export const signIn = new Proxy(signInBase, {
+  get(target, prop) {
+    // First check if property exists in target (email, social)
+    if (prop in target) {
+      return (target as any)[prop];
+    }
+    // Otherwise, get it from the actual signIn object from Better Auth
+    const signInObj = getSignIn();
+    if (signInObj && prop in signInObj) {
+      const value = (signInObj as any)[prop];
+      if (typeof value === "function") {
+        return value.bind(signInObj);
+      }
+      return value;
+    }
+    return undefined;
+  },
+}) as any;
+
+// Create signUp base object with explicit methods
+const signUpBase = {
+  email: async (params: any) => {
+    const signUpObj = getSignUp();
+    if (!signUpObj?.email) {
+      console.warn("[Auth] signUp.email not available");
+      return { error: { message: "Auth client not available. Please refresh the page.", code: "CLIENT_NOT_INITIALIZED" } };
+    }
+    return signUpObj.email(params);
+  },
+  
+  social: async (params: any) => {
+    const signUpObj = getSignUp();
+    if (!signUpObj?.social) {
+      console.warn("[Auth] signUp.social not available");
+      return { error: { message: "Auth client not available. Please refresh the page.", code: "CLIENT_NOT_INITIALIZED" } };
+    }
+    return signUpObj.social(params);
+  },
+};
+
+export const signUp = new Proxy(signUpBase, {
+  get(target, prop) {
+    if (prop in target) {
+      return (target as any)[prop];
+    }
+    const signUpObj = getSignUp();
+    if (signUpObj && prop in signUpObj) {
+      const value = (signUpObj as any)[prop];
+      if (typeof value === "function") {
+        return value.bind(signUpObj);
+      }
+      return value;
+    }
+    return undefined;
+  },
+}) as any;
 
 export const {
   getSession,
