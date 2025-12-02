@@ -14,6 +14,7 @@ import { ManuscriptCard } from "@/components/manuscript-card";
 
 // Force dynamic rendering to prevent prerendering errors
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge'; // Try edge runtime to avoid SSR issues
 
 interface Book {
   id: string;
