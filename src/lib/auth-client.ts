@@ -110,86 +110,65 @@ function getSignUp() {
   return client?.signUp || null;
 }
 
-// Create signIn base object with explicit methods that Turbopack can statically analyze
-// These are defined as direct properties so they're always visible to static analysis
-const signInBase = {
-  email: async (params: any) => {
+// Create signIn proxy that returns methods directly from Better Auth client
+// This ensures methods are called directly without wrapping, which is important for
+// methods like social() that need to work with fetch internally
+export const signIn = new Proxy({} as any, {
+  get(_target, prop) {
     const signInObj = getSignIn();
-    if (!signInObj?.email) {
-      console.warn("[Auth] signIn.email not available");
-      return { error: { message: "Auth client not available. Please refresh the page.", code: "CLIENT_NOT_INITIALIZED" } };
+    
+    if (!signInObj) {
+      // Return safe fallback functions if client not initialized
+      if (prop === "email" || prop === "social") {
+        return async (params: any) => {
+          console.warn(`[Auth] signIn.${String(prop)} not available - client not initialized`);
+          return { error: { message: "Auth client not available. Please refresh the page.", code: "CLIENT_NOT_INITIALIZED" } };
+        };
+      }
+      return undefined;
     }
-    return signInObj.email(params);
-  },
-  
-  social: async (params: any) => {
-    const signInObj = getSignIn();
-    // Use type assertion to access social method which may exist at runtime
-    const signInAny = signInObj as any;
-    if (!signInAny?.social) {
-      console.warn("[Auth] signIn.social not available");
-      return { error: { message: "Auth client not available. Please refresh the page.", code: "CLIENT_NOT_INITIALIZED" } };
-    }
-    return signInAny.social(params);
-  },
-};
-
-// Use Proxy as fallback for any other properties that might exist
-export const signIn = new Proxy(signInBase, {
-  get(target, prop) {
-    // First check if property exists in target (email, social)
-    if (prop in target) {
-      return (target as any)[prop];
-    }
-    // Otherwise, get it from the actual signIn object from Better Auth
-    const signInObj = getSignIn();
-    if (signInObj && prop in signInObj) {
+    
+    // Check if property exists on signIn object
+    if (prop in signInObj) {
       const value = (signInObj as any)[prop];
+      // Return functions directly (bound to signInObj) - don't wrap them
       if (typeof value === "function") {
         return value.bind(signInObj);
       }
       return value;
     }
+    
     return undefined;
   },
 }) as any;
 
-// Create signUp base object with explicit methods
-const signUpBase = {
-  email: async (params: any) => {
+// Create signUp proxy that returns methods directly from Better Auth client
+// Same approach as signIn - return methods directly without wrapping
+export const signUp = new Proxy({} as any, {
+  get(_target, prop) {
     const signUpObj = getSignUp();
-    if (!signUpObj?.email) {
-      console.warn("[Auth] signUp.email not available");
-      return { error: { message: "Auth client not available. Please refresh the page.", code: "CLIENT_NOT_INITIALIZED" } };
+    
+    if (!signUpObj) {
+      // Return safe fallback functions if client not initialized
+      if (prop === "email" || prop === "social") {
+        return async (params: any) => {
+          console.warn(`[Auth] signUp.${String(prop)} not available - client not initialized`);
+          return { error: { message: "Auth client not available. Please refresh the page.", code: "CLIENT_NOT_INITIALIZED" } };
+        };
+      }
+      return undefined;
     }
-    return signUpObj.email(params);
-  },
-  
-  social: async (params: any) => {
-    const signUpObj = getSignUp();
-    // Use type assertion to access social method which may exist at runtime
-    const signUpAny = signUpObj as any;
-    if (!signUpAny?.social) {
-      console.warn("[Auth] signUp.social not available");
-      return { error: { message: "Auth client not available. Please refresh the page.", code: "CLIENT_NOT_INITIALIZED" } };
-    }
-    return signUpAny.social(params);
-  },
-};
-
-export const signUp = new Proxy(signUpBase, {
-  get(target, prop) {
-    if (prop in target) {
-      return (target as any)[prop];
-    }
-    const signUpObj = getSignUp();
-    if (signUpObj && prop in signUpObj) {
+    
+    // Check if property exists on signUp object
+    if (prop in signUpObj) {
       const value = (signUpObj as any)[prop];
+      // Return functions directly (bound to signUpObj) - don't wrap them
       if (typeof value === "function") {
         return value.bind(signUpObj);
       }
       return value;
     }
+    
     return undefined;
   },
 }) as any;
