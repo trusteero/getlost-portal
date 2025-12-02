@@ -303,23 +303,25 @@ export async function GET(request: NextRequest) {
             )
             .limit(1);
 
-          // Also check if there's a completed purchase (webhook might not have processed yet)
-          const [completedPurchase] = await db
+          // Also check if there's a purchase (completed or pending) - webhook might not have processed yet
+          // Pending purchases indicate the user has initiated payment but webhook hasn't completed
+          const [anyPurchase] = await db
             .select()
             .from(purchases)
             .where(
               and(
                 eq(purchases.bookId, book.id),
-                eq(purchases.featureType, "manuscript-report"),
-                eq(purchases.status, "completed")
+                eq(purchases.featureType, "manuscript-report")
               )
             )
-            .orderBy(desc(purchases.completedAt))
+            .orderBy(desc(purchases.createdAt))
             .limit(1);
 
-          // Feature is requested if it's marked as purchased/requested OR if there's a completed purchase
+          // Feature is requested if:
+          // 1. Feature status is purchased/requested, OR
+          // 2. There's a purchase record (pending or completed) - indicates payment was initiated
           const isRequested = (reportFeature && (reportFeature.status === "purchased" || reportFeature.status === "requested")) || 
-                             (completedPurchase !== undefined);
+                             (anyPurchase !== undefined);
 
           if (isRequested) {
             // Get all completed reports for this version (same logic as view route)

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
-import { books, purchases } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { books, purchases, bookFeatures } from "@/server/db/schema";
+import { eq, and } from "drizzle-orm";
 
 const FEATURE_PRICES: Record<string, number> = {
   "summary": 0,
@@ -106,6 +106,40 @@ export async function POST(request: NextRequest) {
       paymentMethod: "stripe",
       status: "pending",
     });
+
+    // Create or update feature record immediately with "purchased" status
+    // This ensures the UI shows "Processing..." immediately, even before webhook processes
+    const existingFeature = await db
+      .select()
+      .from(bookFeatures)
+      .where(
+        and(
+          eq(bookFeatures.bookId, bookId),
+          eq(bookFeatures.featureType, featureType)
+        )
+      )
+      .limit(1);
+
+    if (existingFeature.length > 0) {
+      await db
+        .update(bookFeatures)
+        .set({
+          status: "purchased",
+          purchasedAt: new Date(),
+          price,
+          updatedAt: new Date(),
+        })
+        .where(eq(bookFeatures.id, existingFeature[0]!.id));
+    } else {
+      await db.insert(bookFeatures).values({
+        id: crypto.randomUUID(),
+        bookId,
+        featureType,
+        status: "purchased",
+        purchasedAt: new Date(),
+        price,
+      });
+    }
 
     // Get base URL for redirects
     const baseURL = getBaseURL(request);
