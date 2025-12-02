@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     // Initialize Stripe
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2025-11-17.clover",
+      apiVersion: "2024-11-20.acacia", // Use stable API version
     });
 
     // Create purchase record with pending status
@@ -121,10 +121,26 @@ export async function POST(request: NextRequest) {
       sessionId: checkoutSession.id,
       url: checkoutSession.url 
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to create checkout session:", error);
+    
+    // Provide more detailed error information
+    const errorMessage = error?.message || "Failed to create checkout session";
+    const errorCode = error?.code || "CHECKOUT_ERROR";
+    
+    // If it's a Stripe-specific error, include more details
+    if (error?.type) {
+      console.error("Stripe error type:", error.type);
+      console.error("Stripe error code:", error.code);
+      console.error("Stripe error message:", error.message);
+    }
+    
     return NextResponse.json(
-      { error: "Failed to create checkout session" },
+      { 
+        error: errorMessage,
+        code: errorCode,
+        details: process.env.NODE_ENV === "development" ? error?.stack : undefined
+      },
       { status: 500 }
     );
   }
