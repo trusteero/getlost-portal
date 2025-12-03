@@ -549,7 +549,7 @@ export default function BookDetail() {
   }
 
   // Only show preview if it exists and has HTML content
-  const previewReportWithContent = book.versions[0]?.reports?.find(
+  const previewReportWithContent = book?.versions[0]?.reports?.find(
     (r: Report) => (r.status === "preview" || getReportVariant(r) === "preview") && r.htmlContent
   );
   const hasPreviewWithContent = Boolean(previewReportWithContent);
@@ -586,6 +586,34 @@ export default function BookDetail() {
     );
   }
 
+  // Normal page rendering (not viewing report)
+  if (loading || status === "loading") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+      </div>
+    );
+  }
+
+  if (!book) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card>
+          <CardContent className="p-8">
+            <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+            <p className="text-center text-gray-600">Book not found</p>
+            <Link href="/dashboard">
+              <Button className="mt-4 w-full">Back to Dashboard</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // At this point, book is guaranteed to be non-null
+  const bookData = book;
+
   return (
     <>
       {/* Breadcrumb */}
@@ -611,11 +639,11 @@ export default function BookDetail() {
                   <div className="flex-shrink-0">
                     {editMode ? (
                       <div className="relative mb-4">
-                        {newCoverImagePreview || book.coverImageUrl ? (
+                        {newCoverImagePreview || bookData.coverImageUrl ? (
                           <div className="relative">
                             <img
-                              src={newCoverImagePreview || book.coverImageUrl}
-                              alt={book.title}
+                              src={newCoverImagePreview || bookData.coverImageUrl}
+                              alt={bookData.title}
                               className="w-32 h-auto rounded-lg shadow-md"
                             />
                             <label className="absolute bottom-2 right-2 bg-white/90 backdrop-blur rounded-full p-2 shadow-lg cursor-pointer hover:bg-white transition-colors">
@@ -656,10 +684,10 @@ export default function BookDetail() {
                       </div>
                     ) : (
                       <div className="mb-4">
-                        {book.coverImageUrl ? (
+                        {bookData.coverImageUrl ? (
                           <img
-                            src={book.coverImageUrl}
-                            alt={book.title}
+                            src={bookData.coverImageUrl}
+                            alt={bookData.title}
                             className="w-32 h-auto rounded-lg shadow-md"
                           />
                         ) : (
@@ -684,10 +712,10 @@ export default function BookDetail() {
                             placeholder="Book title"
                           />
                         ) : (
-                          <h2 className="text-2xl font-bold text-gray-900">{book.title}</h2>
+                          <h2 className="text-2xl font-bold text-gray-900">{bookData.title}</h2>
                         )}
                         <p className="text-sm text-gray-500 mt-1">
-                          Added {new Date(book.createdAt).toLocaleDateString()}
+                          Added {new Date(bookData.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                       {!editMode ? (
@@ -747,10 +775,10 @@ export default function BookDetail() {
                         />
                       </div>
                     ) : (
-                      book.description && (
+                      bookData.description && (
                         <div>
                           <h3 className="font-semibold text-gray-700 mb-2">Description</h3>
-                          <p className="text-gray-600">{book.description}</p>
+                          <p className="text-gray-600">{bookData.description}</p>
                         </div>
                       )
                     )}
@@ -774,13 +802,13 @@ export default function BookDetail() {
                 {/* Book Report section - Hide when processing or loading */}
                 {digestLoaded && !(digestJob && (digestJob.status === "processing" || digestJob.status === "pending")) && (
                 <div className="border-t pt-4 mt-4">
-                {book.versions.length === 0 ? (
+                {bookData.versions.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">No manuscript uploaded yet</p>
                 ) : (
                   <>
                     {/* Use first version for now - easy to add version selector later */}
                     {(() => {
-                      const version = book.versions[0];
+                      const version = bookData.versions[0];
                       if (!version) return null;
                       return (
                         <>
