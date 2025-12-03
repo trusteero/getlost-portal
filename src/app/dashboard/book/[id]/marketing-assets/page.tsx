@@ -7,7 +7,6 @@ export const dynamic = 'force-dynamic';
 
 export default function MarketingAssetsPage() {
   const params = useParams();
-  const router = useRouter();
   const bookId = params.id as string;
 
   // Render the HTML (with videos) in a full-screen iframe
