@@ -451,44 +451,77 @@ export default function BookDetail() {
     }
   };
 
-  if (loading || status === "loading") {
+  // CRITICAL: Check hash FIRST - if hash is #report, ONLY show the report, nothing else
+  // This must be checked before any other rendering logic, even before loading checks
+  const hashIsReport = typeof window !== 'undefined' && window.location.hash === '#report';
+  
+  if (hashIsReport && mounted) {
+    // If book is still loading, show minimal loading state (no chrome)
+    if (loading || status === "loading" || !book) {
+      return (
+        <div className="w-full h-screen bg-white flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+        </div>
+      );
+    }
+    
+    // Book is loaded, check if report exists and is unlocked
+    const latestCompletedReport = book.versions[0]?.reports?.find(
+      (r: Report) => r.status === "completed" && getReportVariant(r) !== "preview"
+    );
+    const hasReport = Boolean(latestCompletedReport);
+    const manuscriptReportFeature = book.features?.find(f => f.featureType === "manuscript-report");
+    const isReportUnlocked = manuscriptReportFeature && manuscriptReportFeature.status !== "locked";
+    
+    // If report exists and is unlocked, show ONLY the report
+    if (hasReport && isReportUnlocked) {
+      return (
+        <div className="w-full h-screen bg-white">
+          <iframe
+            ref={reportContainerRef}
+            src={`/api/books/${params.id}/report/view`}
+            className="w-full h-full border-0"
+            sandbox="allow-scripts allow-same-origin"
+            title="Report View"
+            style={{ 
+              width: '100%', 
+              height: '100vh'
+            }}
+            onLoad={() => {
+              // When iframe loads (report is viewed), trigger refresh after a delay
+              // to allow the viewedAt update to complete on the server
+              // The API call happens when the iframe src is loaded, so we need to wait
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('refreshBooks'));
+              }, 1000); // Increased delay to ensure server has time to update viewedAt
+            }}
+          />
+        </div>
+      );
+    }
+    // If hash is #report but report doesn't exist or isn't unlocked, show minimal message (no chrome)
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+      <div className="w-full h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-500">Report not available</p>
+        </div>
       </div>
     );
   }
 
-  if (!book) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card>
-          <CardContent className="p-8">
-            <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-            <p className="text-center text-gray-600">Book not found</p>
-            <Link href="/dashboard">
-              <Button className="mt-4 w-full">Back to Dashboard</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Check if we're viewing just the report (via hash)
-  const latestCompletedReport = book.versions[0]?.reports?.find(
+  // Check if we're viewing just the report (via state - fallback)
+  const latestCompletedReport = book?.versions[0]?.reports?.find(
     (r: Report) => r.status === "completed" && getReportVariant(r) !== "preview"
   );
   const hasReport = Boolean(latestCompletedReport);
-  const hasPreview = book.versions[0]?.reports?.some((r: Report) => (r.status === "preview" || getReportVariant(r) === "preview") && r.htmlContent);
+  const hasPreview = book?.versions[0]?.reports?.some((r: Report) => (r.status === "preview" || getReportVariant(r) === "preview") && r.htmlContent);
   
   // Check if manuscript-report feature is unlocked
-  const manuscriptReportFeature = book.features?.find(f => f.featureType === "manuscript-report");
+  const manuscriptReportFeature = book?.features?.find(f => f.featureType === "manuscript-report");
   const isReportUnlocked = manuscriptReportFeature && manuscriptReportFeature.status !== "locked";
 
-  // If viewing report and HTML content exists, render just the HTML without wrapper
+  // If viewing report via state and HTML content exists, render just the HTML without wrapper
   // Only render after component is mounted to avoid SSR issues
-  // IMPORTANT: This check must come AFTER all hooks are called to follow Rules of Hooks
   if (mounted && isViewingReport && hasReport && isReportUnlocked) {
     return (
       <div className="w-full h-screen bg-white">
