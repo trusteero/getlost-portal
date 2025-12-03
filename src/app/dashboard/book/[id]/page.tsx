@@ -231,14 +231,18 @@ export default function BookDetail() {
         const data = await response.json();
         const prevStatus = digestJob?.status;
         const isFirstLoad = !digestJob;
+        const statusChanged = prevStatus !== data.status;
 
-        console.log("Digest status check:", {
-          isFirstLoad,
-          prevStatus,
-          newStatus: data.status,
-          hasCompletedRecently: data.status === "completed" && data.completedAt &&
-            (new Date().getTime() - new Date(data.completedAt).getTime()) < 30000 // completed in last 30 seconds
-        });
+        // Only log when status changes or on first load, and only if there's an actual job
+        if ((statusChanged || isFirstLoad) && data.status !== "no_job") {
+          console.log("Digest status check:", {
+            isFirstLoad,
+            prevStatus,
+            newStatus: data.status,
+            hasCompletedRecently: data.status === "completed" && data.completedAt &&
+              (new Date().getTime() - new Date(data.completedAt).getTime()) < 30000 // completed in last 30 seconds
+          });
+        }
 
         // Check if we should reload the page
         const shouldReload = data.status === "completed" && (
@@ -261,12 +265,19 @@ export default function BookDetail() {
         setDigestLoaded(true);
 
         // Keep polling if still processing or pending
+        // Don't poll if status is "no_job" or "completed" or "failed"
         if (data.status === "processing" || data.status === "pending") {
           // Clear any existing timeout before setting a new one
           if (pollingRef.current) {
             clearTimeout(pollingRef.current);
           }
           pollingRef.current = setTimeout(() => fetchDigestStatus(), 5000); // Check every 5 seconds
+        } else {
+          // Stop polling for other statuses (no_job, completed, failed)
+          if (pollingRef.current) {
+            clearTimeout(pollingRef.current);
+            pollingRef.current = null;
+          }
         }
       } else {
         setDigestLoaded(true);
@@ -480,45 +491,26 @@ export default function BookDetail() {
   // IMPORTANT: This check must come AFTER all hooks are called to follow Rules of Hooks
   if (mounted && isViewingReport && hasReport && isReportUnlocked) {
     return (
-      <div className="min-h-screen bg-white w-full relative overflow-hidden">
-        <div className="fixed top-2 left-2 sm:top-4 sm:left-4 z-50">
-          <Button
-            variant="default"
-            onClick={() => {
-              // Trigger refresh of books list when returning to dashboard
+      <div className="w-full h-screen bg-white">
+        <iframe
+          ref={reportContainerRef}
+          src={`/api/books/${params.id}/report/view`}
+          className="w-full h-full border-0"
+          sandbox="allow-scripts allow-same-origin"
+          title="Report View"
+          style={{ 
+            width: '100%', 
+            height: '100vh'
+          }}
+          onLoad={() => {
+            // When iframe loads (report is viewed), trigger refresh after a delay
+            // to allow the viewedAt update to complete on the server
+            // The API call happens when the iframe src is loaded, so we need to wait
+            setTimeout(() => {
               window.dispatchEvent(new CustomEvent('refreshBooks'));
-              router.push(`/dashboard`);
-            }}
-            className="bg-white hover:bg-gray-50 text-gray-900 shadow-lg border border-gray-200 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
-            size="sm"
-          >
-            <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Back to Dashboard</span>
-            <span className="sm:hidden">Back</span>
-          </Button>
-        </div>
-        <div className="w-full h-screen pt-10 sm:pt-0">
-          <iframe
-            ref={reportContainerRef}
-            src={`/api/books/${params.id}/report/view`}
-            className="w-full h-full border-0"
-            sandbox="allow-scripts allow-same-origin"
-            title="Report View"
-            style={{ 
-              width: '100%', 
-              height: '100%',
-              minHeight: 'calc(100vh - 2.5rem)'
-            }}
-            onLoad={() => {
-              // When iframe loads (report is viewed), trigger refresh after a delay
-              // to allow the viewedAt update to complete on the server
-              // The API call happens when the iframe src is loaded, so we need to wait
-              setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('refreshBooks'));
-              }, 1000); // Increased delay to ensure server has time to update viewedAt
-            }}
-          />
-        </div>
+            }, 1000); // Increased delay to ensure server has time to update viewedAt
+          }}
+        />
       </div>
     );
   }

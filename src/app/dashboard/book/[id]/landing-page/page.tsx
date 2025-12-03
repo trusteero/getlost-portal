@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
-import { ArrowLeft, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 interface LandingPage {
   id: string;
@@ -63,71 +61,25 @@ export default function LandingPageView() {
     );
   }
 
-  // If no landing page exists yet, show a very minimal placeholder with a back button.
+  // If no landing page exists yet, redirect to dashboard
   if (!landingPage) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col">
-        <div className="p-4">
-          <Button
-            variant="outline"
-            onClick={() => router.push("/dashboard")}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
-          </Button>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-gray-500 text-sm">
-            Landing page is not available yet for this book.
-          </p>
-        </div>
-      </div>
-    );
+    router.push("/dashboard");
+    return null;
   }
 
-  // When landing page HTML exists, render it full-screen in an iframe with minimal chrome,
-  // similar to the report and marketing toolkit views.
+  // When landing page HTML exists, render it full-screen in an iframe without any chrome
   return (
-    <div className="min-h-screen bg-white w-full relative overflow-hidden">
-      <div className="fixed top-2 left-2 sm:top-4 sm:left-4 z-50">
-        <Button
-          variant="default"
-          onClick={() => router.push("/dashboard")}
-          className="bg-white hover:bg-gray-50 text-gray-900 shadow-lg border border-gray-200 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
-          size="sm"
-        >
-          <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-          <span className="hidden sm:inline">Back to Dashboard</span>
-          <span className="sm:hidden">Back</span>
-        </Button>
-      </div>
-      {landingPage.isPublished && (
-        <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50">
-          <Button
-            variant="outline"
-            onClick={() => window.open(`/landing/${landingPage.slug}`, "_blank")}
-            className="text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
-            size="sm"
-          >
-            <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">View Live</span>
-            <span className="sm:hidden">Live</span>
-          </Button>
-        </div>
-      )}
-      <div className="w-full h-screen pt-10 sm:pt-0">
-        <iframe
-          title={landingPage.title || "Landing Page"}
-          srcDoc={landingPage.htmlContent || ""}
-          sandbox="allow-scripts allow-same-origin"
-          className="w-full h-full border-0 bg-white"
-          style={{ 
-            width: '100%', 
-            height: '100%',
-            minHeight: 'calc(100vh - 2.5rem)'
-          }}
-        />
-      </div>
+    <div className="w-full h-screen bg-white">
+      <iframe
+        title={landingPage.title || "Landing Page"}
+        srcDoc={landingPage.htmlContent || ""}
+        sandbox="allow-scripts allow-same-origin"
+        className="w-full h-full border-0 bg-white"
+        style={{ 
+          width: '100%', 
+          height: '100vh'
+        }}
+      />
     </div>
   );
 }

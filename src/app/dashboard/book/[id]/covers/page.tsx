@@ -98,22 +98,16 @@ export default function BookCoversPage() {
   if (htmlCover) {
     const metadata = parseMetadata(htmlCover.metadata);
     return (
-      <div className="min-h-screen bg-white w-full relative">
-        <div className="fixed top-4 left-4 z-50">
-          <Button
-            variant="default"
-            onClick={() => router.push("/dashboard")}
-            className="bg-white hover:bg-gray-50 text-gray-900 shadow-lg border border-gray-200"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
-          </Button>
-        </div>
+      <div className="w-full h-screen bg-white">
         <iframe
           title={htmlCover.title || "Cover Gallery"}
           srcDoc={metadata?.htmlContent || ""}
           sandbox="allow-scripts allow-same-origin"
-          className="w-full h-screen border-0 bg-white"
+          className="w-full h-full border-0 bg-white"
+          style={{ 
+            width: '100%', 
+            height: '100vh'
+          }}
         />
       </div>
     );
