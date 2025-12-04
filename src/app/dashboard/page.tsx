@@ -577,7 +577,7 @@ export default function Dashboard() {
     return {
       id: book.id,
       title: book.title,
-      subtitle: book.description || "A manuscript awaiting analysis",
+      subtitle: book.description || "",
       wordCount,
       genre: "FICTION", // Default genre, could be enhanced with actual genre data
       steps,
