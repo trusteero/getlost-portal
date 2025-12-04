@@ -303,7 +303,7 @@ export default function AdminDashboard() {
 
     switch (status) {
       case "requested":
-        return "Requested";
+        return "Purchased";
       case "uploaded":
         return "Uploaded";
       case "viewed":
