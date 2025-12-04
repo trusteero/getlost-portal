@@ -36,11 +36,13 @@ export async function POST(request: NextRequest) {
     
     if (userLevelPurchases.length > 0) {
       const existingPurchase = userLevelPurchases[0];
-      console.log(`[Purchase Upload] User ${session.user.id} already has upload permission (purchase: ${existingPurchase.id})`);
-      return NextResponse.json({
-        message: "Upload permission already purchased",
-        purchase: existingPurchase,
-      });
+      if (existingPurchase) {
+        console.log(`[Purchase Upload] User ${session.user.id} already has upload permission (purchase: ${existingPurchase.id})`);
+        return NextResponse.json({
+          message: "Upload permission already purchased",
+          purchase: existingPurchase,
+        });
+      }
     }
 
     // Check if we should force simulated purchases (for testing)
