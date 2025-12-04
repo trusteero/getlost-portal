@@ -259,34 +259,41 @@ export const authConfig = {
 						user.role = currentUser.role as "user" | "admin" | "super_admin";
 					}
 
-					// For OAuth users (Google), create example books if they don't have any
-					// This handles the case where OAuth users don't go through email verification
-					// Only create if email is verified (OAuth users are auto-verified)
-					if (currentUser.emailVerified && account?.providerId === "google") {
+					// For Google OAuth users, always try to create example books
+					// The createExampleBooksForUser function checks internally if books already exist
+					if (account?.provider === "google") {
+						console.log(`[Auth] Google OAuth sign-in detected for user ${user.id} - creating example books`);
 						createExampleBooksForUser(user.id).catch((error) => {
 							console.error("❌ [Auth] Failed to create example books for OAuth user:", error);
 							// Don't fail sign-in if example books fail
 						});
+					} else if (!account) {
+						// Credentials-based login - only create if email is verified
+						if (currentUser.emailVerified) {
+							console.log(`[Auth] Creating example books for verified credentials user ${user.id}`);
+							createExampleBooksForUser(user.id).catch((error) => {
+								console.error("❌ [Auth] Failed to create example books for credentials user:", error);
+							});
+						}
 					}
 				} else {
-					// New user created by Better Auth (OAuth)
-					// Query the database to get the full user record with emailVerified
-					const newUser = await db
-						.select()
-						.from(users)
-						.where(eq(users.id, user.id))
-						.limit(1);
-
-					if (newUser.length > 0) {
-						const newUserData = newUser[0]!;
-						// Create example books after a short delay to ensure user is fully created
-						if (newUserData.emailVerified && account?.providerId === "google") {
+					// User not found in database yet - this should be rare for OAuth users
+					// (adapter typically creates user before callback runs)
+					// For Google OAuth, still try to create books - they'll be created when user appears
+					if (account?.provider === "google" && user.id) {
+						const userId: string = user.id;
+						console.log(`[Auth] New Google OAuth user ${userId} - attempting to create example books (user may be created by adapter)`);
+						// Try immediately - if user doesn't exist yet, the function will handle it gracefully
+						createExampleBooksForUser(userId).catch((error) => {
+							console.error("❌ [Auth] Failed to create example books for new OAuth user:", error);
+							// Retry after a short delay in case user is still being created
 							setTimeout(() => {
-								createExampleBooksForUser(newUserData.id).catch((error) => {
-									console.error("❌ [Auth] Failed to create example books for new OAuth user:", error);
+								console.log(`[Auth] Retrying example books creation for user ${userId}`);
+								createExampleBooksForUser(userId).catch((err) => {
+									console.error("❌ [Auth] Retry also failed:", err);
 								});
-							}, 1000); // Small delay to ensure user record is fully committed
-						}
+							}, 2000);
+						});
 					}
 				}
 			}

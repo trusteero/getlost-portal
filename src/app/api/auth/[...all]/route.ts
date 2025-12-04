@@ -1,6 +1,10 @@
 import { auth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 import { NextResponse } from "next/server";
+import { db } from "@/server/db";
+import { account, user as betterAuthUser } from "@/server/db/better-auth-schema";
+import { eq, desc } from "drizzle-orm";
+import { createExampleBooksForUser } from "@/server/utils/create-example-books";
 
 const handler = toNextJsHandler(auth);
 
@@ -110,6 +114,92 @@ export const POST = async (request: Request) => {
 
 export const GET = async (request: Request) => {
   try {
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+    
+    // Handle Google OAuth callback - create example books asynchronously (non-blocking)
+    if (pathname.includes("/callback/google")) {
+      console.log("🔐 [Better Auth] Google OAuth callback detected");
+      
+      // Process the callback first
+      const response = await handler.GET(request);
+      
+      // If the callback was successful (redirect or success status), create example books
+      // Better Auth redirects on success, so check for redirect or 2xx status
+      if (response.status >= 200 && response.status < 400) {
+        console.log("🔐 [Better Auth] Google OAuth callback successful, starting example books creation...");
+        
+        // Start book creation asynchronously (don't block redirect)
+        // The dashboard will poll for books and show a loading state until they appear
+        (async () => {
+          try {
+            // Wait a moment for Better Auth to finish creating the user/account
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Try to get session to identify the user
+            let userId: string | null = null;
+            try {
+              const session = await auth.api.getSession({
+                headers: request.headers,
+              });
+              if (session?.user?.id) {
+                userId = session.user.id;
+                console.log(`🔐 [Better Auth] Found user from session: ${userId}`);
+              }
+            } catch (sessionError) {
+              console.log("🔐 [Better Auth] Could not get session immediately, will find user from account table");
+            }
+            
+            // If we couldn't get from session, find the most recently created/updated Google account
+            if (!userId) {
+              // Try multiple times to find the user (they might still be creating)
+              for (let attempt = 0; attempt < 3; attempt++) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                const recentGoogleAccount = await db
+                  .select({
+                    userId: account.userId,
+                    updatedAt: account.updatedAt,
+                  })
+                  .from(account)
+                  .where(eq(account.providerId, "google"))
+                  .orderBy(desc(account.updatedAt))
+                  .limit(1);
+                
+                if (recentGoogleAccount.length > 0) {
+                  userId = recentGoogleAccount[0]!.userId;
+                  console.log(`🔐 [Better Auth] Found user from account table (attempt ${attempt + 1}): ${userId}`);
+                  break;
+                }
+              }
+            }
+            
+            if (userId) {
+              console.log(`🔐 [Better Auth] Creating example books for user ${userId} (this may take a few seconds...)`);
+              
+              // Create books (this may take a few seconds due to precanned content import)
+              const startTime = Date.now();
+              try {
+                await createExampleBooksForUser(userId);
+                const duration = Date.now() - startTime;
+                console.log(`✅ [Better Auth] Example books created successfully for user ${userId} (took ${duration}ms)`);
+              } catch (error: any) {
+                const duration = Date.now() - startTime;
+                console.error(`❌ [Better Auth] Failed to create example books for user ${userId} after ${duration}ms:`, error);
+                console.error(`❌ [Better Auth] Error details:`, error?.message, error?.stack);
+              }
+            } else {
+              console.warn("🔐 [Better Auth] ⚠️  Could not identify user after multiple attempts - example books will not be created");
+            }
+          } catch (error: any) {
+            console.error("❌ [Better Auth] Unexpected error in example books creation:", error);
+            console.error("❌ [Better Auth] Error details:", error?.message, error?.stack);
+          }
+        })(); // Fire and forget - don't block redirect
+      }
+      
+      return response;
+    }
+    
     return await handler.GET(request);
   } catch (error: any) {
     console.error("Better Auth API GET error:", error);

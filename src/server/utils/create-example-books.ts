@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
-import { books, bookVersions } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { books, bookVersions, reports } from "@/server/db/schema";
+import { eq, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { importPrecannedContentForBook } from "./precanned-content";
 import { ensureBooksTableColumns, columnExists } from "@/server/db/migrations";
@@ -92,7 +92,7 @@ export async function createExampleBooksForUser(userId: string): Promise<void> {
           features: {
             reports: true, // Import reports
             marketing: false, // Don't import marketing (coming soon)
-            covers: false, // Don't import covers (coming soon)
+            covers: false, // Use cover from report instead of separate import
             landingPage: false, // Don't import landing pages (coming soon)
           },
         });
@@ -102,6 +102,56 @@ export async function createExampleBooksForUser(userId: string): Promise<void> {
             reportsLinked: importResult.reportsLinked,
             packageKey: importResult.packageKey,
           });
+          
+          // Extract cover image from the completed report's adminNotes
+          if (importResult.reportsLinked > 0) {
+            try {
+              // Get the completed report for this book version
+              const completedReports = await db
+                .select({
+                  adminNotes: reports.adminNotes,
+                })
+                .from(reports)
+                .where(eq(reports.bookVersionId, createdVersion.id))
+                .orderBy(desc(reports.requestedAt))
+                .limit(5);
+              
+              // Look for cover image data in report adminNotes
+              let coverImageUrl: string | null = null;
+              for (const report of completedReports) {
+                if (report.adminNotes) {
+                  try {
+                    const notes = JSON.parse(report.adminNotes);
+                    if (notes.coverImageData && typeof notes.coverImageData === "string") {
+                      // Use the cover image data URL from the report
+                      coverImageUrl = notes.coverImageData;
+                      console.log(`[Example Books] Found cover image in report for ${exampleBook.title}`);
+                      break;
+                    }
+                  } catch (parseError) {
+                    // Skip invalid JSON
+                    continue;
+                  }
+                }
+              }
+              
+              // Set the book's coverImageUrl from the report
+              if (coverImageUrl) {
+                await db
+                  .update(books)
+                  .set({
+                    coverImageUrl: coverImageUrl,
+                    updatedAt: new Date(),
+                  })
+                  .where(eq(books.id, createdBook.id));
+                console.log(`[Example Books] Set cover image from report for ${exampleBook.title}`);
+              } else {
+                console.log(`[Example Books] No cover image found in report for ${exampleBook.title}`);
+              }
+            } catch (error: any) {
+              console.error(`[Example Books] Error extracting cover from report for ${exampleBook.title}:`, error);
+            }
+          }
         } else {
           console.warn(`[Example Books] Failed to import precanned content for ${exampleBook.key}`);
         }

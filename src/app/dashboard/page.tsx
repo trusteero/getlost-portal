@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -76,6 +76,9 @@ export default function Dashboard() {
   const [checkingPermission, setCheckingPermission] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [hasCheckedForExampleBooks, setHasCheckedForExampleBooks] = useState(false);
+  const [waitingForExampleBooks, setWaitingForExampleBooks] = useState(false);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fallback: Try to fetch session directly if useSession is stuck
   useEffect(() => {
@@ -247,6 +250,67 @@ export default function Dashboard() {
       return () => clearInterval(interval);
     }
   }, [books]);
+
+  // Automatically check for example books after login (for new OAuth users)
+  // Show loading state until books are created
+  useEffect(() => {
+    // Only check once after initial books fetch completes and user has no books
+    if (!activeSession || loading || hasCheckedForExampleBooks) return;
+    
+    // Wait for initial books load to complete (loading becomes false)
+    // Then check if user has no books - they might be a new user with example books being created
+    if (!loading && books.length === 0) {
+      console.log("[Dashboard] No books found after initial load, waiting for example books...");
+      setHasCheckedForExampleBooks(true);
+      setWaitingForExampleBooks(true); // Show loading state
+      
+      // Add initial delay to show the "Setting up your library" message
+      // This gives users time to see the message before we start polling
+      const initialDelay = setTimeout(() => {
+        // Poll immediately and frequently for faster detection after initial delay
+        let pollCount = 0;
+        const maxPolls = 20; // Maximum 20 polls (10 seconds total after initial delay)
+        
+        // Check immediately after delay
+        fetchBooks();
+        
+        pollIntervalRef.current = setInterval(() => {
+          pollCount++;
+          console.log(`[Dashboard] Checking for example books (poll ${pollCount}/${maxPolls}...)`);
+          fetchBooks();
+          
+          if (pollCount >= maxPolls) {
+            console.log("[Dashboard] Maximum wait time reached, showing dashboard");
+            if (pollIntervalRef.current) {
+              clearInterval(pollIntervalRef.current);
+              pollIntervalRef.current = null;
+            }
+            setWaitingForExampleBooks(false);
+          }
+        }, 500); // Check every 500ms for faster detection
+      }, 3000); // 3 second initial delay to show the message
+      
+      return () => {
+        clearTimeout(initialDelay);
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+      };
+    } else if (!loading && books.length > 0) {
+      // User has books, no need to check
+      setHasCheckedForExampleBooks(true);
+      setWaitingForExampleBooks(false);
+    }
+  }, [activeSession, loading, books.length, hasCheckedForExampleBooks]);
+
+  // Stop waiting when books appear
+  useEffect(() => {
+    if (waitingForExampleBooks && books.length > 0) {
+      console.log("[Dashboard] Example books found, showing dashboard");
+      setWaitingForExampleBooks(false);
+    }
+  }, [books.length, waitingForExampleBooks]);
 
   const fetchBooks = async () => {
     try {
@@ -517,10 +581,18 @@ export default function Dashboard() {
 
 
   // Show spinner only if pending and not timed out and no fallback session
-  if ((isPending && !sessionTimeout && !fallbackSession) || loading) {
+  // Also show spinner while waiting for example books to be created
+  if ((isPending && !sessionTimeout && !fallbackSession) || loading || waitingForExampleBooks) {
+    const loadingMessage = waitingForExampleBooks 
+      ? "Setting up your library with example books..."
+      : undefined;
+    
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center flex-col gap-4">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+        {loadingMessage && (
+          <p className="text-gray-600 text-center max-w-md">{loadingMessage}</p>
+        )}
       </div>
     );
   }
