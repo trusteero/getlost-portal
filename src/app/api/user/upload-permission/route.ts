@@ -80,17 +80,19 @@ export async function GET(request: NextRequest) {
         return bTime - aTime; // Most recent first
       })[0];
 
-      const createdAt = typeof validPurchase.createdAt === 'number' 
-        ? validPurchase.createdAt 
-        : (validPurchase.createdAt ? new Date(validPurchase.createdAt).getTime() / 1000 : 0);
-      const ageMinutes = createdAt > 0 ? Math.floor((Math.floor(Date.now() / 1000) - createdAt) / 60) : 0;
-      
-      console.log(`[Upload Permission] User ${session.user.id}: Found valid pending purchase (${validPurchase.id}, age: ${ageMinutes} minutes, paymentMethod: ${validPurchase.paymentMethod}), granting permission`);
-      return NextResponse.json({
-        hasPermission: true,
-        purchase: validPurchase,
-        pending: true, // Indicate this is a pending purchase
-      });
+      if (validPurchase) {
+        const createdAt = typeof validPurchase.createdAt === 'number' 
+          ? validPurchase.createdAt 
+          : (validPurchase.createdAt ? new Date(validPurchase.createdAt).getTime() / 1000 : 0);
+        const ageMinutes = createdAt > 0 ? Math.floor((Math.floor(Date.now() / 1000) - createdAt) / 60) : 0;
+        
+        console.log(`[Upload Permission] User ${session.user.id}: Found valid pending purchase (${validPurchase.id}, age: ${ageMinutes} minutes, paymentMethod: ${validPurchase.paymentMethod}), granting permission`);
+        return NextResponse.json({
+          hasPermission: true,
+          purchase: validPurchase,
+          pending: true, // Indicate this is a pending purchase
+        });
+      }
     }
 
     console.log(`[Upload Permission] User ${session.user.id}: Found ${userLevelPurchases.length} upload purchase(s) total, but none completed or recent pending, hasPermission: false`);
