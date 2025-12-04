@@ -10,6 +10,7 @@ const FEATURE_PRICES: Record<string, number> = {
   "marketing-assets": 14999,
   "book-covers": 14999,
   "landing-page": 14999,
+  "book-upload": 9999, // $99.99 - user-level purchase
 };
 
 function getFeatureName(featureType: string): string {
@@ -19,6 +20,7 @@ function getFeatureName(featureType: string): string {
     "marketing-assets": "Marketing Assets",
     "book-covers": "Book Covers",
     "landing-page": "Landing Page",
+    "book-upload": "Book Upload Permission",
   };
   return names[featureType] || featureType;
 }
@@ -51,15 +53,30 @@ export async function POST(request: NextRequest) {
   try {
     const { bookId, featureType } = await request.json();
 
-    // Verify book ownership
-    const [book] = await db
-      .select()
-      .from(books)
-      .where(eq(books.id, bookId))
-      .limit(1);
+    // Ensure database migrations are up to date (especially for nullable bookId)
+    if (featureType === "book-upload") {
+      try {
+        const { initializeMigrations } = await import("@/server/db/migrations");
+        initializeMigrations();
+      } catch (migrateError) {
+        console.warn("[Checkout] Migration check failed, continuing anyway:", migrateError);
+      }
+    }
 
-    if (!book || book.userId !== session.user.id) {
-      return NextResponse.json({ error: "Book not found" }, { status: 404 });
+    // For user-level purchases (book-upload), bookId is not required
+    let book = null;
+    if (featureType !== "book-upload" && bookId) {
+      // Verify book ownership for book-specific features
+      const [bookResult] = await db
+        .select()
+        .from(books)
+        .where(eq(books.id, bookId))
+        .limit(1);
+
+      if (!bookResult || bookResult.userId !== session.user.id) {
+        return NextResponse.json({ error: "Book not found" }, { status: 404 });
+      }
+      book = bookResult;
     }
 
     const price = FEATURE_PRICES[featureType] ?? 0;
@@ -96,55 +113,69 @@ export async function POST(request: NextRequest) {
 
     // Create purchase record with pending status
     const purchaseId = crypto.randomUUID();
-    await db.insert(purchases).values({
+    const purchaseValues: any = {
       id: purchaseId,
       userId: session.user.id,
-      bookId,
       featureType,
       amount: price,
       currency: "USD",
       paymentMethod: "stripe",
       status: "pending",
-    });
+    };
+    
+    // Only include bookId if it's not a user-level purchase
+    if (featureType !== "book-upload" && bookId) {
+      purchaseValues.bookId = bookId;
+    }
+    // For book-upload, we don't include bookId at all (it will be null/undefined)
+    
+    await db.insert(purchases).values(purchaseValues);
 
-    // Create or update feature record immediately with "purchased" status
-    // This ensures the UI shows "Processing..." immediately, even before webhook processes
-    const existingFeature = await db
-      .select()
-      .from(bookFeatures)
-      .where(
-        and(
-          eq(bookFeatures.bookId, bookId),
-          eq(bookFeatures.featureType, featureType)
+    // For book-specific features, create or update feature record
+    // User-level features (book-upload) don't need bookFeatures records
+    if (featureType !== "book-upload" && bookId) {
+      const existingFeature = await db
+        .select()
+        .from(bookFeatures)
+        .where(
+          and(
+            eq(bookFeatures.bookId, bookId),
+            eq(bookFeatures.featureType, featureType)
+          )
         )
-      )
-      .limit(1);
+        .limit(1);
 
-    if (existingFeature.length > 0) {
-      await db
-        .update(bookFeatures)
-        .set({
+      if (existingFeature.length > 0) {
+        await db
+          .update(bookFeatures)
+          .set({
+            status: "purchased",
+            purchasedAt: new Date(),
+            price,
+            updatedAt: new Date(),
+          })
+          .where(eq(bookFeatures.id, existingFeature[0]!.id));
+      } else {
+        await db.insert(bookFeatures).values({
+          id: crypto.randomUUID(),
+          bookId,
+          featureType,
           status: "purchased",
           purchasedAt: new Date(),
           price,
-          updatedAt: new Date(),
-        })
-        .where(eq(bookFeatures.id, existingFeature[0]!.id));
-    } else {
-      await db.insert(bookFeatures).values({
-        id: crypto.randomUUID(),
-        bookId,
-        featureType,
-        status: "purchased",
-        purchasedAt: new Date(),
-        price,
-      });
+        });
+      }
     }
 
     // Get base URL for redirects
     const baseURL = getBaseURL(request);
     
     // Create Stripe Checkout Session
+    const productName = getFeatureName(featureType);
+    const productDescription = featureType === "book-upload"
+      ? `Purchase ${productName} to upload and analyze manuscripts`
+      : `Purchase ${productName} for "${book?.title || "your book"}"`;
+
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -152,8 +183,8 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: "usd",
             product_data: {
-              name: getFeatureName(featureType),
-              description: `Purchase ${getFeatureName(featureType)} for "${book.title}"`,
+              name: productName,
+              description: productDescription,
             },
             unit_amount: price,
           },
@@ -161,12 +192,14 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: "payment",
-      success_url: `${baseURL}/dashboard?session_id={CHECKOUT_SESSION_ID}&purchase_id=${purchaseId}`,
-      cancel_url: `${baseURL}/dashboard/book/${bookId}`,
+      success_url: `${baseURL}/dashboard?session_id={CHECKOUT_SESSION_ID}&purchase_id=${purchaseId}&feature_type=${featureType}`,
+      cancel_url: featureType === "book-upload" 
+        ? `${baseURL}/dashboard` 
+        : `${baseURL}/dashboard/book/${bookId}`,
       client_reference_id: purchaseId,
       metadata: {
         userId: session.user.id,
-        bookId,
+        bookId: bookId || "",
         featureType,
         purchaseId,
       },

@@ -359,8 +359,8 @@ export const purchases = createTable(
 	(d) => ({
 		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 		userId: d.text({ length: 255 }).notNull().references(() => users.id),
-		bookId: d.text({ length: 255 }).notNull().references(() => books.id),
-		featureType: d.text({ length: 50 }).notNull(), // manuscript-report, marketing-assets, book-covers, landing-page
+		bookId: d.text({ length: 255 }).references(() => books.id), // Nullable for user-level purchases (e.g., book-upload)
+		featureType: d.text({ length: 50 }).notNull(), // manuscript-report, marketing-assets, book-covers, landing-page, book-upload
 		amount: d.integer({ mode: "number" }).notNull(), // Amount in cents
 		currency: d.text({ length: 10 }).notNull().default("USD"),
 		paymentMethod: d.text({ length: 50 }), // stripe, paypal, etc.

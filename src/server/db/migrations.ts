@@ -306,7 +306,7 @@ function ensureEssentialTables(): void {
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS getlostportal_book_version (
           id text(255) PRIMARY KEY NOT NULL,
-          bookId text(255) NOT NULL,
+          bookId text(255),
           versionNumber integer NOT NULL,
           fileName text(500) NOT NULL,
           fileUrl text(1000) NOT NULL,
@@ -336,7 +336,7 @@ function ensureEssentialTables(): void {
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS getlostportal_digest_job (
           id text(255) PRIMARY KEY NOT NULL,
-          bookId text(255) NOT NULL,
+          bookId text(255),
           externalJobId text(255),
           status text(50) DEFAULT 'pending' NOT NULL,
           attempts integer DEFAULT 0 NOT NULL,
@@ -376,7 +376,7 @@ function ensureEssentialTables(): void {
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS getlostportal_book_feature (
           id text(255) PRIMARY KEY NOT NULL,
-          bookId text(255) NOT NULL,
+          bookId text(255),
           featureType text(50) NOT NULL,
           status text(50) DEFAULT 'locked' NOT NULL,
           unlockedAt integer,
@@ -439,7 +439,7 @@ function ensureEssentialTables(): void {
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS getlostportal_marketing_asset (
           id text(255) PRIMARY KEY NOT NULL,
-          bookId text(255) NOT NULL,
+          bookId text(255),
           assetType text(50) NOT NULL,
           title text(500),
           description text,
@@ -474,7 +474,7 @@ function ensureEssentialTables(): void {
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS getlostportal_book_cover (
           id text(255) PRIMARY KEY NOT NULL,
-          bookId text(255) NOT NULL,
+          bookId text(255),
           coverType text(50) NOT NULL,
           title text(500),
           imageUrl text(1000) NOT NULL,
@@ -508,7 +508,7 @@ function ensureEssentialTables(): void {
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS getlostportal_landing_page (
           id text(255) PRIMARY KEY NOT NULL,
-          bookId text(255) NOT NULL,
+          bookId text(255),
           slug text(255) NOT NULL,
           title text(500),
           headline text,
@@ -548,7 +548,7 @@ function ensureEssentialTables(): void {
         CREATE TABLE IF NOT EXISTS getlostportal_purchase (
           id text(255) PRIMARY KEY NOT NULL,
           userId text(255) NOT NULL,
-          bookId text(255) NOT NULL,
+          bookId text(255),
           featureType text(50) NOT NULL,
           amount integer NOT NULL,
           currency text(10) DEFAULT 'USD' NOT NULL,
@@ -558,8 +558,7 @@ function ensureEssentialTables(): void {
           completedAt integer,
           createdAt integer DEFAULT (unixepoch()) NOT NULL,
           updatedAt integer DEFAULT (unixepoch()) NOT NULL,
-          FOREIGN KEY (userId) REFERENCES getlostportal_user(id) ON UPDATE no action ON DELETE no action,
-          FOREIGN KEY (bookId) REFERENCES getlostportal_book(id) ON UPDATE no action ON DELETE no action
+          FOREIGN KEY (userId) REFERENCES getlostportal_user(id) ON UPDATE no action ON DELETE no action
         )
       `);
       sqlite.exec(`CREATE INDEX IF NOT EXISTS purchase_user_idx ON getlostportal_purchase (userId)`);
@@ -567,6 +566,59 @@ function ensureEssentialTables(): void {
       sqlite.exec(`CREATE INDEX IF NOT EXISTS purchase_feature_idx ON getlostportal_purchase (featureType)`);
       sqlite.exec(`CREATE INDEX IF NOT EXISTS purchase_status_idx ON getlostportal_purchase (status)`);
       console.log("[Migrations] ✅ Created getlostportal_purchase table");
+    } else {
+      // Check if bookId is nullable, if not, make it nullable
+      try {
+        const tableInfo = sqlite
+          .prepare("PRAGMA table_info(getlostportal_purchase)")
+          .all() as Array<{ name: string; notnull: number }>;
+        
+        const bookIdColumn = tableInfo.find(col => col.name === "bookId");
+        if (bookIdColumn && bookIdColumn.notnull === 1) {
+          console.log("[Migrations] Making bookId nullable in getlostportal_purchase table...");
+          // SQLite doesn't support ALTER COLUMN to remove NOT NULL easily
+          // We need to recreate the table: create new, copy data, drop old, rename new
+          sqlite.exec(`
+            CREATE TABLE IF NOT EXISTS getlostportal_purchase_new (
+              id text(255) PRIMARY KEY NOT NULL,
+              userId text(255) NOT NULL,
+              bookId text(255),
+              featureType text(50) NOT NULL,
+              amount integer NOT NULL,
+              currency text(10) DEFAULT 'USD' NOT NULL,
+              paymentMethod text(50),
+              paymentIntentId text(255),
+              status text(50) DEFAULT 'pending' NOT NULL,
+              completedAt integer,
+              createdAt integer DEFAULT (unixepoch()) NOT NULL,
+              updatedAt integer DEFAULT (unixepoch()) NOT NULL,
+              FOREIGN KEY (userId) REFERENCES getlostportal_user(id) ON UPDATE no action ON DELETE no action
+            )
+          `);
+          
+          // Copy all data from old table to new
+          sqlite.exec(`
+            INSERT INTO getlostportal_purchase_new 
+            SELECT * FROM getlostportal_purchase
+          `);
+          
+          // Drop old table
+          sqlite.exec(`DROP TABLE getlostportal_purchase`);
+          
+          // Rename new table
+          sqlite.exec(`ALTER TABLE getlostportal_purchase_new RENAME TO getlostportal_purchase`);
+          
+          // Recreate indexes
+          sqlite.exec(`CREATE INDEX IF NOT EXISTS purchase_user_idx ON getlostportal_purchase (userId)`);
+          sqlite.exec(`CREATE INDEX IF NOT EXISTS purchase_book_idx ON getlostportal_purchase (bookId)`);
+          sqlite.exec(`CREATE INDEX IF NOT EXISTS purchase_feature_idx ON getlostportal_purchase (featureType)`);
+          sqlite.exec(`CREATE INDEX IF NOT EXISTS purchase_status_idx ON getlostportal_purchase (status)`);
+          
+          console.log("[Migrations] ✅ Made bookId nullable in getlostportal_purchase table");
+        }
+      } catch (error) {
+        console.error("[Migrations] Error checking bookId column:", error);
+      }
     }
 
     // Check if summary table exists
@@ -581,7 +633,7 @@ function ensureEssentialTables(): void {
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS getlostportal_summary (
           id text(255) PRIMARY KEY NOT NULL,
-          bookId text(255) NOT NULL,
+          bookId text(255),
           bookVersionId text(255),
           source text(50) DEFAULT 'digest' NOT NULL,
           brief text,

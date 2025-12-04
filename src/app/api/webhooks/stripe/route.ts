@@ -68,7 +68,19 @@ export async function POST(request: NextRequest) {
           .limit(1);
 
         if (purchase) {
-          // Create or update feature record
+          // For user-level purchases (book-upload), we don't need to create bookFeatures
+          // The purchase record itself is sufficient
+          if (purchase.featureType === "book-upload") {
+            console.log(`[Webhook] Book upload permission purchased for user ${purchase.userId}`);
+            break; // No bookFeatures needed for user-level purchases
+          }
+
+          // Create or update feature record for book-specific features
+          if (!purchase.bookId) {
+            console.warn(`[Webhook] Purchase ${purchaseId} has no bookId but is not book-upload`);
+            break;
+          }
+
           const existingFeature = await db
             .select()
             .from(bookFeatures)

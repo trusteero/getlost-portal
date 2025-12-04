@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, User, Mail, Shield, Save, Loader2, Trash2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, User, Mail, Shield, Save, Loader2, Trash2, AlertTriangle, CreditCard, Upload } from "lucide-react";
 
 // Force dynamic rendering since we need auth check
 export const dynamic = 'force-dynamic';
@@ -28,6 +28,12 @@ export default function Settings() {
     confirmPassword: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [credits, setCredits] = useState<{
+    uploadPermissionsPurchased: number;
+    booksUploaded: number;
+    totalSpent: number;
+  } | null>(null);
+  const [loadingCredits, setLoadingCredits] = useState(false);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -38,8 +44,28 @@ export default function Settings() {
         name: session.user.name || "",
         email: session.user.email || "",
       }));
+      fetchCredits();
     }
   }, [session, isPending]);
+
+  const fetchCredits = async () => {
+    setLoadingCredits(true);
+    try {
+      const response = await fetch("/api/user/credits");
+      if (response.ok) {
+        const data = await response.json();
+        setCredits({
+          uploadPermissionsPurchased: data.uploadPermissionsPurchased || 0,
+          booksUploaded: data.booksUploaded || 0,
+          totalSpent: data.totalSpent || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch credits:", error);
+    } finally {
+      setLoadingCredits(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,6 +194,58 @@ export default function Settings() {
         </div>
 
         <div className="grid gap-6">
+          {/* Credits/Uploads Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Credits & Uploads</CardTitle>
+              <CardDescription>Your account credits and upload permissions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingCredits ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                </div>
+              ) : credits !== null ? (
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Upload className="w-5 h-5 text-emerald-600" />
+                      <h3 className="font-semibold text-emerald-900">Upload Permissions</h3>
+                    </div>
+                    <p className="text-3xl font-bold text-emerald-600">{credits.uploadPermissionsPurchased}</p>
+                    <p className="text-sm text-emerald-700 mt-1">
+                      {credits.uploadPermissionsPurchased === 1 ? "Permission purchased" : "Permissions purchased"}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Upload className="w-5 h-5 text-purple-600" />
+                      <h3 className="font-semibold text-purple-900">Books Uploaded</h3>
+                    </div>
+                    <p className="text-3xl font-bold text-purple-600">{credits.booksUploaded}</p>
+                    <p className="text-sm text-purple-700 mt-1">
+                      {credits.booksUploaded === 1 ? "Book uploaded" : "Books uploaded"}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <CreditCard className="w-5 h-5 text-blue-600" />
+                      <h3 className="font-semibold text-blue-900">Total Spent</h3>
+                    </div>
+                    <p className="text-3xl font-bold text-blue-600">${credits.totalSpent.toFixed(2)}</p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Total funds spent on upload permissions
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">Unable to load credits information</p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Profile Information */}
           <Card>
             <CardHeader>

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, Plus, RefreshCw, Users, Upload, X, Loader2, FileText } from "lucide-react";
+import { BookOpen, Plus, RefreshCw, Users, Upload, X, Loader2, FileText, CreditCard } from "lucide-react";
 import { CondensedLibrary } from "@/components/condensed-library";
 import { ManuscriptCard } from "@/components/manuscript-card";
 
@@ -72,6 +72,10 @@ export default function Dashboard() {
   const [uploadError, setUploadError] = useState("");
   const [sessionTimeout, setSessionTimeout] = useState(false);
   const [fallbackSession, setFallbackSession] = useState<any>(null);
+  const [hasUploadPermission, setHasUploadPermission] = useState<boolean | null>(null);
+  const [checkingPermission, setCheckingPermission] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState(false);
 
   // Fallback: Try to fetch session directly if useSession is stuck
   useEffect(() => {
@@ -126,6 +130,7 @@ export default function Dashboard() {
       setSessionTimeout(false); // Reset timeout if session loads
       fetchBooks();
       checkProcessingJobs();
+      checkUploadPermission();
     }
 
     // Check for Stripe return (after successful payment)
@@ -133,32 +138,77 @@ export default function Dashboard() {
       const params = new URLSearchParams(window.location.search);
       const sessionId = params.get('session_id');
       const purchaseId = params.get('purchase_id');
+      const featureType = params.get('feature_type');
 
       if (sessionId && purchaseId) {
-        // Payment was successful, refresh books immediately
-        fetchBooks();
+        // Payment was successful
+        console.log(`[Dashboard] Payment successful! sessionId: ${sessionId}, purchaseId: ${purchaseId}, featureType: ${featureType}`);
+        
+        if (featureType === 'book-upload') {
+          // Close payment modal if open
+          setShowPaymentModal(false);
+          
+          // First, check if the specific purchase exists (even if pending)
+          const checkSpecificPurchase = async () => {
+            try {
+              const response = await fetch(`/api/user/check-purchase?purchaseId=${purchaseId}`);
+              if (response.ok) {
+                const data = await response.json();
+                if (data.hasPermission) {
+                  console.log(`[Dashboard] Purchase ${purchaseId} found, hasPermission: true`);
+                  setShowUploadModal(true);
+                  return true;
+                }
+              }
+            } catch (error) {
+              console.error("Failed to check specific purchase:", error);
+            }
+            return false;
+          };
+          
+          // Check the specific purchase first (async, don't await in useEffect)
+          checkSpecificPurchase().then((purchaseFound) => {
+            if (!purchaseFound) {
+              // If specific purchase check didn't work, fall back to general permission check
+              const checkAndOpen = async () => {
+                const hasPermission = await checkUploadPermission();
+                console.log(`[Dashboard] Permission check after payment: ${hasPermission}`);
+                if (hasPermission) {
+                  setShowUploadModal(true);
+                }
+              };
+              
+              // Check immediately
+              checkAndOpen();
+              
+              // Webhook might take a moment to process, so retry fetching after delays
+              setTimeout(checkAndOpen, 1000); // Retry after 1 second
+              setTimeout(checkAndOpen, 3000); // Retry after 3 seconds
+              setTimeout(checkAndOpen, 5000); // Retry after 5 seconds
+            }
+          });
+        } else {
+          // Refresh books for book-specific features
+          fetchBooks();
+        }
         
         // Clean up URL
         window.history.replaceState({}, '', '/dashboard');
-        
-        // Show success message (you can add a toast notification here)
-        console.log('Payment successful! Feature unlocked.');
-        
-        // Webhook might take a moment to process, so retry fetching after a short delay
-        // This ensures we catch the updated feature status even if webhook is delayed
-        setTimeout(() => {
-          fetchBooks();
-        }, 2000); // Retry after 2 seconds
-        
-        // Also retry after 5 seconds to catch any delayed webhook processing
-        setTimeout(() => {
-          fetchBooks();
-        }, 5000);
       }
     }
 
     // Listen for upload modal open event from condensed library
-    const handleOpenUploadModal = () => {
+    const handleOpenUploadModal = async () => {
+      // Always check permission first (in case it changed)
+      const hasPermission = await checkUploadPermission();
+
+      if (!hasPermission) {
+        // Show payment modal
+        setShowPaymentModal(true);
+        return;
+      }
+
+      // User has permission, show upload modal
       setShowUploadModal(true);
     };
     window.addEventListener('openUploadModal', handleOpenUploadModal);
@@ -228,6 +278,126 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error("Failed to check processing jobs:", error);
+    }
+  };
+
+  const checkUploadPermission = async (): Promise<boolean> => {
+    if (checkingPermission) {
+      // If already checking, wait a bit and check again
+      return new Promise((resolve) => {
+        setTimeout(async () => {
+          // Re-check instead of using stale state
+          const result = await checkUploadPermission();
+          resolve(result);
+        }, 200);
+      });
+    }
+    setCheckingPermission(true);
+    try {
+      const response = await fetch("/api/user/upload-permission");
+      if (response.ok) {
+        const data = await response.json();
+        const hasPermission = data.hasPermission === true;
+        console.log("[Dashboard] Upload permission check result:", {
+          hasPermission,
+          purchase: data.purchase,
+          pending: data.pending,
+          rawData: data
+        });
+        setHasUploadPermission(hasPermission);
+        return hasPermission;
+      }
+      console.warn("[Dashboard] Upload permission check failed:", response.status);
+      setHasUploadPermission(false);
+      return false;
+    } catch (error) {
+      console.error("Failed to check upload permission:", error);
+      setHasUploadPermission(false);
+      return false;
+    } finally {
+      setCheckingPermission(false);
+    }
+  };
+
+  const handleUploadButtonClick = async () => {
+    console.log("[Dashboard] Upload button clicked, checking permission...");
+    // Always check permission first (in case it changed)
+    const hasPermission = await checkUploadPermission();
+    console.log("[Dashboard] Permission check result for upload button:", hasPermission);
+
+    if (!hasPermission) {
+      console.log("[Dashboard] No permission, showing payment modal");
+      // Show payment modal
+      setShowPaymentModal(true);
+      return;
+    }
+
+    console.log("[Dashboard] Has permission, opening upload modal");
+    // User has permission, show upload modal
+    setShowUploadModal(true);
+  };
+
+  const handlePurchaseUpload = async () => {
+    setProcessingPayment(true);
+    try {
+      // Try simulated purchase first
+      const purchaseResponse = await fetch("/api/user/purchase-upload", {
+        method: "POST",
+      });
+
+      if (purchaseResponse.ok) {
+        const data = await purchaseResponse.json();
+        console.log("[Dashboard] Purchase response:", data);
+        // Check if purchase was successful or if user already has permission
+        if (data.purchase?.status === "completed" || data.message?.includes("already purchased")) {
+          // Purchase successful or already exists - refresh permission and open upload modal
+          console.log("[Dashboard] Purchase successful, checking permission...");
+          // Wait a moment for database to be updated
+          await new Promise(resolve => setTimeout(resolve, 200));
+          const hasPermission = await checkUploadPermission();
+          console.log("[Dashboard] Permission check result:", hasPermission);
+          setShowPaymentModal(false);
+          if (hasPermission) {
+            console.log("[Dashboard] Opening upload modal");
+            setShowUploadModal(true);
+          } else {
+            console.warn("[Dashboard] Permission check returned false after purchase");
+          }
+          return;
+        }
+      }
+
+      // If simulated purchase didn't work, try Stripe checkout
+      if (purchaseResponse.status === 402) {
+        const data = await purchaseResponse.json();
+        if (data.redirectToCheckout) {
+          // Create Stripe checkout session
+          const checkoutResponse = await fetch("/api/checkout/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              featureType: "book-upload",
+              bookId: null, // User-level purchase
+            }),
+          });
+
+          if (checkoutResponse.ok) {
+            const checkoutData = await checkoutResponse.json();
+            if (checkoutData.url) {
+              // Redirect to Stripe checkout
+              window.location.href = checkoutData.url;
+              return;
+            }
+          }
+        }
+      }
+
+      setUploadError("Failed to process payment. Please try again.");
+    } catch (error) {
+      console.error("Failed to purchase upload permission:", error);
+      setUploadError("Failed to process payment. Please try again.");
+    } finally {
+      setProcessingPayment(false);
     }
   };
 
@@ -641,8 +811,9 @@ export default function Dashboard() {
         {/* Action Buttons - Always visible */}
         <div className="flex flex-col md:flex-row justify-center gap-4 mb-6 md:mb-8">
           <button 
-            onClick={() => setShowUploadModal(true)}
+            onClick={handleUploadButtonClick}
             className="w-full md:w-auto btn-premium-emerald text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            disabled={checkingPermission}
           >
             {books.length > 0 ? (
               <>
@@ -864,6 +1035,77 @@ export default function Dashboard() {
                     </Button>
                   </div>
                 </form>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Payment Modal for Upload Permission */}
+        {showPaymentModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-md">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">Purchase Upload Permission</h2>
+                  <button
+                    onClick={() => setShowPaymentModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    disabled={processingPayment}
+                  >
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <p className="text-gray-600">
+                    To upload and analyze manuscripts, you need to purchase upload permission.
+                  </p>
+                  
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-gray-900">Upload Permission</span>
+                      <span className="text-2xl font-bold text-emerald-600">$99.99</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">
+                      One-time payment to upload and analyze unlimited manuscripts
+                    </p>
+                  </div>
+
+                  {uploadError && (
+                    <div className="bg-red-50 text-red-800 p-3 rounded-md text-sm">
+                      {uploadError}
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowPaymentModal(false)}
+                      disabled={processingPayment}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                      onClick={handlePurchaseUpload}
+                      disabled={processingPayment}
+                    >
+                      {processingPayment ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Purchase ($99.99)
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
