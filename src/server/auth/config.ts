@@ -282,7 +282,7 @@ export const authConfig = {
 						// Create example books after a short delay to ensure user is fully created
 						if (newUserData.emailVerified && account?.providerId === "google") {
 							setTimeout(() => {
-								createExampleBooksForUser(user.id).catch((error) => {
+								createExampleBooksForUser(newUserData.id).catch((error) => {
 									console.error("❌ [Auth] Failed to create example books for new OAuth user:", error);
 								});
 							}, 1000); // Small delay to ensure user record is fully committed
