@@ -31,7 +31,7 @@ interface ProgressStep {
   title: string;
   status: 'complete' | 'locked' | 'processing';
   action: string;
-  price: string;
+  price: string | null;
   buttonText: string;
 }
 
@@ -237,6 +237,7 @@ export const ManuscriptCard = ({
     const isAvailable = step.status === 'complete';
     const isProcessing = step.status === 'processing';
     const isUnlocking = unlockingFeature === step.id;
+    const isComingSoon = step.buttonText === 'Coming soon';
     
     // For manuscript-report, check if it's queued or working_on (show text without spinner)
     const isManuscriptStatus = step.id === 'manuscript-report' && 
@@ -247,6 +248,8 @@ export const ManuscriptCard = ({
       buttonClass = "w-full md:w-auto btn-premium-emerald text-white text-sm font-semibold px-4 py-2 rounded h-10 min-w-[120px] max-w-full whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-emerald-500";
     } else if (isProcessing) {
       buttonClass = "w-full md:w-auto premium-card text-gray-500 text-sm font-medium px-4 py-2 rounded h-10 min-w-[120px] max-w-full whitespace-nowrap focus:outline-none cursor-not-allowed opacity-75";
+    } else if (isComingSoon) {
+      buttonClass = "w-full md:w-auto premium-card text-gray-500 text-sm font-medium px-4 py-2 rounded h-10 min-w-[120px] max-w-full whitespace-nowrap focus:outline-none cursor-not-allowed opacity-75";
     } else {
       buttonClass = "w-full md:w-auto premium-card hover:premium-card text-gray-900 text-sm font-medium px-4 py-2 rounded h-10 min-w-[120px] max-w-full whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-sapphire-500 backdrop-blur-sm";
     }
@@ -255,13 +258,13 @@ export const ManuscriptCard = ({
       <button 
         className={buttonClass}
         onClick={() => {
-          if (isAvailable) {
+          if (isAvailable && !isComingSoon) {
             handleStageAction(step.id, step.title);
-          } else if (!isProcessing) {
+          } else if (!isProcessing && !isComingSoon) {
             handleUnlockClick(step);
           }
         }}
-        disabled={isUnlocking || isProcessing}
+        disabled={isUnlocking || isProcessing || isComingSoon}
       >
         {isUnlocking ? (
           <>
@@ -548,12 +551,11 @@ export const ManuscriptCard = ({
             {updatedSteps.slice(0, 5).map((step) => {
               // Dim other features until manuscript is ready (except manuscript-report itself)
               // Also dim summary if it's locked (no preview report uploaded)
-              // Dim marketing, covers, and landing pages until report is viewed
-              // BUT: if report has been viewed, don't dim them even if they're locked (not_requested)
+              // Always dim marketing, covers, and landing pages (they are "Coming soon")
               const isMarketingOrCoverOrLanding = step.id === "marketing-assets" || step.id === "book-covers" || step.id === "landing-page";
               const shouldDim = (!isManuscriptReady && step.id !== "manuscript-report") || 
                                 (step.id === "summary" && step.status === "locked") ||
-                                (isMarketingOrCoverOrLanding && step.status === "locked" && !hasViewedReport);
+                                isMarketingOrCoverOrLanding; // Always dim these features
               return (
               <div 
                 key={step.id} 
@@ -567,7 +569,7 @@ export const ManuscriptCard = ({
                   
                   <div className="text-sm text-gray-600 leading-6 break-words min-h-[72px]">
                     {step.action && (
-                      <p className="line-clamp-3">{step.action}</p>
+                      <p className={step.id === "manuscript-report" ? "" : "line-clamp-3"}>{step.action}</p>
                     )}
                   </div>
                 </div>

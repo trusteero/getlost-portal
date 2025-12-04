@@ -45,6 +45,12 @@ interface Book {
     featureType: string;
     status: string;
   }>;
+  assetStatuses?: {
+    report?: string;
+    marketing?: string;
+    covers?: string;
+    landingPage?: string;
+  };
 }
 
 interface DigestJob {
@@ -279,19 +285,41 @@ export default function BookDetail() {
   };
 
   const handlePurchaseAnalysis = async (versionId: string) => {
+    if (!book) return;
+    
     setPurchasing(true);
     try {
-      // Fake payment processing
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const response = await fetch("/api/reports", {
+      // Use the proper feature purchase endpoint which creates purchase and bookFeature records
+      const response = await fetch(`/api/books/${book.id}/features/manuscript-report`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bookVersionId: versionId }),
       });
 
       if (response.ok) {
-        await fetchBook(); // Refresh to show new report
+        await fetchBook(); // Refresh to show new report status
+      } else {
+        const errorData = await response.json();
+        console.error("Failed to purchase report:", errorData);
+        // If it's a payment redirect, handle it
+        if (response.status === 402 && errorData.redirectToCheckout) {
+          // Redirect to checkout
+          const checkoutResponse = await fetch("/api/checkout/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              featureType: "manuscript-report",
+              bookId: book.id,
+            }),
+          });
+          
+          if (checkoutResponse.ok) {
+            const checkoutData = await checkoutResponse.json();
+            if (checkoutData.url) {
+              window.location.href = checkoutData.url;
+              return;
+            }
+          }
+        }
       }
     } catch (error) {
       console.error("Failed to purchase analysis:", error);
@@ -439,46 +467,54 @@ export default function BookDetail() {
       );
     }
     
-    // Book is loaded, check if report exists and is unlocked
-    const latestCompletedReport = book.versions[0]?.reports?.find(
-      (r: Report) => r.status === "completed" && getReportVariant(r) !== "preview"
-    );
-    const hasReport = Boolean(latestCompletedReport);
-    const manuscriptReportFeature = book.features?.find(f => f.featureType === "manuscript-report");
-    const isReportUnlocked = manuscriptReportFeature && manuscriptReportFeature.status !== "locked";
-    
-    // If report exists and is unlocked, show ONLY the report
-    if (hasReport && isReportUnlocked) {
-      return (
-        <div className="w-full h-screen bg-white">
-          <iframe
-            ref={reportContainerRef}
-            src={`/api/books/${params.id}/report/view`}
-            className="w-full h-full border-0"
-            sandbox="allow-scripts allow-same-origin"
-            title="Report View"
-            style={{ 
-              width: '100%', 
-              height: '100vh'
-            }}
-            onLoad={() => {
-              // When iframe loads (report is viewed), trigger refresh after a delay
-              // to allow the viewedAt update to complete on the server
-              // The API call happens when the iframe src is loaded, so we need to wait
+    // Always show the iframe when hash is #report - let the API handle errors
+    // The API will return an HTML error page if the report doesn't exist or isn't unlocked
+    return (
+      <div className="w-full h-screen bg-white">
+        <iframe
+          ref={reportContainerRef}
+          src={`/api/books/${params.id}/report/view`}
+          className="w-full h-full border-0"
+          sandbox="allow-scripts allow-same-origin"
+          title="Report View"
+          style={{ 
+            width: '100%', 
+            height: '100vh'
+          }}
+          onLoad={async () => {
+            // Check if iframe loaded successfully or returned an error
+            try {
+              const iframe = reportContainerRef.current;
+              if (iframe?.contentWindow) {
+                // Try to access the iframe content to check for errors
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const bodyText = iframeDoc?.body?.innerText || '';
+                
+                // Check if it's an error response
+                if (bodyText.includes('Not Available') || bodyText.includes('Error') || bodyText.includes('Unauthorized')) {
+                  console.error('[Report View] Error loading report:', bodyText);
+                } else {
+                  // Report loaded successfully
+                  console.log('[Report View] Report loaded successfully');
+                  // When iframe loads (report is viewed), trigger refresh after a delay
+                  setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('refreshBooks'));
+                  }, 1000);
+                }
+              }
+            } catch (error) {
+              // Cross-origin or other error accessing iframe
+              console.error('[Report View] Could not check iframe content:', error);
+              // Assume it loaded and trigger refresh anyway
               setTimeout(() => {
                 window.dispatchEvent(new CustomEvent('refreshBooks'));
-              }, 1000); // Increased delay to ensure server has time to update viewedAt
-            }}
-          />
-        </div>
-      );
-    }
-    // If hash is #report but report doesn't exist or isn't unlocked, show minimal message (no chrome)
-    return (
-      <div className="w-full h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-500">Report not available</p>
-        </div>
+              }, 1000);
+            }
+          }}
+          onError={(e) => {
+            console.error('[Report View] Iframe load error:', e);
+          }}
+        />
       </div>
     );
   }
@@ -492,7 +528,12 @@ export default function BookDetail() {
   
   // Check if manuscript-report feature is unlocked
   const manuscriptReportFeature = book?.features?.find(f => f.featureType === "manuscript-report");
-  const isReportUnlocked = manuscriptReportFeature && manuscriptReportFeature.status !== "locked";
+  // Report is unlocked if:
+  // 1. Feature exists and status is not "locked" (purchased, unlocked, etc.), OR
+  // 2. Report status from API indicates it's been requested/purchased/uploaded/viewed (user has access)
+  const reportStatus = book?.assetStatuses?.report;
+  const hasReportAccess = reportStatus === "requested" || reportStatus === "uploaded" || reportStatus === "viewed";
+  const isReportUnlocked = (manuscriptReportFeature && manuscriptReportFeature.status !== "locked") || hasReportAccess;
 
   // If viewing report via state and HTML content exists, render just the HTML without wrapper
   // Only render after component is mounted to avoid SSR issues

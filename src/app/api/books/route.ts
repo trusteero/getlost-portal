@@ -305,7 +305,7 @@ export async function GET(request: NextRequest) {
 
           // Also check if there's a purchase (completed or pending) - webhook might not have processed yet
           // Pending purchases indicate the user has initiated payment but webhook hasn't completed
-          const [anyPurchase] = await db
+          const allPurchases = await db
             .select()
             .from(purchases)
             .where(
@@ -314,8 +314,17 @@ export async function GET(request: NextRequest) {
                 eq(purchases.featureType, "manuscript-report")
               )
             )
-            .orderBy(desc(purchases.createdAt))
-            .limit(1);
+            .orderBy(desc(purchases.createdAt));
+
+          const anyPurchase = allPurchases.length > 0 ? allPurchases[0] : undefined;
+
+          console.log(`[Books API] Book ${book.id} report status check:`, {
+            hasFeature: !!reportFeature,
+            featureStatus: reportFeature?.status,
+            hasPurchase: !!anyPurchase,
+            purchaseStatus: anyPurchase?.status,
+            purchaseId: anyPurchase?.id,
+          });
 
           // Feature is requested if:
           // 1. Feature status is purchased/requested, OR
@@ -323,54 +332,55 @@ export async function GET(request: NextRequest) {
           const isRequested = (reportFeature && (reportFeature.status === "purchased" || reportFeature.status === "requested")) || 
                              (anyPurchase !== undefined);
 
-          if (isRequested) {
-            // Get all completed reports for this version (same logic as view route)
-            const completedReports = await db
-              .select({
-                id: reports.id,
-                viewedAt: reports.viewedAt,
-                adminNotes: reports.adminNotes,
-              })
-              .from(reports)
-              .where(and(
-                eq(reports.bookVersionId, latestVersion[0].id),
-                eq(reports.status, "completed")
-              ))
-              .orderBy(desc(reports.requestedAt));
-            
-            // Find active report (same logic as view route)
-            let activeReport = completedReports.find(r => {
-              if (!r.adminNotes) return false;
-              try {
-                const notes = JSON.parse(r.adminNotes);
-                return notes.isActive === true;
-              } catch {
-                return false;
-              }
-            });
-            
-            // If no active report, use the latest one
-            if (!activeReport && completedReports.length > 0) {
-              activeReport = completedReports[0] || undefined;
+          // Get all completed reports for this version (same logic as view route)
+          const completedReports = await db
+            .select({
+              id: reports.id,
+              viewedAt: reports.viewedAt,
+              adminNotes: reports.adminNotes,
+            })
+            .from(reports)
+            .where(and(
+              eq(reports.bookVersionId, latestVersion[0].id),
+              eq(reports.status, "completed")
+            ))
+            .orderBy(desc(reports.requestedAt));
+          
+          // Find active report (same logic as view route)
+          let activeReport = completedReports.find(r => {
+            if (!r.adminNotes) return false;
+            try {
+              const notes = JSON.parse(r.adminNotes);
+              return notes.isActive === true;
+            } catch {
+              return false;
             }
+          });
+          
+          // If no active report, use the latest one
+          if (!activeReport && completedReports.length > 0) {
+            activeReport = completedReports[0] || undefined;
+          }
+
+          // If there's a completed report, user should be able to view it
+          // (admin uploaded it, so it's ready)
+          if (activeReport) {
+            // Check if viewedAt exists and is not null/undefined
+            // Drizzle converts integer timestamps to Date objects when reading
+            const hasViewedAt = activeReport.viewedAt !== null && 
+                                activeReport.viewedAt !== undefined;
             
-            if (activeReport) {
-              // Check if viewedAt exists and is not null/undefined
-              // Drizzle converts integer timestamps to Date objects when reading
-              const hasViewedAt = activeReport.viewedAt !== null && 
-                                  activeReport.viewedAt !== undefined;
-              
-              if (hasViewedAt) {
-                reportStatus = "viewed";
-                console.log(`[Books API] Report ${activeReport.id} has been viewed. viewedAt: ${activeReport.viewedAt}`);
-              } else {
-                reportStatus = "uploaded";
-                console.log(`[Books API] Report ${activeReport.id} exists but not viewed yet. viewedAt: ${activeReport.viewedAt}`);
-              }
+            if (hasViewedAt) {
+              reportStatus = "viewed";
+              console.log(`[Books API] Report ${activeReport.id} has been viewed. viewedAt: ${activeReport.viewedAt}`);
             } else {
-              reportStatus = "requested";
-              console.log(`[Books API] No active report found for book ${book.id}`);
+              reportStatus = "uploaded";
+              console.log(`[Books API] Report ${activeReport.id} exists but not viewed yet. viewedAt: ${activeReport.viewedAt}`);
             }
+          } else if (isRequested) {
+            // User has requested/purchased but no report uploaded yet
+            reportStatus = "requested";
+            console.log(`[Books API] Report requested for book ${book.id} but not uploaded yet`);
           }
         }
 

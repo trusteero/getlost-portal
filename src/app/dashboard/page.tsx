@@ -716,13 +716,18 @@ export default function Dashboard() {
         }
       }
       
+      // Other assets (marketing-assets, book-covers, landing-page) are "Coming soon"
+      if (featureType === 'marketing-assets' || featureType === 'book-covers' || featureType === 'landing-page') {
+        return 'Coming soon';
+      }
+      
       if (status === 'processing') {
         return 'Processing...';
       }
       if (status === 'complete') {
         return 'View';
       }
-      return 'Unlock';
+      return 'Coming soon';
     };
     
     const steps = [
@@ -731,7 +736,7 @@ export default function Dashboard() {
         title: "Manuscript Report",
         status: getFeatureStatus("manuscript-report"),
         action: "View a comprehensive review and marketing report.",
-        price: getFeatureStatus("manuscript-report") === 'complete' ? "Unlocked" : "$149.99",
+        price: getFeatureStatus("manuscript-report") === 'complete' ? null : "$149.99",
         buttonText: getButtonText("manuscript-report", getFeatureStatus("manuscript-report")),
       },
       {
@@ -739,7 +744,7 @@ export default function Dashboard() {
         title: "Marketing Assets",
         status: getFeatureStatus("marketing-assets"),
         action: "Video assets to advertise your book to your audience.",
-        price: getFeatureStatus("marketing-assets") === 'complete' ? "Unlocked" : "$149.99",
+        price: null, // No price for coming soon features
         buttonText: getButtonText("marketing-assets", getFeatureStatus("marketing-assets")),
       },
       {
@@ -747,7 +752,7 @@ export default function Dashboard() {
         title: "Book Covers",
         status: getFeatureStatus("book-covers"),
         action: "Access book covers that appeal to your core audience.",
-        price: getFeatureStatus("book-covers") === 'complete' ? "Unlocked" : "$149.99",
+        price: null, // No price for coming soon features
         buttonText: getButtonText("book-covers", getFeatureStatus("book-covers")),
       },
       {
@@ -755,7 +760,7 @@ export default function Dashboard() {
         title: "Landing Page",
         status: getFeatureStatus("landing-page"),
         action: "Access a landing page for your book that converts.",
-        price: getFeatureStatus("landing-page") === 'complete' ? "Unlocked" : "$149.99",
+        price: null, // No price for coming soon features
         buttonText: getButtonText("landing-page", getFeatureStatus("landing-page")),
       },
     ];

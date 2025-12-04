@@ -13,6 +13,7 @@ import {
 } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { trackUserActivity } from "@/server/services/analytics";
+import { createExampleBooksForUser } from "@/server/utils/create-example-books";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -256,6 +257,26 @@ export const authConfig = {
 					} else {
 						// Keep existing role
 						user.role = currentUser.role as "user" | "admin" | "super_admin";
+					}
+
+					// For OAuth users (Google), create example books if they don't have any
+					// This handles the case where OAuth users don't go through email verification
+					// Only create if email is verified (OAuth users are auto-verified)
+					if (currentUser.emailVerified && account?.providerId === "google") {
+						createExampleBooksForUser(user.id).catch((error) => {
+							console.error("❌ [Auth] Failed to create example books for OAuth user:", error);
+							// Don't fail sign-in if example books fail
+						});
+					}
+				} else {
+					// New user created by Better Auth (OAuth)
+					// Create example books after a short delay to ensure user is fully created
+					if (user.emailVerified && account?.providerId === "google") {
+						setTimeout(() => {
+							createExampleBooksForUser(user.id).catch((error) => {
+								console.error("❌ [Auth] Failed to create example books for new OAuth user:", error);
+							});
+						}, 1000); // Small delay to ensure user record is fully committed
 					}
 				}
 			}

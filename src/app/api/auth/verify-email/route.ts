@@ -7,6 +7,7 @@ import { sendWelcomeEmail } from "@/server/services/email";
 import { auth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 import crypto from "crypto";
+import { createExampleBooksForUser } from "@/server/utils/create-example-books";
 
 const handler = toNextJsHandler(auth);
 
@@ -62,6 +63,12 @@ export async function GET(request: Request) {
                   console.error("❌ [Verify Email] Failed to send welcome email:", emailError);
                   // Don't fail the verification if email fails
                 }
+                
+                // Create example books for the user (async, don't wait)
+                createExampleBooksForUser(verifiedUser[0]!.id).catch((error) => {
+                  console.error("❌ [Verify Email] Failed to create example books:", error);
+                  // Don't fail verification if example books fail
+                });
               }
             }
           }
@@ -175,6 +182,12 @@ export async function GET(request: Request) {
             console.error("❌ [Verify Email] Failed to send welcome email:", emailError);
             // Don't fail the verification if email fails
           }
+          
+          // Create example books for the user (async, don't wait)
+          createExampleBooksForUser(verifiedUser.id).catch((error) => {
+            console.error("❌ [Verify Email] Failed to create example books:", error);
+            // Don't fail verification if example books fail
+          });
 
           return NextResponse.json({
             message: "Email verified successfully",
@@ -250,6 +263,12 @@ export async function GET(request: Request) {
 
     // Send welcome email
     await sendWelcomeEmail(verifiedUser.email, verifiedUser.name || undefined);
+
+    // Create example books for the user (async, don't wait)
+    createExampleBooksForUser(verifiedUser.id).catch((error) => {
+      console.error("❌ [Verify Email] Failed to create example books:", error);
+      // Don't fail verification if example books fail
+    });
 
     return NextResponse.json({
       message: "Email verified successfully",
