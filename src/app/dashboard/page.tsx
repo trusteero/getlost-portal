@@ -612,24 +612,32 @@ export default function Dashboard() {
           )}
         </div>
 
-        {books.length > 0 && (
-          <>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col md:flex-row justify-center gap-4 mb-6 md:mb-8">
-              <button 
-                onClick={() => setShowUploadModal(true)}
-                className="w-full md:w-auto btn-premium-emerald text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              >
+        {/* Action Buttons - Always visible */}
+        <div className="flex flex-col md:flex-row justify-center gap-4 mb-6 md:mb-8">
+          <button 
+            onClick={() => setShowUploadModal(true)}
+            className="w-full md:w-auto btn-premium-emerald text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            {books.length > 0 ? (
+              <>
                 <RefreshCw className="w-4 h-4 inline-block align-middle" />
                 Analyze Another Manuscript
-              </button>
-              <button className="w-full md:w-auto btn-premium-sapphire text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-sapphire-500">
-                <Users className="w-4 h-4 inline-block align-middle" />
-                Refer an Author
-              </button>
-            </div>
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4 inline-block align-middle" />
+                Upload Manuscript
+              </>
+            )}
+          </button>
+          <button className="w-full md:w-auto btn-premium-sapphire text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-sapphire-500">
+            <Users className="w-4 h-4 inline-block align-middle" />
+            Refer an Author
+          </button>
+        </div>
 
+        {books.length > 0 && (
+          <>
             {/* Condensed Library */}
             <div className="mb-6 md:mb-8">
               <CondensedLibrary 
@@ -656,13 +664,6 @@ export default function Dashboard() {
               <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h2 className="text-2xl font-semibold text-gray-900 mb-2">No books yet</h2>
               <p className="text-gray-600 mb-6">Upload your first manuscript to get started</p>
-              <Button 
-                onClick={() => setShowUploadModal(true)}
-                className="bg-orange-600 hover:bg-orange-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Your First Book
-              </Button>
             </CardContent>
           </Card>
         )}
