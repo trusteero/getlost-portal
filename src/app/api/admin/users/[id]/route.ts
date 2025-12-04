@@ -40,12 +40,33 @@ export async function DELETE(
   try {
     const { id: userId } = await params;
 
-    // Get target user
-    const targetUser = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
+    // Get target user - check if password column exists first
+    const { columnExists } = await import("@/server/db/migrations");
+    const hasPasswordColumn = columnExists("getlostportal_user", "password");
+    
+    let targetUser;
+    if (hasPasswordColumn) {
+      targetUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+    } else {
+      targetUser = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          emailVerified: users.emailVerified,
+          image: users.image,
+          role: users.role,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+        })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+    }
 
     if (targetUser.length === 0) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -78,72 +99,172 @@ export async function DELETE(
 
     // 2. For each book, delete all related data (same as book deletion)
     for (const book of userBooks) {
-      // Delete summaries
-      await db.delete(summaries).where(eq(summaries.bookId, book.id));
-
-      // Delete landing pages
-      await db.delete(landingPages).where(eq(landingPages.bookId, book.id));
-
-      // Delete book covers
-      await db.delete(bookCovers).where(eq(bookCovers.bookId, book.id));
-
-      // Delete marketing assets
-      await db.delete(marketingAssets).where(eq(marketingAssets.bookId, book.id));
-
-      // Delete purchases
-      await db.delete(purchases).where(eq(purchases.bookId, book.id));
-
-      // Delete book features
-      await db.delete(bookFeatures).where(eq(bookFeatures.bookId, book.id));
-
-      // Delete digest jobs
-      await db.delete(digestJobs).where(eq(digestJobs.bookId, book.id));
-
-      // Delete reports (via book versions)
-      const bookVersionsList = await db
-        .select({ id: bookVersions.id })
-        .from(bookVersions)
-        .where(eq(bookVersions.bookId, book.id));
-      
-      const versionIds = bookVersionsList.map(v => v.id);
-      
-      for (const versionId of versionIds) {
-        await db.delete(reports).where(eq(reports.bookVersionId, versionId));
+      try {
+        // Delete summaries (if table exists)
+        await db.delete(summaries).where(eq(summaries.bookId, book.id));
+      } catch (error: any) {
+        if (!error.message?.includes("no such table")) {
+          console.warn(`Failed to delete summaries for book ${book.id}:`, error.message);
+        }
       }
 
-      // Delete book versions
-      await db.delete(bookVersions).where(eq(bookVersions.bookId, book.id));
+      try {
+        // Delete landing pages
+        await db.delete(landingPages).where(eq(landingPages.bookId, book.id));
+      } catch (error: any) {
+        if (!error.message?.includes("no such table")) {
+          console.warn(`Failed to delete landing pages for book ${book.id}:`, error.message);
+        }
+      }
+
+      try {
+        // Delete book covers
+        await db.delete(bookCovers).where(eq(bookCovers.bookId, book.id));
+      } catch (error: any) {
+        if (!error.message?.includes("no such table")) {
+          console.warn(`Failed to delete book covers for book ${book.id}:`, error.message);
+        }
+      }
+
+      try {
+        // Delete marketing assets
+        await db.delete(marketingAssets).where(eq(marketingAssets.bookId, book.id));
+      } catch (error: any) {
+        if (!error.message?.includes("no such table")) {
+          console.warn(`Failed to delete marketing assets for book ${book.id}:`, error.message);
+        }
+      }
+
+      try {
+        // Delete purchases
+        await db.delete(purchases).where(eq(purchases.bookId, book.id));
+      } catch (error: any) {
+        if (!error.message?.includes("no such table")) {
+          console.warn(`Failed to delete purchases for book ${book.id}:`, error.message);
+        }
+      }
+
+      try {
+        // Delete book features
+        await db.delete(bookFeatures).where(eq(bookFeatures.bookId, book.id));
+      } catch (error: any) {
+        if (!error.message?.includes("no such table")) {
+          console.warn(`Failed to delete book features for book ${book.id}:`, error.message);
+        }
+      }
+
+      try {
+        // Delete digest jobs
+        await db.delete(digestJobs).where(eq(digestJobs.bookId, book.id));
+      } catch (error: any) {
+        if (!error.message?.includes("no such table")) {
+          console.warn(`Failed to delete digest jobs for book ${book.id}:`, error.message);
+        }
+      }
+
+      try {
+        // Delete reports (via book versions)
+        const bookVersionsList = await db
+          .select({ id: bookVersions.id })
+          .from(bookVersions)
+          .where(eq(bookVersions.bookId, book.id));
+        
+        const versionIds = bookVersionsList.map(v => v.id);
+        
+        for (const versionId of versionIds) {
+          try {
+            await db.delete(reports).where(eq(reports.bookVersionId, versionId));
+          } catch (error: any) {
+            if (!error.message?.includes("no such table")) {
+              console.warn(`Failed to delete reports for version ${versionId}:`, error.message);
+            }
+          }
+        }
+      } catch (error: any) {
+        if (!error.message?.includes("no such table")) {
+          console.warn(`Failed to get book versions for book ${book.id}:`, error.message);
+        }
+      }
+
+      try {
+        // Delete book versions
+        await db.delete(bookVersions).where(eq(bookVersions.bookId, book.id));
+      } catch (error: any) {
+        if (!error.message?.includes("no such table")) {
+          console.warn(`Failed to delete book versions for book ${book.id}:`, error.message);
+        }
+      }
     }
 
     // 3. Delete all books for this user
-    await db.delete(books).where(eq(books.userId, userId));
+    try {
+      await db.delete(books).where(eq(books.userId, userId));
+    } catch (error: any) {
+      console.warn("Failed to delete books:", error.message);
+      throw error; // This is critical, so throw
+    }
 
     // 4. Delete purchases (in case any remain)
-    await db.delete(purchases).where(eq(purchases.userId, userId));
+    try {
+      await db.delete(purchases).where(eq(purchases.userId, userId));
+    } catch (error: any) {
+      if (!error.message?.includes("no such table")) {
+        console.warn("Failed to delete purchases:", error.message);
+      }
+    }
 
     // 5. Delete notifications
-    await db.delete(notifications).where(eq(notifications.userId, userId));
+    try {
+      await db.delete(notifications).where(eq(notifications.userId, userId));
+    } catch (error: any) {
+      if (!error.message?.includes("no such table")) {
+        console.warn("Failed to delete notifications:", error.message);
+      }
+    }
 
     // 6. Delete verification tokens (Better Auth uses identifier field)
-    await db.delete(verificationTokens).where(eq(verificationTokens.identifier, target.email));
+    try {
+      await db.delete(verificationTokens).where(eq(verificationTokens.identifier, target.email));
+    } catch (error: any) {
+      if (!error.message?.includes("no such table")) {
+        console.warn("Failed to delete verification tokens:", error.message);
+      }
+    }
 
     // 7. Delete sessions (Better Auth schema uses userId field which maps to user_id column)
-    await db.delete(betterAuthSession).where(eq(betterAuthSession.userId, userId));
+    try {
+      await db.delete(betterAuthSession).where(eq(betterAuthSession.userId, userId));
+    } catch (error: any) {
+      if (!error.message?.includes("no such table") && !error.message?.includes("no such column")) {
+        console.warn("Failed to delete sessions:", error.message);
+      }
+    }
 
     // 8. Delete accounts (OAuth accounts - Better Auth schema uses userId field which maps to user_id column)
-    await db.delete(betterAuthAccount).where(eq(betterAuthAccount.userId, userId));
+    try {
+      await db.delete(betterAuthAccount).where(eq(betterAuthAccount.userId, userId));
+    } catch (error: any) {
+      if (!error.message?.includes("no such table") && !error.message?.includes("no such column")) {
+        console.warn("Failed to delete accounts:", error.message);
+      }
+    }
 
     // 9. Finally, delete the user
-    await db.delete(users).where(eq(users.id, userId));
+    try {
+      await db.delete(users).where(eq(users.id, userId));
+    } catch (error: any) {
+      console.error("Failed to delete user:", error.message);
+      throw error; // This is critical, so throw
+    }
 
     return NextResponse.json({ 
       success: true,
       message: "User and all related data deleted successfully"
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to delete user:", error);
     return NextResponse.json(
-      { error: "Failed to delete user" },
+      { error: "Failed to delete user", details: error.message || String(error) },
       { status: 500 }
     );
   }

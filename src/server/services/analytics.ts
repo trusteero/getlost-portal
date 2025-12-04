@@ -73,17 +73,28 @@ export async function getAnalytics() {
   const yesterdayDay = String(yesterday.getDate()).padStart(2, '0');
   const yesterdayStr = `${yesterdayYear}-${yesterdayMonth}-${yesterdayDay}`;
 
-  // Get DAU for today
-  const dauToday = await db
-    .select({ count: sql<number>`count(distinct ${userActivity.userId})` })
-    .from(userActivity)
-    .where(eq(userActivity.date, todayStr));
+  // Get DAU for today (check if table exists first)
+  let dauToday = [{ count: 0 }];
+  let dauYesterday = [{ count: 0 }];
+  
+  try {
+    const { columnExists } = await import("@/server/db/migrations");
+    if (columnExists("getlostportal_user_activity", "userId")) {
+      dauToday = await db
+        .select({ count: sql<number>`count(distinct ${userActivity.userId})` })
+        .from(userActivity)
+        .where(eq(userActivity.date, todayStr));
 
-  // Get DAU for yesterday (for comparison)
-  const dauYesterday = await db
-    .select({ count: sql<number>`count(distinct ${userActivity.userId})` })
-    .from(userActivity)
-    .where(eq(userActivity.date, yesterdayStr));
+      // Get DAU for yesterday (for comparison)
+      dauYesterday = await db
+        .select({ count: sql<number>`count(distinct ${userActivity.userId})` })
+        .from(userActivity)
+        .where(eq(userActivity.date, yesterdayStr));
+    }
+  } catch (error: any) {
+    // Table doesn't exist or query failed - return zeros
+    console.warn("[Analytics] User activity table not available:", error?.message || error);
+  }
 
   return {
     dailyActiveUsers: dauToday[0]?.count || 0,

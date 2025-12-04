@@ -50,6 +50,7 @@ try {
         emailVerified INTEGER DEFAULT 0,
         image TEXT,
         role TEXT DEFAULT 'user' NOT NULL,
+        password TEXT,
         createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
         updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
       )
@@ -57,6 +58,17 @@ try {
     console.log("✅ User table created");
   } else {
     console.log("✅ User table already exists");
+    // Check if password column exists, add it if missing (for compatibility with Render)
+    try {
+      const columns = sqlite.prepare("PRAGMA table_info(getlostportal_user)").all();
+      const hasPassword = columns.some((col: any) => col.name === "password");
+      if (!hasPassword) {
+        sqlite.exec(`ALTER TABLE getlostportal_user ADD COLUMN password TEXT`);
+        console.log("✅ Added password column to existing user table");
+      }
+    } catch (error) {
+      // Column might already exist, that's okay
+    }
   }
 
   // Create account table if it doesn't exist

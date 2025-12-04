@@ -17,9 +17,33 @@ export async function GET(request: NextRequest) {
   try {
     // Get all users (Better Auth uses 'user' table, but we query 'users' from schema which maps to getlostportal_user)
     // Both should work as they reference the same table
-    const allUsers = await db
-      .select()
-      .from(users);
+    console.log("[Admin Users] Fetching all users...");
+    
+    // Check if password column exists (for compatibility with both old and new schemas)
+    const { columnExists } = await import("@/server/db/migrations");
+    const hasPasswordColumn = columnExists("getlostportal_user", "password");
+    
+    let allUsers;
+    if (hasPasswordColumn) {
+      // Select all columns including password
+      allUsers = await db.select().from(users);
+    } else {
+      // Select only columns that exist (without password)
+      allUsers = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          emailVerified: users.emailVerified,
+          image: users.image,
+          role: users.role,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+        })
+        .from(users);
+    }
+    
+    console.log(`[Admin Users] Found ${allUsers.length} users`);
 
     // Get book counts for each user
     const userBooks = await db
@@ -29,6 +53,8 @@ export async function GET(request: NextRequest) {
       })
       .from(books)
       .groupBy(books.userId);
+    
+    console.log(`[Admin Users] Found ${userBooks.length} users with books`);
 
     // Get Google accounts for users (Better Auth uses providerId instead of provider)
     let googleAccounts: Array<{ userId: string }> = [];
@@ -48,18 +74,22 @@ export async function GET(request: NextRequest) {
     // Get last activity for each user with proper datetime
     let lastActivities: Array<{ userId: string; lastActivityTime: string | null; lastActivityDate: string | null }> = [];
     try {
-      const lastActivitiesResult = await db
-        .select({
-          userId: userActivity.userId,
-          lastActivityDate: sql<string>`MAX(${userActivity.date})`,
-          lastActivityTime: sql<string>`MAX(datetime(${userActivity.lastActivityAt}))`,
-        })
-        .from(userActivity)
-        .groupBy(userActivity.userId);
-      lastActivities = lastActivitiesResult;
+      // Check if user_activity table exists first
+      const { columnExists } = await import("@/server/db/migrations");
+      if (columnExists("getlostportal_user_activity", "userId")) {
+        const lastActivitiesResult = await db
+          .select({
+            userId: userActivity.userId,
+            lastActivityDate: sql<string>`MAX(${userActivity.date})`,
+            lastActivityTime: sql<string>`MAX(datetime(${userActivity.lastActivityAt}))`,
+          })
+          .from(userActivity)
+          .groupBy(userActivity.userId);
+        lastActivities = lastActivitiesResult;
+      }
     } catch (error) {
       // If userActivity table doesn't exist, continue without activity info
-      console.warn("Could not fetch user activity:", error);
+      // Don't log as error - this is expected if the table hasn't been created yet
     }
 
     // Create maps for quick lookup
@@ -83,11 +113,14 @@ export async function GET(request: NextRequest) {
       lastActivity: lastActivityMap[user.id] || null,
     }));
 
+    console.log(`[Admin Users] Returning ${usersWithFullData.length} users with full data`);
     return NextResponse.json(usersWithFullData);
   } catch (error) {
-    console.error("Failed to fetch users:", error);
+    console.error("[Admin Users] Failed to fetch users:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("[Admin Users] Error details:", errorMessage);
     return NextResponse.json(
-      { error: "Failed to fetch users" },
+      { error: "Failed to fetch users", details: errorMessage },
       { status: 500 }
     );
   }

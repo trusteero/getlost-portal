@@ -327,6 +327,7 @@ function ensureUserTable() {
       console.log("🔄 [Better Auth] Creating user table...");
       
       // Create user table with Better Auth schema
+      // Include password column for compatibility with existing Render database
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS getlostportal_user (
           id TEXT PRIMARY KEY,
@@ -335,10 +336,23 @@ function ensureUserTable() {
           emailVerified INTEGER DEFAULT 0,
           image TEXT,
           role TEXT DEFAULT 'user' NOT NULL,
+          password TEXT,
           createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
           updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
         )
       `);
+      
+      // Add password column if table exists but column doesn't (for existing databases)
+      try {
+        const columns = sqlite.prepare("PRAGMA table_info(getlostportal_user)").all() as Array<{ name: string }>;
+        const hasPassword = columns.some(col => col.name === "password");
+        if (!hasPassword) {
+          sqlite.exec(`ALTER TABLE getlostportal_user ADD COLUMN password TEXT`);
+          console.log("✅ [Better Auth] Added password column to existing user table");
+        }
+      } catch (error) {
+        // Column might already exist, that's okay
+      }
 
       console.log("✅ [Better Auth] User table created");
     } finally {

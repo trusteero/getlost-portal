@@ -82,9 +82,29 @@ export function useSession() {
   const client = getAuthClient();
   if (!client) {
     // During SSR, return a safe default
-    return { data: null, isPending: true };
+    if (typeof window === "undefined") {
+      return { data: null, isPending: true };
+    }
+    // Client-side but client failed to initialize - log error
+    console.error("[Auth Client] useSession called but client is null");
+    return { data: null, isPending: false, error: "Auth client not initialized" };
   }
-  return client.useSession();
+  
+  try {
+    const sessionResult = client.useSession();
+    // Add error logging if session is stuck in pending
+    if (sessionResult.isPending && typeof window !== "undefined") {
+      setTimeout(() => {
+        if (sessionResult.isPending) {
+          console.warn("[Auth Client] useSession stuck in pending state for >5s");
+        }
+      }, 5000);
+    }
+    return sessionResult;
+  } catch (error) {
+    console.error("[Auth Client] Error in useSession:", error);
+    return { data: null, isPending: false, error: String(error) };
+  }
 }
 
 // Helper to create a proxy for nested objects (like signIn with .email, .social)

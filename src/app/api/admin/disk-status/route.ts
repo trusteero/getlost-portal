@@ -18,8 +18,22 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const diskPath = "/var/data";
-    const dbPath = "/var/data/db.sqlite";
+    // Get actual database path from environment
+    let dbPath = process.env.DATABASE_URL || "./dev.db";
+    if (dbPath.startsWith("file://")) {
+      dbPath = dbPath.replace(/^file:\/\//, "");
+    } else if (dbPath.startsWith("file:")) {
+      dbPath = dbPath.replace(/^file:/, "");
+    }
+    
+    // Resolve to absolute path
+    if (!path.isAbsolute(dbPath)) {
+      dbPath = path.resolve(process.cwd(), dbPath);
+    }
+    
+    // Determine disk path based on database location
+    // If database is in /var/data, use that; otherwise use the database's directory
+    const diskPath = dbPath.startsWith("/var/data") ? "/var/data" : path.dirname(dbPath);
     
     const diskExists = existsSync(diskPath);
     const diskWritable = diskExists && (await fs.access(diskPath).then(() => true).catch(() => false));
@@ -75,14 +89,14 @@ export async function GET(request: NextRequest) {
         path: dbPath,
         exists: dbExists,
         size: dbSize,
-        sizeFormatted: `${Math.round(dbSize / 1024)} KB`,
+        sizeFormatted: dbSize > 0 ? `${Math.round(dbSize / 1024)} KB` : "0 KB",
         tables: dbTables,
         status: dbExists ? "✅ Exists" : "❌ Not found",
       },
       directories,
       lastInit,
       usingPersistentDisk: dbPath.startsWith("/var/data"),
-      warning: !dbPath.startsWith("/var/data") 
+      warning: process.env.NODE_ENV === "production" && !dbPath.startsWith("/var/data") 
         ? "⚠️ Database is NOT on persistent disk - data will be lost on redeploy!"
         : null,
     });

@@ -585,6 +585,14 @@ export async function POST(request: NextRequest) {
     const fileSize = file.size;
     const fileUrl = `/api/books/${bookId}/file`;
 
+    // Ensure book_version table exists before inserting
+    const { initializeMigrations } = await import("@/server/db/migrations");
+    try {
+      initializeMigrations();
+    } catch (migrateError) {
+      console.warn("[Books API] Migration check failed, continuing anyway:", migrateError);
+    }
+
     const newVersion = await db
       .insert(bookVersions)
       .values({

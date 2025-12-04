@@ -31,7 +31,29 @@ export async function GET(request: NextRequest) {
     const yesterdayTimestamp = Math.floor(yesterday.getTime() / 1000);
 
     // Get all users and filter in memory (simpler for SQLite)
-    const allUsers = await db.select().from(users);
+    // Check if password column exists (for compatibility with both old and new schemas)
+    const { columnExists } = await import("@/server/db/migrations");
+    const hasPasswordColumn = columnExists("getlostportal_user", "password");
+    
+    let allUsers;
+    if (hasPasswordColumn) {
+      // Select all columns including password
+      allUsers = await db.select().from(users);
+    } else {
+      // Select only columns that exist (without password)
+      allUsers = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          emailVerified: users.emailVerified,
+          image: users.image,
+          role: users.role,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+        })
+        .from(users);
+    }
 
     const newUsersToday = allUsers.filter((u: any) => {
       if (!u.createdAt) return false;

@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import {
   ArrowLeft, Upload, FileText, Clock, CheckCircle, AlertCircle,
   Download, Eye, CreditCard, Loader2, ChevronDown, ChevronRight, Edit2, Save, X, Image,
-  Lock, Users, Megaphone, BookOpen, MessageCircle
+  Lock, Users, Megaphone, MessageCircle
 } from "lucide-react";
 
 interface BookVersion {
@@ -76,7 +76,7 @@ export default function BookDetail() {
   const [expandedVersions, setExpandedVersions] = useState<Set<string>>(new Set());
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<BookVersion | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("summary");
+  const [activeTab, setActiveTab] = useState<string>("author");
   const [newVersionFile, setNewVersionFile] = useState<File | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
@@ -100,6 +100,8 @@ export default function BookDetail() {
     if (typeof window !== 'undefined') {
       if (window.location.hash === '#report') {
         setIsViewingReport(true);
+        setActiveTab("author");
+      } else {
         setActiveTab("author");
       }
     }
@@ -752,20 +754,6 @@ export default function BookDetail() {
                               <button
                                 onClick={() => {
                                   setSelectedVersion(version);
-                                  setActiveTab("summary");
-                                }}
-                                className={`flex-1 px-4 py-3 text-sm font-medium text-center border-b-2 transition-colors ${
-                                  activeTab === "summary"
-                                    ? "text-orange-600 border-orange-600 bg-white"
-                                    : "text-gray-600 border-transparent hover:text-gray-900"
-                                }`}
-                              >
-                                <BookOpen className="w-4 h-4 inline-block mr-1" />
-                                Summary
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedVersion(version);
                                   setActiveTab("author");
                                   if (version.reports.length > 0 && version.reports[0]) {
                                     setSelectedReport(version.reports[0]);
@@ -830,38 +818,6 @@ export default function BookDetail() {
 
                           {/* Tab Content */}
                           <div className="p-6">
-                            {activeTab === "summary" && (
-                              <div>
-                                <div className="mb-4">
-                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Free
-                                  </span>
-                                </div>
-                                {(() => {
-                                  // Priority: 1. Version summary (extracted from report HTML by API), 2. Digest job summary, 3. Fallback
-                                  if (version.summary) {
-                                    return <p className="text-gray-700">{version.summary}</p>;
-                                  }
-                                  
-                                  if (digestJob && digestJob.status === "completed" && digestJob.summary) {
-                                    return (
-                                      <div className="space-y-4">
-                                        <p className="text-gray-700">{digestJob.summary}</p>
-                                        {digestJob.shortSummary && digestJob.shortSummary !== digestJob.summary && (
-                                          <div>
-                                            <h4 className="font-semibold text-gray-700 mb-1">Short Summary:</h4>
-                                            <p className="text-gray-600 text-sm">{digestJob.shortSummary}</p>
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  }
-                                  
-                                  return <p className="text-gray-500 italic">No summary available yet.</p>;
-                                })()}
-                              </div>
-                            )}
-
                             {activeTab === "author" && (
                               <div>
                                 {(() => {

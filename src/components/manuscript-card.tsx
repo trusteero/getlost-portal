@@ -215,9 +215,6 @@ export const ManuscriptCard = ({
 
   const handleStageAction = (stepId: string, stepTitle: string) => {
     switch (stepId) {
-      case 'summary':
-        // Summary is no longer available (preview report removed)
-        break;
       case 'manuscript-report':
         // Navigate to book detail page with report hash
         router.push(`/dashboard/book/${id}#report`);

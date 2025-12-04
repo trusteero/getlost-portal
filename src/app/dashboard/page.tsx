@@ -70,11 +70,60 @@ export default function Dashboard() {
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [sessionTimeout, setSessionTimeout] = useState(false);
+  const [fallbackSession, setFallbackSession] = useState<any>(null);
+
+  // Fallback: Try to fetch session directly if useSession is stuck
+  useEffect(() => {
+    if (isPending && typeof window !== "undefined") {
+      const fallbackTimeout = setTimeout(async () => {
+        console.warn("[Dashboard] useSession stuck, trying fallback session fetch");
+        try {
+          const response = await fetch("/api/auth/get-session");
+          if (response.ok) {
+            const sessionData = await response.json();
+            if (sessionData?.user) {
+              console.log("[Dashboard] Fallback session fetch successful");
+              setFallbackSession(sessionData);
+            } else {
+              console.warn("[Dashboard] No session found, redirecting to login");
+              router.push("/login");
+            }
+          } else {
+            console.warn("[Dashboard] Fallback session fetch failed, redirecting to login");
+            router.push("/login");
+          }
+        } catch (error) {
+          console.error("[Dashboard] Fallback session fetch error:", error);
+          router.push("/login");
+        }
+      }, 3000); // Try fallback after 3 seconds
+
+      return () => clearTimeout(fallbackTimeout);
+    }
+  }, [isPending, router]);
+
+  // Add timeout for session loading to prevent infinite spinner
+  useEffect(() => {
+    if (isPending && !fallbackSession) {
+      const timeout = setTimeout(() => {
+        console.warn("[Dashboard] Session loading timeout - redirecting to login");
+        setSessionTimeout(true);
+        router.push("/login");
+      }, 10000); // 10 second timeout
+
+      return () => clearTimeout(timeout);
+    }
+  }, [isPending, fallbackSession, router]);
+
+  // Use fallback session if useSession is stuck
+  const activeSession = session || fallbackSession?.user;
 
   useEffect(() => {
-    if (!isPending && !session) {
+    if (!isPending && !activeSession && !fallbackSession) {
       router.push("/login");
-    } else if (session) {
+    } else if (activeSession) {
+      setSessionTimeout(false); // Reset timeout if session loads
       fetchBooks();
       checkProcessingJobs();
     }
@@ -297,7 +346,8 @@ export default function Dashboard() {
   };
 
 
-  if (isPending || loading) {
+  // Show spinner only if pending and not timed out and no fallback session
+  if ((isPending && !sessionTimeout && !fallbackSession) || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
@@ -305,37 +355,49 @@ export default function Dashboard() {
     );
   }
 
+  // If session timed out or failed to load, show error
+  if (sessionTimeout || (!isPending && !activeSession && !fallbackSession)) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Session expired or failed to load</p>
+          <button
+            onClick={() => router.push("/login")}
+            className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Calculate statistics for welcome message
   const calculateStats = () => {
     let unlockedInsights = 0;
-    const totalInsights = 5; // 5 features per book: summary, manuscript-report, marketing-assets, book-covers, landing-page
+    const totalInsights = 4; // 4 features per book: manuscript-report, marketing-assets, book-covers, landing-page
     
     books.forEach((book) => {
-      // 1. Summary (free when digest completes or book version has summary)
-      const hasSummary = (book.digestJob?.summary && book.digestJob.status === "completed") || 
-                         (book.latestVersion?.summary !== undefined && book.latestVersion.summary !== null);
-      if (hasSummary) unlockedInsights++;
-      
-      // 2. Manuscript Report (check assetStatuses or feature status)
+      // 1. Manuscript Report (check assetStatuses or feature status)
       const hasReport = book.assetStatuses?.report === "uploaded" || 
                         book.assetStatuses?.report === "viewed" ||
                         book.latestReport?.status === "completed" ||
                         book.features?.some(f => f.featureType === "manuscript-report" && (f.status === "purchased" || f.status === "unlocked"));
       if (hasReport) unlockedInsights++;
       
-      // 3. Marketing Assets
+      // 2. Marketing Assets
       const hasMarketing = book.assetStatuses?.marketing === "uploaded" || 
                            book.assetStatuses?.marketing === "viewed" ||
                            book.features?.some(f => f.featureType === "marketing-assets" && (f.status === "purchased" || f.status === "unlocked"));
       if (hasMarketing) unlockedInsights++;
       
-      // 4. Book Covers
+      // 3. Book Covers
       const hasCovers = book.assetStatuses?.covers === "uploaded" || 
                        book.assetStatuses?.covers === "viewed" ||
                        book.features?.some(f => f.featureType === "book-covers" && (f.status === "purchased" || f.status === "unlocked"));
       if (hasCovers) unlockedInsights++;
       
-      // 5. Landing Page
+      // 4. Landing Page
       const hasLandingPage = book.assetStatuses?.landingPage === "uploaded" || 
                              book.assetStatuses?.landingPage === "viewed" ||
                              book.features?.some(f => f.featureType === "landing-page" && (f.status === "purchased" || f.status === "unlocked"));
@@ -354,8 +416,6 @@ export default function Dashboard() {
 
   // Map book data to condensed library format
   const mapBookToCondensed = (book: Book) => {
-    const hasSummary = (book.digestJob?.summary && book.digestJob.status === "completed") || 
-                       (book.latestVersion?.summary !== undefined && book.latestVersion.summary !== null);
     const hasReport = book.latestReport?.status === "completed";
     
     // Check feature unlock statuses from database
@@ -363,10 +423,6 @@ export default function Dashboard() {
       const feature = book.features?.find(f => f.featureType === featureType);
       if (feature && feature.status !== 'locked') {
         return 'complete';
-      }
-      // Summary is always locked (no preview report)
-      if (featureType === 'summary') {
-        return 'locked';
       }
       // For manuscript-report, require explicit unlock via purchase
       return 'locked';
@@ -378,7 +434,6 @@ export default function Dashboard() {
     };
     
     const steps = [
-      { id: "summary", status: getCondensedStatus("summary") },
       { id: "manuscript-report", status: getCondensedStatus("manuscript-report") },
       { id: "marketing-assets", status: getCondensedStatus("marketing-assets") },
       { id: "book-covers", status: getCondensedStatus("book-covers") },
@@ -404,9 +459,7 @@ export default function Dashboard() {
     const isManuscriptReady = manuscriptStatus === "ready_to_purchase";
     const hasViewedReport = book.assetStatuses?.report === "viewed";
     
-    // Determine feature statuses - check digest job summary first, then book version summary
-    const hasSummary = (book.digestJob?.summary && book.digestJob.status === "completed") || 
-                       (book.latestVersion?.summary !== undefined && book.latestVersion.summary !== null);
+    // Determine feature statuses
     const hasReport = book.latestReport?.status === "completed";
     
     // Check feature unlock statuses from database
@@ -434,11 +487,6 @@ export default function Dashboard() {
       
       // For all other features, dim them until manuscript is ready
       if (!isManuscriptReady) {
-        return 'locked';
-      }
-      
-      // Summary is always locked (no preview report)
-      if (featureType === 'summary') {
         return 'locked';
       }
       
@@ -502,25 +550,12 @@ export default function Dashboard() {
         return 'Processing...';
       }
       if (status === 'complete') {
-        if (featureType === 'summary') return 'View Summary';
         return 'View';
-      }
-      // For summary, don't show unlock button - keep it dimmed
-      if (featureType === 'summary') {
-        return ''; // Empty string means no button will be shown
       }
       return 'Unlock';
     };
     
     const steps = [
-      {
-        id: "summary",
-        title: "Free Summary",
-        status: getFeatureStatus("summary"),
-        action: "View a basic summary of your manuscript.",
-        price: "Free",
-        buttonText: getButtonText("summary", getFeatureStatus("summary")),
-      },
       {
         id: "manuscript-report",
         title: "Manuscript Report",

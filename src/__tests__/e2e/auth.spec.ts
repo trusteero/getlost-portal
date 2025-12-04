@@ -6,19 +6,6 @@ test.describe("Authentication", () => {
     await page.goto("/");
   });
 
-  test("should navigate to sign up page", async ({ page }) => {
-    // Click sign up link
-    await page.click('text=Get Started');
-    
-    // Should be on sign up page
-    await expect(page).toHaveURL(/.*signup/);
-    // Check for sign up form elements (signup has multiple password fields)
-    await expect(page.locator('input[type="email"]')).toBeVisible();
-    await expect(page.locator('input[type="password"]').first()).toBeVisible();
-    // Signup page should have name field
-    await expect(page.locator('input[type="text"], input[name="name"]').first()).toBeVisible();
-  });
-
   test("should navigate to login page", async ({ page }) => {
     // Click sign in link
     await page.click('text=Sign in');

@@ -1319,7 +1319,7 @@ export default function AdminDashboard() {
                                       </svg>
                                     </div>
                                   )}
-                                  {!user.hasGoogleAuth && user.password && (
+                                  {!user.hasGoogleAuth && (user as any).password && (
                                     <span title="Email/Password">
                                       <Mail className="w-4 h-4 text-gray-500" />
                                     </span>
