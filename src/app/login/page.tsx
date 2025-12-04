@@ -203,24 +203,13 @@ function LoginContent() {
 	};
 
 	return (
-		<div className="min-h-screen flex items-center justify-center px-4 py-12" style={{ backgroundImage: 'url(/booksborder.png)', backgroundRepeat: 'repeat-x', backgroundPosition: 'top', backgroundSize: 'auto 320px' }}>
+		<div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
 			<div className="w-full max-w-md">
 				<div className="mb-8 text-center">
-					<Link href="/">
-						<Button
-							variant="ghost"
-							size="sm"
-							className="mb-6 text-gray-600 hover:text-gray-900"
-						>
-							<ArrowLeft className="w-4 h-4 mr-2" />
-							Back to Home
-						</Button>
-					</Link>
-
 					<div className="flex justify-center mb-4">
 						<img src="/logo256.png" alt="Get Lost" className="h-16 w-16" />
 					</div>
-					<h1 className="text-3xl font-bold mb-4 text-gray-900">Welcome Back</h1>
+					<h1 className="text-3xl font-bold mb-4 text-gray-900 tracking-tight">Welcome Back</h1>
 					<p className="text-gray-600">
 						Sign in to access your author dashboard
 					</p>
