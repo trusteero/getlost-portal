@@ -1,33 +1,80 @@
 "use client";
 
 import { createAuthClient } from "better-auth/react";
-import type { Auth } from "./auth";
 
 // Get the base URL - in browser use current origin, otherwise use env var or default
 function getBaseURL(): string {
   if (typeof window !== "undefined") {
-    return window.location.origin;
+    // Ensure we always return a string, never a Promise
+    const origin = window.location.origin;
+    if (typeof origin === "string") {
+      return origin;
+    }
   }
-  return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  // Fallback to env var or default - ensure it's a string
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (typeof envUrl === "string" && envUrl) {
+    return envUrl;
+  }
+  return "http://localhost:3000";
 }
 
-// Lazy initialization - only create client when actually needed
+// Initialize client immediately when module loads (client-side only)
+// This ensures it's available synchronously
 let _authClient: ReturnType<typeof createAuthClient> | null = null;
 
-function getAuthClient() {
-  // During SSR, we can't use the client, but we need to return something
-  // that won't crash during build
+function initializeAuthClient() {
   if (typeof window === "undefined") {
     return null;
   }
   
+  if (_authClient) {
+    return _authClient;
+  }
+  
+  // Ensure baseURL is definitely a string, not a Promise
+  const baseURL = getBaseURL();
+  if (typeof baseURL !== "string") {
+    console.error("[Auth Client] baseURL is not a string:", baseURL);
+    return null;
+  }
+  
+  try {
+    // Initialize with just baseURL - Better Auth will handle the rest
+    // Use a simple string literal to avoid any Promise issues
+    const config = {
+      baseURL: String(baseURL), // Explicitly convert to string
+    };
+    console.log("[Auth Client] Initializing with baseURL:", config.baseURL);
+    _authClient = createAuthClient(config);
+    console.log("[Auth Client] Successfully initialized");
+    return _authClient;
+  } catch (error) {
+    console.error("[Auth Client] Failed to create auth client:", error);
+    return null;
+  }
+}
+
+function getAuthClient() {
+  // During SSR, we can't use the client
+  if (typeof window === "undefined") {
+    return null;
+  }
+  
+  // Initialize if not already initialized
   if (!_authClient) {
-    _authClient = createAuthClient({
-      baseURL: getBaseURL(),
-    });
+    return initializeAuthClient();
   }
   
   return _authClient;
+}
+
+// Initialize on module load (client-side only)
+if (typeof window !== "undefined") {
+  // Use a microtask to ensure window is fully available
+  Promise.resolve().then(() => {
+    initializeAuthClient();
+  });
 }
 
 // Export useSession hook directly - it needs special handling
@@ -62,41 +109,32 @@ function createNestedProxy(getValue: () => any) {
   });
 }
 
-// Export client for direct access - this preserves the original structure
-// (e.g., signIn.email(), signIn.social(), etc.)
-export const authClient = new Proxy({} as ReturnType<typeof createAuthClient>, {
-  get(_target, prop) {
-    const client = getAuthClient();
-    if (!client) {
-      // During SSR, return appropriate defaults or proxies
-      if (prop === "useSession") {
-        return () => ({ data: null, isPending: true });
-      }
-      // For objects with nested methods (like signIn), return a proxy
-      if (prop === "signIn" || prop === "signUp") {
-        return createNestedProxy(() => null);
-      }
-      // Return a no-op function for other methods
-      return () => Promise.resolve({ error: { message: "Auth client not available" } });
-    }
-    
-    const value = client[prop as keyof typeof client];
-    
-    // If it's a function, bind it to the client
-    if (typeof value === "function") {
-      return value.bind(client);
-    }
-    
-    // If it's an object with nested methods (like signIn.email, signIn.social),
-    // wrap it in a proxy to ensure nested access works
-    if (value && typeof value === "object" && (prop === "signIn" || prop === "signUp")) {
-      return createNestedProxy(() => value);
-    }
-    
-    // Return other objects as-is
-    return value;
-  },
-});
+// Export client directly - Better Auth needs direct access to its internal properties
+// Initialize immediately on client-side to avoid Proxy interference
+let _exportedClient: ReturnType<typeof createAuthClient> | null = null;
+
+if (typeof window !== "undefined") {
+  // Initialize on client-side immediately
+  _exportedClient = initializeAuthClient();
+}
+
+// Export the client directly - no Proxy to avoid interfering with Better Auth's internal property access
+export const authClient = _exportedClient || (() => {
+  // SSR fallback - return a minimal object
+  return {
+    useSession: () => ({ data: null, isPending: true }),
+    signIn: {
+      email: () => Promise.resolve({ error: { message: "Auth client not available" } }),
+      social: () => Promise.resolve({ error: { message: "Auth client not available" } }),
+    },
+    signUp: {
+      email: () => Promise.resolve({ error: { message: "Auth client not available" } }),
+      social: () => Promise.resolve({ error: { message: "Auth client not available" } }),
+    },
+    getSession: () => Promise.resolve(null),
+    signOut: () => Promise.resolve({ error: { message: "Auth client not available" } }),
+  } as any;
+})();
 
 // Export signIn and signUp - access them directly from the client to avoid double-proxying
 // This gets the actual Better Auth objects without additional proxy layers

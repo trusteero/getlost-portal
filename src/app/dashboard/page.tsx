@@ -54,7 +54,6 @@ interface Book {
     landingPage: "not_requested" | "requested" | "uploaded" | "viewed";
   };
   hasPrecannedContent?: boolean;
-  hasPreviewReport?: boolean;
 }
 
 export default function Dashboard() {
@@ -365,12 +364,8 @@ export default function Dashboard() {
       if (feature && feature.status !== 'locked') {
         return 'complete';
       }
-      // For summary only, check if preview report exists (not just summary text)
+      // Summary is always locked (no preview report)
       if (featureType === 'summary') {
-        // Only show as complete if preview report exists
-        if (book.hasPreviewReport) {
-          return 'complete';
-        }
         return 'locked';
       }
       // For manuscript-report, require explicit unlock via purchase
@@ -442,12 +437,8 @@ export default function Dashboard() {
         return 'locked';
       }
       
-      // For summary only, check if preview report exists (not just summary text)
+      // Summary is always locked (no preview report)
       if (featureType === 'summary') {
-        // Only show as complete if preview report exists
-        if (book.hasPreviewReport) {
-          return 'complete';
-        }
         return 'locked';
       }
       

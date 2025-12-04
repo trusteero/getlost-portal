@@ -296,9 +296,35 @@ try {
     }
   }
   
+  // Now ensure Better Auth user table exists (must be first, as other tables reference it)
+  console.log('🔍 Checking Better Auth user table...');
+  const sqlite2 = new Database(dbPath);
+  
+  // Check if user table exists
+  const userTable = sqlite2.prepare(\"SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_user'\").get();
+  
+  if (!userTable) {
+    // Table doesn't exist - create it with Better Auth schema
+    console.log('🔄 Creating user table with Better Auth schema (table does not exist)...');
+    sqlite2.exec(\`
+      CREATE TABLE getlostportal_user (
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        email TEXT NOT NULL UNIQUE,
+        emailVerified INTEGER DEFAULT 0,
+        image TEXT,
+        role TEXT DEFAULT 'user' NOT NULL,
+        createdAt INTEGER DEFAULT (unixepoch()) NOT NULL,
+        updatedAt INTEGER DEFAULT (unixepoch()) NOT NULL
+      )
+    \`);
+    console.log('✅ User table created with Better Auth schema');
+  } else {
+    console.log('✅ User table already exists');
+  }
+  
   // Now ensure Better Auth session table has correct schema
   console.log('🔍 Checking Better Auth session table...');
-  const sqlite2 = new Database(dbPath);
   
   // Check if session table exists
   const sessionTable = sqlite2.prepare(\"SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_session'\").get();

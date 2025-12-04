@@ -379,27 +379,6 @@ export async function GET(request: NextRequest) {
         const coversStatus = await getAssetStatusByBookId("book-covers", bookCovers);
         const landingPageStatus = await getAssetStatusByBookId("landing-page", landingPages);
 
-        // Check if preview report exists
-        const hasPreviewReport = await (async () => {
-          if (latestVersion[0]) {
-            const [previewReport] = await db
-              .select({
-                id: reports.id,
-                htmlContent: reports.htmlContent,
-              })
-              .from(reports)
-              .where(
-                and(
-                  eq(reports.bookVersionId, latestVersion[0].id),
-                  eq(reports.status, "preview")
-                )
-              )
-              .limit(1);
-            
-            return Boolean(previewReport && previewReport.htmlContent);
-          }
-          return false;
-        })();
 
         // Check if book has any precanned content (subtle indicator for demo content)
         const hasPrecannedContent = await (async () => {
@@ -485,7 +464,6 @@ export async function GET(request: NextRequest) {
             landingPage: landingPageStatus,
           },
           hasPrecannedContent,
-          hasPreviewReport,
         };
       })
     );

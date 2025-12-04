@@ -128,7 +128,6 @@ export default function AdminDashboard() {
   
   // Asset management state
   const [reports, setReports] = useState<any[]>([]);
-  const [previewReports, setPreviewReports] = useState<any[]>([]);
   const [marketingAssets, setMarketingAssets] = useState<any[]>([]);
   const [covers, setCovers] = useState<any[]>([]);
   const [landingPages, setLandingPages] = useState<any[]>([]);
@@ -325,11 +324,9 @@ export default function AdminDashboard() {
 
       if (reportsRes.ok) {
         const allReports = await reportsRes.json();
-        // Separate full reports from preview reports
+        // Filter out preview reports
         const fullReports = allReports.filter((r: any) => r.status !== "preview");
-        const preview = allReports.filter((r: any) => r.status === "preview");
         setReports(fullReports);
-        setPreviewReports(preview);
       }
 
       if (marketingRes.ok) {
@@ -382,32 +379,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const handlePreviewReportUpload = async (bookId: string, file: File) => {
-    setUploadingAsset("preview-report");
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch(`/api/admin/books/${bookId}/preview-report`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        await fetchBookAssets(bookId);
-        await fetchData(); // Refresh main book list to update statuses
-        alert("Preview report uploaded successfully");
-      } else {
-        const error = await response.json();
-        alert(error.error || "Failed to upload preview report");
-      }
-    } catch (error) {
-      console.error("Failed to upload preview report:", error);
-      alert("Failed to upload preview report");
-    } finally {
-      setUploadingAsset(null);
-    }
-  };
 
   const handleMarketingAssetUpload = async (bookId: string, file: File) => {
     setUploadingAsset("marketing");
@@ -1765,18 +1736,6 @@ export default function AdminDashboard() {
                   onDelete={(itemId) => handleDeleteAsset(selectedBook.id, "reports", itemId)}
                   activeLabel="Active"
                   uploadButtonColor="bg-blue-600 hover:bg-blue-700"
-                />
-
-                {/* Preview Report (Free Report) */}
-                <AssetUploadSection
-                  title="Preview Report (Free Report)"
-                  assetType="preview-report"
-                  items={previewReports.map(r => ({ ...r, adminNotes: r.adminNotes }))}
-                  isUploading={uploadingAsset === "preview-report"}
-                  onUpload={(file) => handlePreviewReportUpload(selectedBook.id, file)}
-                  onDelete={(itemId) => handleDeleteAsset(selectedBook.id, "reports", itemId)}
-                  activeLabel="Active"
-                  uploadButtonColor="bg-green-600 hover:bg-green-700"
                 />
 
                 {/* Marketing Assets */}

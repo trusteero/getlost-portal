@@ -89,13 +89,9 @@ export default function BookDetail() {
   const [checkingDigest, setCheckingDigest] = useState(false);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const [isViewingReport, setIsViewingReport] = useState(false);
-  const [isViewingPreview, setIsViewingPreview] = useState(false);
   const reportContainerRef = useRef<HTMLIFrameElement>(null);
   const [mounted, setMounted] = useState(false);
   const getReportVariant = (report?: Report | null) => report?.variant;
-  const previewReport = book?.versions?.[0]?.reports?.find(
-    (r: Report) => r.status === "preview" || getReportVariant(r) === "preview"
-  );
 
   // Set mounted flag after component mounts (client-side only)
   useEffect(() => {
@@ -104,12 +100,7 @@ export default function BookDetail() {
     if (typeof window !== 'undefined') {
       if (window.location.hash === '#report') {
         setIsViewingReport(true);
-        setIsViewingPreview(false);
         setActiveTab("author");
-      } else if (window.location.hash === '#preview') {
-        setIsViewingReport(false);
-        setIsViewingPreview(true);
-        setActiveTab("summary");
       }
     }
   }, []);
@@ -130,24 +121,14 @@ export default function BookDetail() {
             const hasReport = book.versions[0]?.reports?.some((r: Report) => r.status === "completed");
             if (hasReport) {
               setIsViewingReport(true);
-              setIsViewingPreview(false);
               setActiveTab("author");
             }
           } else {
             setIsViewingReport(true);
-            setIsViewingPreview(false);
             setActiveTab("author");
-          }
-        } else if (window.location.hash === '#preview') {
-          const hasPreview = previewReport?.htmlContent || book?.versions?.[0]?.reports?.some((r: Report) => (getReportVariant(r) === "preview" || r.status === "preview") && r.htmlContent);
-          if (hasPreview) {
-            setActiveTab("summary");
-            setIsViewingReport(false);
-            setIsViewingPreview(true);
           }
         } else {
           setIsViewingReport(false);
-          setIsViewingPreview(false);
         }
       }
     };
@@ -200,19 +181,10 @@ export default function BookDetail() {
               const hasReport = latestVersion.reports?.some((r: Report) => r.status === "completed");
               if (hasReport) {
                 setIsViewingReport(true);
-                setIsViewingPreview(false);
                 setActiveTab("author");
-              }
-            } else if (window.location.hash === '#preview') {
-              const hasPreview = latestVersion.reports?.some((r: Report) => (getReportVariant(r) === "preview" || r.status === "preview") && r.htmlContent);
-              if (hasPreview) {
-                setActiveTab("summary");
-                setIsViewingReport(false);
-                setIsViewingPreview(true);
               }
             } else {
               setIsViewingReport(false);
-              setIsViewingPreview(false);
             }
           }
         }
@@ -544,44 +516,6 @@ export default function BookDetail() {
             }, 1000); // Increased delay to ensure server has time to update viewedAt
           }}
         />
-      </div>
-    );
-  }
-
-  // Only show preview if it exists and has HTML content
-  const previewReportWithContent = book?.versions[0]?.reports?.find(
-    (r: Report) => (r.status === "preview" || getReportVariant(r) === "preview") && r.htmlContent
-  );
-  const hasPreviewWithContent = Boolean(previewReportWithContent);
-
-  if (mounted && isViewingPreview && hasPreviewWithContent) {
-    return (
-      <div className="min-h-screen bg-white w-full relative overflow-hidden">
-        <div className="fixed top-2 left-2 sm:top-4 sm:left-4 z-50">
-          <Button
-            variant="default"
-            onClick={() => router.push(`/dashboard/book/${params.id}`)}
-            className="bg-white hover:bg-gray-50 text-gray-900 shadow-lg border border-gray-200 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
-            size="sm"
-          >
-            <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Back to Dashboard</span>
-            <span className="sm:hidden">Back</span>
-          </Button>
-        </div>
-        <div className="w-full h-screen pt-10 sm:pt-0">
-          <iframe
-            src={`/api/books/${params.id}/preview/view`}
-            className="w-full h-full border-0"
-            sandbox="allow-scripts allow-same-origin"
-            title="Preview View"
-            style={{ 
-              width: '100%', 
-              height: '100%',
-              minHeight: 'calc(100vh - 2.5rem)'
-            }}
-          />
-        </div>
       </div>
     );
   }
@@ -932,15 +866,11 @@ export default function BookDetail() {
                               <div>
                                 {(() => {
                                   const versionReports = version.reports || [];
-                                  const previewReport = versionReports.find(
-                                    (r) => r.status === "preview" || getReportVariant(r) === "preview"
+                                  const latestReport = versionReports.find(
+                                    (r) => r.status === "completed" && getReportVariant(r) !== "preview"
                                   );
-                                  const nonPreviewReports = versionReports.filter(
-                                    (r) => getReportVariant(r) !== "preview"
-                                  );
-                                  const latestReport = nonPreviewReports[0];
 
-                                  if (!previewReport && !latestReport) {
+                                  if (!latestReport) {
                                     return (
                                       <div className="text-center py-12">
                                         <Lock className="w-16 h-16 mx-auto mb-4 text-gray-300" />
@@ -968,46 +898,6 @@ export default function BookDetail() {
                                   }
 
                                   if (!isReportUnlocked) {
-                                    if (previewReport?.htmlContent) {
-                                      return (
-                                        <div className="space-y-6">
-                                          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-left">
-                                            <div className="flex items-start gap-3">
-                                              <Lock className="w-8 h-8 text-orange-500" />
-                                              <div>
-                                                <h3 className="text-lg font-semibold text-orange-900">Preview Available</h3>
-                                                <p className="text-sm text-orange-800">
-                                                  Unlock the full author report to access every section, export options, and marketing insights.
-                                                </p>
-                                              </div>
-                                            </div>
-                                            <div className="mt-4">
-                                              <Button
-                                                className="bg-orange-600 hover:bg-orange-700"
-                                                onClick={() => handlePurchaseAnalysis(version.id)}
-                                                disabled={purchasing}
-                                              >
-                                                {purchasing ? (
-                                                  <>
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                    Processing...
-                                                  </>
-                                                ) : (
-                                                  <>
-                                                    <CreditCard className="w-4 h-4 mr-2" />
-                                                    Unlock Full Report
-                                                  </>
-                                                )}
-                                              </Button>
-                                            </div>
-                                          </div>
-                                          <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                                            <div dangerouslySetInnerHTML={{ __html: previewReport.htmlContent }} />
-                                          </div>
-                                        </div>
-                                      );
-                                    }
-
                                     return (
                                       <div className="text-center py-12">
                                         <Lock className="w-16 h-16 mx-auto mb-4 text-gray-300" />
@@ -1041,11 +931,6 @@ export default function BookDetail() {
                                         <h3 className="text-2xl font-semibold text-gray-900 mb-2">Report Requested</h3>
                                         <p className="text-gray-600">Your report has been requested</p>
                                         <p className="text-sm text-gray-500 mt-2">We'll start analyzing it soon</p>
-                                        {previewReport?.htmlContent && (
-                                          <div className="mt-8 border rounded-lg overflow-hidden bg-white shadow-sm">
-                                            <div dangerouslySetInnerHTML={{ __html: previewReport.htmlContent }} />
-                                          </div>
-                                        )}
                                       </div>
                                     );
                                   }
@@ -1081,11 +966,6 @@ export default function BookDetail() {
                                           <p className="text-gray-600">Our team is currently analyzing your manuscript</p>
                                           <p className="text-sm text-gray-500 mt-2">This usually takes a few hours</p>
                                         </div>
-                                        {previewReport?.htmlContent && (
-                                          <div className="mt-8 border rounded-lg overflow-hidden bg-white shadow-sm">
-                                            <div dangerouslySetInnerHTML={{ __html: previewReport.htmlContent }} />
-                                          </div>
-                                        )}
                                       </div>
                                     );
                                   }
