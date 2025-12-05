@@ -1,5 +1,25 @@
 # Test Cases to Add
 
+## Recently Implemented Features (To Be Tested)
+
+### Sample Books & Example Books
+- ✅ Example books creation for new users (credentials and OAuth)
+- ✅ Sample books labeling ("Wool" and "Beach Read" with SAMPLE labels)
+- ✅ Sample books exclusion from statistics (unlocked insights, active manuscripts)
+- ✅ Sample books exclusion from "Books Uploaded" count
+- ✅ Cover image extraction from reports for example books
+
+### UI/UX Improvements
+- ✅ Books ordered with newest on the right
+- ✅ "+" button positioned on right side of condensed library
+- ✅ Horizontal scrolling without overlap
+- ✅ Loading state while creating example books
+
+### Upload Permission System
+- ✅ Consumption-based upload permissions (1 purchase = 1 upload)
+- ✅ Correct counting of uploaded books (excluding samples)
+- ✅ Purchase prompt when no permissions remain
+
 ## Priority 1: Critical User Flows (High Impact)
 
 ### E2E Tests (Playwright)

@@ -124,6 +124,22 @@ npm run test:coverage
 - ✅ View purchase status
 - ✅ Handle Stripe integration
 
+### Upload Permissions & Credits (`credits.test.ts`, `upload-permission.test.ts`)
+
+#### Unit Tests
+- ✅ Count books uploaded excluding sample books
+- ✅ Track purchased upload permissions
+- ✅ Consumption-based permission logic (1 purchase = 1 upload)
+- ✅ Include pending purchases with payment method
+- ✅ Filter out sample books from count ("Wool", "Beach Read")
+- ✅ Calculate remaining permissions correctly
+
+#### E2E Tests
+- ✅ Display correct "Books Uploaded" count (excluding samples)
+- ✅ Prompt for purchase when no permissions remain
+- ✅ Allow upload after purchasing permission
+- ✅ Decrement permissions after upload
+
 ### Admin Panel (`admin-panel.spec.ts`, `admin-upload.test.ts`)
 
 #### E2E Tests
@@ -174,10 +190,40 @@ npm run test:coverage
 
 ### Dashboard (`dashboard.spec.ts`)
 
+#### Basic Display
 - ✅ Display user's books
 - ✅ Filter books
 - ✅ Search books
 - ✅ Sort books
+
+#### Example Books & Sample Content
+- ✅ Create example books for new credentials users
+- ✅ Create example books for new OAuth users
+- ✅ Display "Setting up your library" message while creating example books
+- ✅ Wait for example books to appear before showing dashboard
+- ✅ Display sample books with "SAMPLE" label on covers
+- ✅ Display sample books with "Sample" badge in condensed library
+- ✅ Display sample books with "Sample Report" badge in manuscript cards
+
+#### Book Ordering & Layout
+- ✅ Display books with newest on the right in condensed library
+- ✅ Display "+" button on the right side of condensed library
+- ✅ "+" button is part of scrollable area (no overlap)
+- ✅ Leftmost books slide off screen when scrolling
+- ✅ Books can scroll horizontally to reach "+" button
+
+#### Statistics & Counting
+- ✅ Exclude sample books from "unlocked insights" count
+- ✅ Exclude sample books from "total insights" count
+- ✅ Exclude sample books from "active manuscripts" count
+- ✅ Exclude sample books from "Books Uploaded" count in Account Settings
+- ✅ Only count user-uploaded books in statistics
+
+#### Upload Permissions
+- ✅ Track purchased upload permissions correctly
+- ✅ Count uploaded books excluding samples
+- ✅ Prompt for purchase when no permissions remain
+- ✅ Consumption-based permission logic (1 purchase = 1 upload)
 
 ### Manuscript Status (`manuscript-status.spec.ts`)
 

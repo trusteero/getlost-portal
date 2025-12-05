@@ -80,6 +80,7 @@ export default function Dashboard() {
   const [waitingForExampleBooks, setWaitingForExampleBooks] = useState(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const absoluteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const initialDelayRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fallback: Try to fetch session directly if useSession is stuck
   useEffect(() => {
@@ -255,145 +256,139 @@ export default function Dashboard() {
   // Automatically check for example books after login (for new OAuth users)
   // Show loading state until books are created
   useEffect(() => {
-    // Only check once after initial books fetch completes and user has no books
-    if (!activeSession || loading || hasCheckedForExampleBooks) return;
+    // Cleanup function to clear all timeouts/intervals
+    const cleanup = () => {
+      if (initialDelayRef.current) {
+        clearTimeout(initialDelayRef.current);
+        initialDelayRef.current = null;
+      }
+      if (absoluteTimeoutRef.current) {
+        clearTimeout(absoluteTimeoutRef.current);
+        absoluteTimeoutRef.current = null;
+      }
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      setWaitingForExampleBooks(false);
+    };
+
+    // Don't start if already checked or currently waiting
+    if (!activeSession || loading || hasCheckedForExampleBooks || waitingForExampleBooks) {
+      return cleanup;
+    }
     
     // Wait for initial books load to complete (loading becomes false)
     // Then check if user has no books - they might be a new user with example books being created
     if (!loading && books.length === 0) {
-      console.log("[Dashboard] No books found after initial load, waiting for example books...");
+      console.log("[Dashboard] No books found after initial load, starting to wait for example books...");
       setHasCheckedForExampleBooks(true);
       setWaitingForExampleBooks(true); // Show loading state
       
       let pollCount = 0;
       let errorCount = 0;
-      const maxPolls = 20; // Maximum 20 polls (10 seconds total after initial delay)
-      const maxErrors = 5; // Stop after 5 consecutive errors
-      const absoluteTimeout = 30000; // Absolute maximum 30 seconds total
+      let isCleanedUp = false;
+      const maxPolls = 20; // Maximum 20 polls (10 seconds total)
+      const maxErrors = 3; // Stop after 3 consecutive errors
+      const absoluteTimeout = 10000; // Absolute maximum 10 seconds total - fail fast!
       
-      // Set absolute timeout to prevent infinite spinner
+      // Enhanced cleanup that prevents multiple calls
+      const safeCleanup = () => {
+        if (isCleanedUp) return;
+        isCleanedUp = true;
+        cleanup();
+      };
+      
+      // Set absolute timeout to prevent infinite spinner - this will ALWAYS clear the waiting state
       absoluteTimeoutRef.current = setTimeout(() => {
-        console.log("[Dashboard] Absolute timeout reached (30s), stopping wait for example books");
-        if (pollIntervalRef.current) {
-          clearInterval(pollIntervalRef.current);
-          pollIntervalRef.current = null;
-        }
-        setWaitingForExampleBooks(false);
-        absoluteTimeoutRef.current = null;
+        console.log("[Dashboard] ⏱️ Absolute timeout reached (10s), stopping wait - books may not have been created");
+        safeCleanup();
       }, absoluteTimeout);
       
-      // Add initial delay to show the "Setting up your library" message
-      // This gives users time to see the message before we start polling
-      const initialDelay = setTimeout(() => {
-        // Poll immediately and frequently for faster detection after initial delay
-        const doPoll = async () => {
-          try {
-            pollCount++;
-            console.log(`[Dashboard] Checking for example books (poll ${pollCount}/${maxPolls}...)`);
+      // Poll immediately and frequently for faster detection
+      const doPoll = async () => {
+        // Don't poll if already cleaned up
+        if (isCleanedUp) return;
+        
+        try {
+          pollCount++;
+          console.log(`[Dashboard] 🔍 Checking for example books (poll ${pollCount}/${maxPolls}...)`);
+          
+          const response = await fetch("/api/books");
+          if (response.ok) {
+            const data = await response.json();
+            errorCount = 0; // Reset error count on success
             
-            const response = await fetch("/api/books");
-            if (response.ok) {
-              const data = await response.json();
-              errorCount = 0; // Reset error count on success
+            // If books were found, stop polling immediately
+            if (data && Array.isArray(data) && data.length > 0) {
+              console.log(`[Dashboard] ✅ Example books found (${data.length} books), stopping poll`);
               setBooks(data);
-              
-              // If books were found, stop polling
-              if (data && Array.isArray(data) && data.length > 0) {
-                console.log("[Dashboard] Example books found, stopping poll");
-                if (pollIntervalRef.current) {
-                  clearInterval(pollIntervalRef.current);
-                  pollIntervalRef.current = null;
-                }
-                if (absoluteTimeoutRef.current) {
-                  clearTimeout(absoluteTimeoutRef.current);
-                  absoluteTimeoutRef.current = null;
-                }
-                setWaitingForExampleBooks(false);
-                return;
-              }
-            } else {
-              errorCount++;
-              console.warn(`[Dashboard] Fetch books returned status ${response.status}`);
-              
-              // If too many errors, stop waiting
-              if (errorCount >= maxErrors) {
-                console.error(`[Dashboard] Too many errors (${errorCount}), stopping wait for example books`);
-                if (pollIntervalRef.current) {
-                  clearInterval(pollIntervalRef.current);
-                  pollIntervalRef.current = null;
-                }
-                if (absoluteTimeoutRef.current) {
-                  clearTimeout(absoluteTimeoutRef.current);
-                  absoluteTimeoutRef.current = null;
-                }
-                setWaitingForExampleBooks(false);
-                return;
-              }
+              safeCleanup();
+              return;
             }
             
-            // Stop if we've reached max polls
-            if (pollCount >= maxPolls) {
-              console.log("[Dashboard] Maximum polls reached, showing dashboard");
-              if (pollIntervalRef.current) {
-                clearInterval(pollIntervalRef.current);
-                pollIntervalRef.current = null;
-              }
-              if (absoluteTimeoutRef.current) {
-                clearTimeout(absoluteTimeoutRef.current);
-                absoluteTimeoutRef.current = null;
-              }
-              setWaitingForExampleBooks(false);
-            }
-          } catch (error) {
+            // Update books even if empty
+            setBooks(data);
+          } else {
             errorCount++;
-            console.error(`[Dashboard] Error fetching books (attempt ${pollCount}):`, error);
+            console.warn(`[Dashboard] ⚠️ Fetch books returned status ${response.status}`);
             
             // If too many errors, stop waiting
             if (errorCount >= maxErrors) {
-              console.error(`[Dashboard] Too many consecutive errors (${errorCount}), stopping wait for example books`);
-              if (pollIntervalRef.current) {
-                clearInterval(pollIntervalRef.current);
-                pollIntervalRef.current = null;
-              }
-              if (absoluteTimeoutRef.current) {
-                clearTimeout(absoluteTimeoutRef.current);
-                absoluteTimeoutRef.current = null;
-              }
-              setWaitingForExampleBooks(false);
+              console.error(`[Dashboard] ❌ Too many errors (${errorCount}), stopping wait for example books`);
+              safeCleanup();
+              return;
             }
           }
-        };
-        
-        // Check immediately after delay
-        doPoll();
-        
-        // Then poll at intervals
-        pollIntervalRef.current = setInterval(doPoll, 500); // Check every 500ms
-      }, 3000); // 3 second initial delay to show the message
-      
-      return () => {
-        clearTimeout(initialDelay);
-        if (absoluteTimeoutRef.current) {
-          clearTimeout(absoluteTimeoutRef.current);
-          absoluteTimeoutRef.current = null;
-        }
-        if (pollIntervalRef.current) {
-          clearInterval(pollIntervalRef.current);
-          pollIntervalRef.current = null;
+          
+          // Stop if we've reached max polls
+          if (pollCount >= maxPolls) {
+            console.log(`[Dashboard] ⏱️ Maximum polls reached (${maxPolls}), showing dashboard`);
+            safeCleanup();
+          }
+        } catch (error) {
+          errorCount++;
+          console.error(`[Dashboard] ❌ Error fetching books (attempt ${pollCount}):`, error);
+          
+          // If too many errors, stop waiting
+          if (errorCount >= maxErrors) {
+            console.error(`[Dashboard] ❌ Too many consecutive errors (${errorCount}), stopping wait`);
+            safeCleanup();
+          }
         }
       };
+      
+      // Poll immediately, then continue at intervals
+      // This gives users a moment to see the message, but starts checking right away
+      initialDelayRef.current = setTimeout(() => {
+        if (!isCleanedUp) {
+          // Check immediately
+          doPoll();
+          
+          // Then poll at intervals
+          pollIntervalRef.current = setInterval(doPoll, 500); // Check every 500ms
+        }
+      }, 1000); // 1 second initial delay - just enough to show the message
+      
+      return safeCleanup;
     } else if (!loading && books.length > 0) {
       // User has books, no need to check
       setHasCheckedForExampleBooks(true);
       setWaitingForExampleBooks(false);
     }
-  }, [activeSession, loading, books.length, hasCheckedForExampleBooks]);
+    
+    return cleanup;
+  }, [activeSession, loading, books.length, hasCheckedForExampleBooks, waitingForExampleBooks]);
 
   // Stop waiting when books appear
   useEffect(() => {
     if (waitingForExampleBooks && books.length > 0) {
       console.log("[Dashboard] Example books found, showing dashboard");
       // Clear any ongoing polling/timeouts
+      if (initialDelayRef.current) {
+        clearTimeout(initialDelayRef.current);
+        initialDelayRef.current = null;
+      }
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
         pollIntervalRef.current = null;
