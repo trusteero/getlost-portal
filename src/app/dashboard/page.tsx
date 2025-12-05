@@ -141,13 +141,8 @@ export default function Dashboard() {
     } else if (activeSession) {
       setSessionTimeout(false); // Reset timeout if session loads
       
-      // If this is the first time loading books, immediately set waiting state
-      // This ensures the "Setting up your library" message shows right away
-      if (!initialBooksLoadedRef.current) {
-        console.log("[Dashboard] 🎯 First load - setting waiting state immediately");
-        setWaitingForExampleBooks(true);
-        waitingStartTimeRef.current = Date.now();
-      }
+      // Don't set waiting state here - let fetchBooks determine if it's first login
+      // We'll set it in fetchBooks only if no books are found
       
       fetchBooks();
       checkProcessingJobs();
@@ -339,16 +334,25 @@ export default function Dashboard() {
 
     // Wait for initial books load to complete (loading becomes false)
     // Then check if user has no books - they might be a new user with example books being created
-    // Note: We allow polling to start even if waitingForExampleBooks is already true
-    // (it might have been set optimistically when session loaded)
+    // Only show "Setting up your library" message on first login
     if (!loading && books.length === 0) {
-      // Always set waiting state and timer when no books - ensures spinner shows and delay works
+      // Only show the message if this is actually a first login
+      // If we've determined it's NOT a first login, skip the message
+      if (hasDeterminedFirstLogin && !isFirstLogin) {
+        // Not a first login, don't show the "Setting up your library" message
+        console.log("[Dashboard] 📚 Not a first login, skipping example books wait");
+        setHasCheckedForExampleBooks(true);
+        return cleanup;
+      }
+      
+      // This is a first login (no books found) - show the message
       if (!hasCheckedForExampleBooks) {
-        console.log("[Dashboard] 📚 No books found after initial load, starting to wait for example books...");
+        console.log("[Dashboard] 📚 No books found after initial load - FIRST LOGIN, starting to wait for example books...");
         setHasCheckedForExampleBooks(true);
       }
-      // CRITICAL: Always set waiting state and timer to ensure minimum delay works
-      if (!waitingForExampleBooks || !waitingStartTimeRef.current) {
+      // CRITICAL: Set waiting state and timer to ensure minimum delay works
+      // Only set if this is a first login (isFirstLogin is true or not yet determined)
+      if ((!waitingForExampleBooks || !waitingStartTimeRef.current) && isFirstLogin) {
         console.log("[Dashboard] ⏱️ Setting waiting state and starting 3s minimum delay timer...");
         setWaitingForExampleBooks(true);
         waitingStartTimeRef.current = Date.now(); // Start timer NOW - required for minimum delay
