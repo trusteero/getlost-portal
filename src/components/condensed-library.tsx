@@ -60,7 +60,7 @@ export function CondensedLibrary({
       
       <div className="relative">
         {/* Scrollable manuscripts container */}
-        <div className="flex gap-3 overflow-x-auto snap-x pb-2 scroll-smooth no-scrollbar pr-20">
+        <div className="flex gap-3 overflow-x-auto snap-x pb-2 scroll-smooth no-scrollbar">
           {manuscripts.map((manuscript) => {
             const unlockedSteps = manuscript.steps.filter(step => step.status === 'complete');
             const statusLabel = `${manuscript.title}: ${unlockedSteps.length} of ${manuscript.steps.length} stages completed`;
@@ -94,6 +94,12 @@ export function CondensedLibrary({
                       className="w-full h-20 object-cover rounded-lg border border-gray-200"
                       style={{ boxShadow: 'var(--shadow-mobile-cover)' }}
                     />
+                    {/* Sample report label on cover */}
+                    {manuscript.isSample && (
+                      <div className="absolute top-0 left-0 right-0 bg-blue-600 text-white text-[8px] font-bold py-0.5 px-1 text-center rounded-t-lg shadow-md uppercase">
+                        SAMPLE
+                      </div>
+                    )}
                   </div>
                   
                   {/* Desktop: 3D enhanced cover */}
@@ -109,6 +115,12 @@ export function CondensedLibrary({
                           loading="lazy"
                           className="w-full h-20 object-cover rounded-lg transition-all duration-400"
                         />
+                        {/* Sample report label on cover */}
+                        {manuscript.isSample && (
+                          <div className="absolute top-0 left-0 right-0 bg-blue-600 text-white text-[8px] font-bold py-0.5 px-1 text-center rounded-t-lg shadow-md z-10 uppercase">
+                            SAMPLE
+                          </div>
+                        )}
                         {/* Enhanced 3D spine for small covers */}
                         <div 
                           className="absolute inset-y-0 left-0 w-1 rounded-l-lg transition-all duration-400"
@@ -146,21 +158,15 @@ export function CondensedLibrary({
               </button>
             );
           })}
-        </div>
-
-        {/* Fixed "+" button on the right */}
-        <div className="absolute right-0 top-0 bottom-2 flex items-stretch pointer-events-none">
-          {/* Gradient fade effect */}
-          <div className="absolute right-0 inset-y-0 w-32 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
           
-          {/* Plus button - square that fills vertical space */}
+          {/* "+" button as the last item in the scrollable area */}
           <button
             onClick={() => {
               // Trigger upload modal - this will be handled by parent component
               const event = new CustomEvent('openUploadModal');
               window.dispatchEvent(event);
             }}
-            className="relative z-10 pointer-events-auto aspect-square h-full rounded-xl premium-card flex items-center justify-center transition-all duration-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 group ml-2"
+            className="flex-shrink-0 self-stretch w-16 rounded-xl premium-card flex items-center justify-center transition-all duration-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 group"
             aria-label="Add new manuscript"
           >
             <Plus className="w-8 h-8 text-emerald-500 transition-transform duration-300 group-hover:scale-110" />

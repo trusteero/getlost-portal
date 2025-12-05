@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
-import { purchases } from "@/server/db/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { purchases, books } from "@/server/db/schema";
+import { eq, and } from "drizzle-orm";
 
 /**
  * GET /api/user/upload-permission
@@ -47,75 +47,89 @@ export async function GET(request: NextRequest) {
       })));
     }
     
-    // Check for completed purchases first
+    // Count valid upload permissions purchased (completed + valid pending)
     const completedPurchases = userLevelPurchases.filter(p => p.status === "completed");
     
+    // Count valid pending purchases (those with payment method)
+    const validPendingPurchases = userLevelPurchases.filter(p => {
+      if (p.status !== "pending") return false;
+      if (!p.paymentMethod) return false;
+      const createdAt = typeof p.createdAt === 'number' 
+        ? p.createdAt 
+        : (p.createdAt ? new Date(p.createdAt).getTime() / 1000 : 0);
+      return createdAt > 0;
+    });
+    
+    const totalPermissionsPurchased = completedPurchases.length + validPendingPurchases.length;
+    
+    // Count books uploaded by this user (excluding sample books)
+    const userBooks = await db
+      .select({
+        id: books.id,
+        title: books.title,
+      })
+      .from(books)
+      .where(eq(books.userId, session.user.id));
+    
+    // Filter out sample books (Wool and Beach Read)
+    const isSampleBook = (title: string | null | undefined): boolean => {
+      return !!(title && (title.includes("Wool") || title.includes("Beach Read")));
+    };
+    
+    const booksUploaded = userBooks.filter(book => !isSampleBook(book.title)).length;
+    
+    // Check if user has remaining upload permissions
+    // One purchase = one upload permission
+    const hasPermission = booksUploaded < totalPermissionsPurchased;
+    const remainingPermissions = totalPermissionsPurchased - booksUploaded;
+    
+    console.log(`[Upload Permission] User ${session.user.id}: ${totalPermissionsPurchased} permission(s) purchased, ${booksUploaded} book(s) uploaded, remaining: ${remainingPermissions}, hasPermission: ${hasPermission}`);
+    
+    if (!hasPermission) {
+      // No permission - user has used all their upload permissions
+      console.log(`[Upload Permission] User ${session.user.id}: No remaining upload permissions (${booksUploaded} books uploaded >= ${totalPermissionsPurchased} permissions purchased)`);
+      
+      return NextResponse.json({
+        hasPermission: false,
+        purchase: null,
+        permissionsPurchased: totalPermissionsPurchased,
+        booksUploaded: booksUploaded,
+        remainingPermissions: 0,
+      });
+    }
+    
+    // User has permission - return purchase details
+    let purchaseToReturn = null;
+    let isPending = false;
+    
     if (completedPurchases.length > 0) {
-      // Get the most recent completed purchase
-      const uploadPurchase = completedPurchases.sort((a, b) => {
+      // Prefer completed purchases
+      purchaseToReturn = completedPurchases.sort((a, b) => {
         const aTime = a.completedAt?.getTime() || 0;
         const bTime = b.completedAt?.getTime() || 0;
         return bTime - aTime; // Most recent first
       })[0];
-
-      console.log(`[Upload Permission] User ${session.user.id}: Found ${completedPurchases.length} completed upload purchase(s), hasPermission: true`);
-      return NextResponse.json({
-        hasPermission: true,
-        purchase: uploadPurchase,
-      });
-    }
-
-    // Fallback: Check for pending purchases that have a payment method
-    // (these went through checkout and should be valid, even if webhook hasn't processed them yet)
-    // We'll accept pending purchases that are older than 5 minutes (webhook should have processed by then)
-    // OR very recent ones (within 5 minutes, webhook might still be processing)
-    const fiveMinutesAgo = Math.floor(Date.now() / 1000) - 5 * 60; // Unix timestamp in seconds
-    const validPendingPurchases = userLevelPurchases.filter(p => {
-      if (p.status !== "pending") return false;
-      // Must have a payment method (went through checkout)
-      if (!p.paymentMethod) return false;
-      
-      // Check createdAt timestamp (SQLite stores as integer in seconds)
-      const createdAt = typeof p.createdAt === 'number' 
-        ? p.createdAt 
-        : (p.createdAt ? new Date(p.createdAt).getTime() / 1000 : 0);
-      
-      // Accept any pending purchase with a payment method (went through checkout)
-      // This covers both stuck webhooks and recent purchases
-      return createdAt > 0;
-    });
-
-    if (validPendingPurchases.length > 0) {
-      const validPurchase = validPendingPurchases.sort((a, b) => {
+    } else if (validPendingPurchases.length > 0) {
+      // Fall back to pending purchases if no completed ones
+      purchaseToReturn = validPendingPurchases.sort((a, b) => {
         const aTime = typeof a.createdAt === 'number' 
           ? a.createdAt 
           : (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
         const bTime = typeof b.createdAt === 'number' 
           ? b.createdAt 
           : (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
-        return bTime - aTime; // Most recent first
+        return bTime - aTime;
       })[0];
-
-      if (validPurchase) {
-        const createdAt = typeof validPurchase.createdAt === 'number' 
-          ? validPurchase.createdAt 
-          : (validPurchase.createdAt ? new Date(validPurchase.createdAt).getTime() / 1000 : 0);
-        const ageMinutes = createdAt > 0 ? Math.floor((Math.floor(Date.now() / 1000) - createdAt) / 60) : 0;
-        
-        console.log(`[Upload Permission] User ${session.user.id}: Found valid pending purchase (${validPurchase.id}, age: ${ageMinutes} minutes, paymentMethod: ${validPurchase.paymentMethod}), granting permission`);
-        return NextResponse.json({
-          hasPermission: true,
-          purchase: validPurchase,
-          pending: true, // Indicate this is a pending purchase
-        });
-      }
+      isPending = true;
     }
-
-    console.log(`[Upload Permission] User ${session.user.id}: Found ${userLevelPurchases.length} upload purchase(s) total, but none completed or recent pending, hasPermission: false`);
-
+    
     return NextResponse.json({
-      hasPermission: false,
-      purchase: null,
+      hasPermission: true,
+      purchase: purchaseToReturn,
+      pending: isPending,
+      permissionsPurchased: totalPermissionsPurchased,
+      booksUploaded: booksUploaded,
+      remainingPermissions: remainingPermissions,
     });
   } catch (error) {
     console.error("Failed to check upload permission:", error);

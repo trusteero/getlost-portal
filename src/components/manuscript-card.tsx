@@ -312,6 +312,12 @@ export const ManuscriptCard = ({
                   console.log(`[ManuscriptCard] Successfully loaded cover: ${coverImage}`);
                 }}
               />
+              {/* Sample report label on cover */}
+              {isSample && (
+                <div className="absolute top-0 left-0 right-0 bg-blue-600 text-white text-[10px] font-bold py-1.5 px-2 text-center rounded-t-lg shadow-lg uppercase tracking-wide">
+                  Sample Report
+                </div>
+              )}
               {/* Subtle precanned content indicator */}
               {hasPrecannedContent && (
                 <TooltipProvider>
@@ -360,6 +366,12 @@ export const ManuscriptCard = ({
                   loading="lazy"
                   className="w-full h-auto object-contain rounded-xl transition-all duration-500"
                 />
+                {/* Sample report label on cover */}
+                {isSample && (
+                  <div className="absolute top-0 left-0 right-0 bg-blue-600 text-white text-xs font-bold py-2 px-3 text-center rounded-t-xl shadow-lg z-20 uppercase tracking-wide">
+                    Sample Report
+                  </div>
+                )}
                 {/* Subtle precanned content indicator */}
                 {hasPrecannedContent && (
                   <TooltipProvider>

@@ -1020,7 +1020,7 @@ export default function Dashboard() {
             {/* Condensed Library */}
             <div className="mb-6 md:mb-8">
               <CondensedLibrary 
-                manuscripts={books.map(mapBookToCondensed)}
+                manuscripts={[...books].reverse().map(mapBookToCondensed)}
               />
             </div>
 
