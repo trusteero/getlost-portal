@@ -78,9 +78,16 @@ export default function Dashboard() {
   const [processingPayment, setProcessingPayment] = useState(false);
   const [hasCheckedForExampleBooks, setHasCheckedForExampleBooks] = useState(false);
   const [waitingForExampleBooks, setWaitingForExampleBooks] = useState(false);
+  const [isFirstLogin, setIsFirstLogin] = useState<boolean>(true); // Track first login for welcome message
+  const [hasDeterminedFirstLogin, setHasDeterminedFirstLogin] = useState(false); // Track if we've determined first login status
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const absoluteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const maxTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const initialDelayRef = useRef<NodeJS.Timeout | null>(null);
+  const continuousCheckRef = useRef<NodeJS.Timeout | null>(null);
+  const waitingStartTimeRef = useRef<number | null>(null);
+  const minDelayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const initialBooksLoadedRef = useRef<boolean>(false);
 
   // Fallback: Try to fetch session directly if useSession is stuck
   useEffect(() => {
@@ -133,6 +140,15 @@ export default function Dashboard() {
       router.push("/login");
     } else if (activeSession) {
       setSessionTimeout(false); // Reset timeout if session loads
+      
+      // If this is the first time loading books, immediately set waiting state
+      // This ensures the "Setting up your library" message shows right away
+      if (!initialBooksLoadedRef.current) {
+        console.log("[Dashboard] 🎯 First load - setting waiting state immediately");
+        setWaitingForExampleBooks(true);
+        waitingStartTimeRef.current = Date.now();
+      }
+      
       fetchBooks();
       checkProcessingJobs();
       checkUploadPermission();
@@ -230,6 +246,9 @@ export default function Dashboard() {
     };
   }, [session, isPending]);
 
+  // First login is now determined in fetchBooks() when initial books are loaded
+  // This ensures it's checked at the right time with the correct books.length value
+
   useEffect(() => {
     // Check for processing jobs or processing assets periodically
     const hasProcessing = books.some(book => {
@@ -266,6 +285,14 @@ export default function Dashboard() {
         clearTimeout(absoluteTimeoutRef.current);
         absoluteTimeoutRef.current = null;
       }
+      if (maxTimeoutRef.current) {
+        clearTimeout(maxTimeoutRef.current);
+        maxTimeoutRef.current = null;
+      }
+      if (minDelayTimeoutRef.current) {
+        clearTimeout(minDelayTimeoutRef.current);
+        minDelayTimeoutRef.current = null;
+      }
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
         pollIntervalRef.current = null;
@@ -273,57 +300,120 @@ export default function Dashboard() {
       setWaitingForExampleBooks(false);
     };
 
-    // Don't start if already checked or currently waiting
-    if (!activeSession || loading || hasCheckedForExampleBooks || waitingForExampleBooks) {
+    // Don't start if no session or still loading initial data
+    if (!activeSession || loading) {
       return cleanup;
     }
-    
+
+    // If user has books, check minimum delay before showing dashboard
+    if (books.length > 0) {
+      // If we're waiting, enforce minimum delay
+      if (waitingForExampleBooks && waitingStartTimeRef.current) {
+        const minDelay = 3000; // 3 seconds minimum
+        const elapsed = Date.now() - waitingStartTimeRef.current;
+        const remainingDelay = Math.max(0, minDelay - elapsed);
+        
+        if (remainingDelay > 0) {
+          console.log(`[Dashboard] ⏱️ Books found but enforcing minimum delay: waiting ${remainingDelay}ms more...`);
+          // Stop polling but keep spinner until minimum delay
+          cleanup(); // This clears polling but we'll set waiting back
+          setWaitingForExampleBooks(true); // Keep spinner showing
+          
+          // Set timeout to hide spinner after remaining delay
+          minDelayTimeoutRef.current = setTimeout(() => {
+            console.log(`[Dashboard] ✅ Minimum delay complete (3s), showing dashboard`);
+            setWaitingForExampleBooks(false);
+            setHasCheckedForExampleBooks(true);
+          }, remainingDelay);
+          
+          return cleanup;
+        }
+      }
+      
+      // Minimum delay already passed or not waiting - show immediately
+      setHasCheckedForExampleBooks(true);
+      setWaitingForExampleBooks(false);
+      cleanup(); // Clean up any ongoing polling
+      return cleanup;
+    }
+
     // Wait for initial books load to complete (loading becomes false)
     // Then check if user has no books - they might be a new user with example books being created
+    // Note: We allow polling to start even if waitingForExampleBooks is already true
+    // (it might have been set optimistically when session loaded)
     if (!loading && books.length === 0) {
-      console.log("[Dashboard] No books found after initial load, starting to wait for example books...");
-      setHasCheckedForExampleBooks(true);
-      setWaitingForExampleBooks(true); // Show loading state
+      // Always set waiting state and timer when no books - ensures spinner shows and delay works
+      if (!hasCheckedForExampleBooks) {
+        console.log("[Dashboard] 📚 No books found after initial load, starting to wait for example books...");
+        setHasCheckedForExampleBooks(true);
+      }
+      // CRITICAL: Always set waiting state and timer to ensure minimum delay works
+      if (!waitingForExampleBooks || !waitingStartTimeRef.current) {
+        console.log("[Dashboard] ⏱️ Setting waiting state and starting 3s minimum delay timer...");
+        setWaitingForExampleBooks(true);
+        waitingStartTimeRef.current = Date.now(); // Start timer NOW - required for minimum delay
+      }
       
       let pollCount = 0;
       let errorCount = 0;
       let isCleanedUp = false;
-      const maxPolls = 20; // Maximum 20 polls (10 seconds total)
+      let hasShownDashboard = false;
+      const maxPolls = 60; // Maximum 60 polls (30 seconds total)
       const maxErrors = 3; // Stop after 3 consecutive errors
-      const absoluteTimeout = 10000; // Absolute maximum 10 seconds total - fail fast!
+      const spinnerTimeout = 10000; // Show dashboard after 10s even if no books (user won't be stuck)
+      const maxTimeout = 30000; // Stop all polling after 30s
       
       // Enhanced cleanup that prevents multiple calls
-      const safeCleanup = () => {
+      const safeCleanup = (stopPolling = true) => {
         if (isCleanedUp) return;
-        isCleanedUp = true;
-        cleanup();
+        if (stopPolling) {
+          isCleanedUp = true;
+          cleanup();
+        } else {
+          // Just stop the spinner but keep polling
+          setWaitingForExampleBooks(false);
+          hasShownDashboard = true;
+        }
       };
       
-      // Set absolute timeout to prevent infinite spinner - this will ALWAYS clear the waiting state
+      // First timeout: Stop spinner but keep checking in background
       absoluteTimeoutRef.current = setTimeout(() => {
-        console.log("[Dashboard] ⏱️ Absolute timeout reached (10s), stopping wait - books may not have been created");
-        safeCleanup();
-      }, absoluteTimeout);
+        if (!hasShownDashboard && !isCleanedUp) {
+          console.log("[Dashboard] ⏱️ Spinner timeout (10s), showing dashboard but continuing to check for books in background...");
+          setWaitingForExampleBooks(false);
+          hasShownDashboard = true;
+        }
+      }, spinnerTimeout);
+      
+      // Second timeout: Stop all polling after maximum time
+      maxTimeoutRef.current = setTimeout(() => {
+        if (!isCleanedUp) {
+          console.log("[Dashboard] ⏱️ Maximum timeout reached (30s), stopping all polling");
+          safeCleanup(true);
+        }
+      }, maxTimeout);
       
       // Poll immediately and frequently for faster detection
       const doPoll = async () => {
-        // Don't poll if already cleaned up
-        if (isCleanedUp) return;
-        
         try {
           pollCount++;
-          console.log(`[Dashboard] 🔍 Checking for example books (poll ${pollCount}/${maxPolls}...)`);
+          const pollType = hasShownDashboard ? "background" : "active";
+          console.log(`[Dashboard] 🔍 Checking for example books (${pollType} poll ${pollCount}/${maxPolls}...)`);
           
           const response = await fetch("/api/books");
           if (response.ok) {
             const data = await response.json();
             errorCount = 0; // Reset error count on success
             
-            // If books were found, stop polling immediately
+            // If books were found, update state and let the useEffect handle the delay
             if (data && Array.isArray(data) && data.length > 0) {
-              console.log(`[Dashboard] ✅ Example books found (${data.length} books), stopping poll`);
+              console.log(`[Dashboard] ✅ Example books found (${data.length} books)!`);
               setBooks(data);
-              safeCleanup();
+              
+              // Stop polling - the useEffect at line 498 will handle clearing waiting state
+              // after the minimum delay
+              console.log("[Dashboard] 📚 Books detected, stopping polling - useEffect will handle delay");
+              safeCleanup(true); // Stop polling, but don't clear waiting state yet
               return;
             }
             
@@ -333,18 +423,23 @@ export default function Dashboard() {
             errorCount++;
             console.warn(`[Dashboard] ⚠️ Fetch books returned status ${response.status}`);
             
-            // If too many errors, stop waiting
+            // If too many errors and we've shown dashboard, stop polling
             if (errorCount >= maxErrors) {
-              console.error(`[Dashboard] ❌ Too many errors (${errorCount}), stopping wait for example books`);
-              safeCleanup();
+              if (hasShownDashboard) {
+                console.error(`[Dashboard] ❌ Too many errors (${errorCount}), stopping background polling`);
+                safeCleanup(true);
+              } else {
+                console.error(`[Dashboard] ❌ Too many errors (${errorCount}), stopping wait for example books`);
+                safeCleanup(true);
+              }
               return;
             }
           }
           
           // Stop if we've reached max polls
           if (pollCount >= maxPolls) {
-            console.log(`[Dashboard] ⏱️ Maximum polls reached (${maxPolls}), showing dashboard`);
-            safeCleanup();
+            console.log(`[Dashboard] ⏱️ Maximum polls reached (${maxPolls}), ${hasShownDashboard ? 'stopping background polling' : 'showing dashboard'}`);
+            safeCleanup(true);
           }
         } catch (error) {
           errorCount++;
@@ -352,60 +447,243 @@ export default function Dashboard() {
           
           // If too many errors, stop waiting
           if (errorCount >= maxErrors) {
-            console.error(`[Dashboard] ❌ Too many consecutive errors (${errorCount}), stopping wait`);
-            safeCleanup();
+            console.error(`[Dashboard] ❌ Too many consecutive errors (${errorCount}), stopping ${hasShownDashboard ? 'background polling' : 'wait'}`);
+            safeCleanup(true);
           }
         }
       };
       
-      // Poll immediately, then continue at intervals
-      // This gives users a moment to see the message, but starts checking right away
+      // Start polling immediately - check right away
+      // Give just a tiny delay to ensure state is set
       initialDelayRef.current = setTimeout(() => {
         if (!isCleanedUp) {
           // Check immediately
           doPoll();
           
-          // Then poll at intervals
+          // Then poll at intervals - check frequently
           pollIntervalRef.current = setInterval(doPoll, 500); // Check every 500ms
         }
-      }, 1000); // 1 second initial delay - just enough to show the message
+      }, 300); // Minimal delay - just to show the message briefly
       
       return safeCleanup;
-    } else if (!loading && books.length > 0) {
-      // User has books, no need to check
-      setHasCheckedForExampleBooks(true);
-      setWaitingForExampleBooks(false);
     }
     
     return cleanup;
-  }, [activeSession, loading, books.length, hasCheckedForExampleBooks, waitingForExampleBooks]);
+  }, [activeSession, loading, hasCheckedForExampleBooks]); // Removed books.length and waitingForExampleBooks from deps to prevent re-runs
 
-  // Stop waiting when books appear
+  // Stop all polling when books appear, but ensure minimum 3 second delay
   useEffect(() => {
-    if (waitingForExampleBooks && books.length > 0) {
-      console.log("[Dashboard] Example books found, showing dashboard");
-      // Clear any ongoing polling/timeouts
-      if (initialDelayRef.current) {
-        clearTimeout(initialDelayRef.current);
-        initialDelayRef.current = null;
+    console.log(`[Dashboard] 🔄 useEffect triggered: books.length=${books.length}, waitingForExampleBooks=${waitingForExampleBooks}, waitingStartTime=${waitingStartTimeRef.current}`);
+    
+    if (books.length > 0 && waitingForExampleBooks) {
+      // Ensure waitingStartTimeRef is set (defensive check)
+      if (!waitingStartTimeRef.current) {
+        console.warn("[Dashboard] ⚠️ waitingStartTimeRef not set, setting it now");
+        waitingStartTimeRef.current = Date.now();
       }
+      
+      const minDelay = 3000; // 3 seconds minimum
+      const elapsed = Date.now() - waitingStartTimeRef.current;
+      const remainingDelay = Math.max(0, minDelay - elapsed);
+      
+      console.log(`[Dashboard] ⏱️ Delay calculation: elapsed=${elapsed}ms, remaining=${remainingDelay}ms`);
+      
+      // Clear any existing timeout first
+      if (minDelayTimeoutRef.current) {
+        clearTimeout(minDelayTimeoutRef.current);
+        minDelayTimeoutRef.current = null;
+      }
+      
+      if (remainingDelay > 0) {
+        console.log(`[Dashboard] ✅ Books detected (${books.length} books), but waiting ${remainingDelay}ms more for minimum delay...`);
+        // Clear polling but keep spinner until minimum delay
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        if (continuousCheckRef.current) {
+          clearInterval(continuousCheckRef.current);
+          continuousCheckRef.current = null;
+        }
+        
+        // Wait for remaining time before hiding spinner
+        minDelayTimeoutRef.current = setTimeout(() => {
+          console.log(`[Dashboard] ✅ Minimum delay complete, showing dashboard with ${books.length} books`);
+          setWaitingForExampleBooks(false);
+          setHasCheckedForExampleBooks(true);
+          
+          // Clear all remaining timeouts
+          if (initialDelayRef.current) {
+            clearTimeout(initialDelayRef.current);
+            initialDelayRef.current = null;
+          }
+          if (absoluteTimeoutRef.current) {
+            clearTimeout(absoluteTimeoutRef.current);
+            absoluteTimeoutRef.current = null;
+          }
+          if (maxTimeoutRef.current) {
+            clearTimeout(maxTimeoutRef.current);
+            maxTimeoutRef.current = null;
+          }
+        }, remainingDelay);
+      } else {
+        // Minimum delay already passed, show immediately
+        console.log(`[Dashboard] ✅ Books detected (${books.length} books), minimum delay already passed, showing dashboard immediately`);
+        setWaitingForExampleBooks(false);
+        setHasCheckedForExampleBooks(true);
+        
+        // Clear all polling/timeouts
+        if (initialDelayRef.current) {
+          clearTimeout(initialDelayRef.current);
+          initialDelayRef.current = null;
+        }
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        if (absoluteTimeoutRef.current) {
+          clearTimeout(absoluteTimeoutRef.current);
+          absoluteTimeoutRef.current = null;
+        }
+        if (maxTimeoutRef.current) {
+          clearTimeout(maxTimeoutRef.current);
+          maxTimeoutRef.current = null;
+        }
+        if (continuousCheckRef.current) {
+          clearInterval(continuousCheckRef.current);
+          continuousCheckRef.current = null;
+        }
+        if (minDelayTimeoutRef.current) {
+          clearTimeout(minDelayTimeoutRef.current);
+          minDelayTimeoutRef.current = null;
+        }
+      }
+    } else if (books.length > 0) {
+      // Books exist but we're not waiting - just ensure polling is stopped
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
         pollIntervalRef.current = null;
       }
-      if (absoluteTimeoutRef.current) {
-        clearTimeout(absoluteTimeoutRef.current);
-        absoluteTimeoutRef.current = null;
+      if (continuousCheckRef.current) {
+        clearInterval(continuousCheckRef.current);
+        continuousCheckRef.current = null;
       }
-      setWaitingForExampleBooks(false);
     }
   }, [books.length, waitingForExampleBooks]);
 
+  // Simple continuous check for books when there are none - runs independently
+  useEffect(() => {
+    // Don't start if already checking
+    if (continuousCheckRef.current) {
+      return;
+    }
+
+    // Only run if we have a session and finished loading
+    if (!activeSession || loading) {
+      return;
+    }
+
+    // Check current books state
+    if (books.length > 0) {
+      return; // Already have books
+    }
+
+    console.log("[Dashboard] 🔄 Starting continuous check for books...");
+    
+    let checkCount = 0;
+    const maxChecks = 60; // Check for up to 30 seconds (60 * 500ms)
+    let stopped = false;
+    
+    const checkForBooks = async () => {
+      if (stopped) return;
+      
+      try {
+        checkCount++;
+        console.log(`[Dashboard] 🔍 Continuous check (${checkCount}/${maxChecks})...`);
+        
+        const response = await fetch("/api/books?t=" + Date.now()); // Cache bust
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data && Array.isArray(data) && data.length > 0) {
+            console.log(`[Dashboard] ✅ Books found via continuous check! (${data.length} books)`);
+            stopped = true;
+            setBooks(data);
+            if (continuousCheckRef.current) {
+              clearInterval(continuousCheckRef.current);
+              continuousCheckRef.current = null;
+            }
+            return;
+          }
+        }
+        
+        // Stop after max attempts
+        if (checkCount >= maxChecks) {
+          console.log("[Dashboard] ⏱️ Stopped continuous check after maximum attempts");
+          stopped = true;
+          if (continuousCheckRef.current) {
+            clearInterval(continuousCheckRef.current);
+            continuousCheckRef.current = null;
+          }
+        }
+      } catch (error) {
+        console.error("[Dashboard] ❌ Error in continuous check:", error);
+      }
+    };
+
+    // Check immediately
+    checkForBooks();
+    
+    // Then check every 500ms
+    continuousCheckRef.current = setInterval(checkForBooks, 500);
+
+    return () => {
+      if (continuousCheckRef.current) {
+        clearInterval(continuousCheckRef.current);
+        continuousCheckRef.current = null;
+      }
+    };
+  }, [activeSession, loading]); // Only depend on session and loading - check books.length inside effect
+
   const fetchBooks = async () => {
+    let shouldKeepLoading = false; // Track if we should keep loading state true
+    
     try {
       const response = await fetch("/api/books");
       if (response.ok) {
         const data = await response.json();
+        
+        // Mark that initial books have been loaded
+        if (!initialBooksLoadedRef.current) {
+          initialBooksLoadedRef.current = true;
+          
+          // Determine first login based on initial books
+          if (data && Array.isArray(data) && data.length === 0) {
+            // No books = first login
+            console.log("[Dashboard] 📚 No books on initial load - FIRST LOGIN");
+            setIsFirstLogin(true);
+            setHasDeterminedFirstLogin(true);
+            
+            // CRITICAL: Set waiting state (spinner will show via waitingForExampleBooks)
+            // We can set loading to false - the spinner condition is: loading || waitingForExampleBooks
+            console.log("[Dashboard] ⏱️ Setting waiting state and starting 3s timer...");
+            setWaitingForExampleBooks(true);
+            waitingStartTimeRef.current = Date.now();
+            console.log("[Dashboard] ⏱️ Timer started at:", waitingStartTimeRef.current);
+            
+            // Allow loading to be cleared - spinner will still show via waitingForExampleBooks
+            shouldKeepLoading = false;
+          } else if (data && Array.isArray(data) && data.length > 0) {
+            // Books exist = not first login
+            console.log("[Dashboard] 📚 Books exist on initial load - NOT FIRST LOGIN");
+            setIsFirstLogin(false);
+            setHasDeterminedFirstLogin(true);
+            // Clear waiting state since books already exist
+            setWaitingForExampleBooks(false);
+            shouldKeepLoading = false; // Allow loading to be cleared
+          }
+        }
+        
         setBooks(data);
       } else if (response.status === 401) {
         // Session is invalid, clear cookies and redirect to login
@@ -415,7 +693,10 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Failed to fetch books:", error);
     } finally {
-      setLoading(false);
+      // Only clear loading if we're not waiting for example books
+      if (!shouldKeepLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -967,7 +1248,7 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="mb-6 md:mb-8 premium-card rounded-2xl p-4 md:p-8">
           <h2 className="text-lg md:text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight mb-2">
-            {books.length === 0 ? `Welcome, ${userName}!` : `Welcome back, ${userName}!`}
+            {isFirstLogin ? `Welcome, ${userName}!` : `Welcome back, ${userName}!`}
           </h2>
           {books.length > 0 ? (
             <>

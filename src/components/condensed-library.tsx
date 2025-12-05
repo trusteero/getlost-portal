@@ -55,12 +55,12 @@ export function CondensedLibrary({
   activeManuscriptId 
 }: CondensedLibraryProps) {
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex flex-col gap-3 pt-2">
       <h2 className="text-base font-semibold text-gray-900 tracking-wide">Your manuscripts</h2>
       
       <div className="relative">
         {/* Scrollable manuscripts container */}
-        <div className="flex gap-3 overflow-x-auto snap-x pb-2 scroll-smooth no-scrollbar">
+        <div className="flex gap-3 overflow-x-auto snap-x pt-2 pb-2 scroll-smooth no-scrollbar">
           {manuscripts.map((manuscript) => {
             const unlockedSteps = manuscript.steps.filter(step => step.status === 'complete');
             const statusLabel = `${manuscript.title}: ${unlockedSteps.length} of ${manuscript.steps.length} stages completed`;
