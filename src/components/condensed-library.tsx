@@ -15,6 +15,7 @@ interface CondensedManuscript {
   coverImage: string;
   genre: string;
   steps: ProgressStep[];
+  isSample?: boolean;
 }
 
 interface CondensedLibraryProps {
@@ -127,8 +128,15 @@ export function CondensedLibrary({
 
                 {/* Title and Progress */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-base font-bold text-gray-900 truncate mb-1">
-                    {manuscript.title}
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="text-base font-bold text-gray-900 truncate">
+                      {manuscript.title}
+                    </div>
+                    {manuscript.isSample && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 shrink-0">
+                        Sample
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm text-gray-500 font-normal mb-2">
                     {manuscript.genre.replace(/^[A-Z]+\d+\s*/, '')}

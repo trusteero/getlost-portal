@@ -48,23 +48,41 @@ export async function GET(request: NextRequest) {
     );
     
     console.log(`[Credits] User ${session.user.id}: Found ${userLevelPurchases.length} user-level purchase(s) (after filtering)`);
+    if (userLevelPurchases.length > 0) {
+      console.log(`[Credits] User-level purchase statuses:`, userLevelPurchases.map(p => ({
+        id: p.id,
+        status: p.status,
+        paymentMethod: p.paymentMethod,
+        createdAt: p.createdAt,
+        completedAt: p.completedAt,
+      })));
+    }
 
     // Count completed purchases for the credits display
     const completedPurchases = userLevelPurchases.filter(p => p.status === "completed");
     
-    // Also check for pending purchases that are older than 5 minutes
-    // (these should have been completed by webhook, but might be stuck)
-    const fiveMinutesAgo = Math.floor(Date.now() / 1000) - 5 * 60;
-    const stuckPendingPurchases = userLevelPurchases.filter(p => {
+    // Also check for pending purchases that have a payment method
+    // (these went through checkout and should be valid, even if webhook hasn't processed them yet)
+    // Accept any pending purchase with payment method (regardless of age) to match upload-permission logic
+    const validPendingPurchases = userLevelPurchases.filter(p => {
       if (p.status !== "pending") return false;
+      if (!p.paymentMethod) return false; // Must have payment method (went through checkout)
       const createdAt = typeof p.createdAt === 'number' ? p.createdAt : (p.createdAt ? new Date(p.createdAt).getTime() / 1000 : 0);
-      return createdAt > 0 && createdAt < fiveMinutesAgo && p.paymentMethod; // Has payment method means it went through checkout
+      return createdAt > 0; // Valid timestamp
     });
     
-    // Count both completed and stuck pending purchases
-    const allValidPurchases = [...completedPurchases, ...stuckPendingPurchases];
+    // Also check for any other statuses that might indicate a valid purchase
+    // (e.g., if webhook set it to a different status)
+    const otherValidPurchases = userLevelPurchases.filter(p => {
+      if (p.status === "completed" || p.status === "pending") return false; // Already counted
+      // If it has a payment method and completedAt, it's likely valid
+      return !!(p.paymentMethod && p.completedAt);
+    });
     
-    console.log(`[Credits] User ${session.user.id}: Found ${completedPurchases.length} completed, ${stuckPendingPurchases.length} stuck pending purchase(s)`);
+    // Count all valid purchases
+    const allValidPurchases = [...completedPurchases, ...validPendingPurchases, ...otherValidPurchases];
+    
+    console.log(`[Credits] User ${session.user.id}: Found ${completedPurchases.length} completed, ${validPendingPurchases.length} valid pending, ${otherValidPurchases.length} other valid purchase(s)`);
     
     const uploadCount = allValidPurchases.length;
     
@@ -72,13 +90,22 @@ export async function GET(request: NextRequest) {
     const totalSpent = allValidPurchases.reduce((sum, purchase) => sum + (purchase.amount || 0), 0);
     const totalSpentDollars = totalSpent / 100;
 
-    // Count actual books uploaded by this user
+    // Count actual books uploaded by this user (excluding sample books)
     const userBooks = await db
-      .select()
+      .select({
+        id: books.id,
+        title: books.title,
+      })
       .from(books)
       .where(eq(books.userId, session.user.id));
     
-    const booksUploadedCount = userBooks.length;
+    // Filter out sample books (Wool and Beach Read)
+    const isSampleBook = (title: string | null | undefined): boolean => {
+      return !!(title && (title.includes("Wool") || title.includes("Beach Read")));
+    };
+    
+    const userBooksFiltered = userBooks.filter(book => !isSampleBook(book.title));
+    const booksUploadedCount = userBooksFiltered.length;
 
     console.log(`[Credits] User ${session.user.id}: ${uploadCount} valid purchase(s), ${booksUploadedCount} book(s) uploaded, total spent: $${totalSpentDollars.toFixed(2)}`);
 

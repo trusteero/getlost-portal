@@ -79,6 +79,7 @@ export default function Dashboard() {
   const [hasCheckedForExampleBooks, setHasCheckedForExampleBooks] = useState(false);
   const [waitingForExampleBooks, setWaitingForExampleBooks] = useState(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const absoluteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fallback: Try to fetch session directly if useSession is stuck
   useEffect(() => {
@@ -264,34 +265,118 @@ export default function Dashboard() {
       setHasCheckedForExampleBooks(true);
       setWaitingForExampleBooks(true); // Show loading state
       
+      let pollCount = 0;
+      let errorCount = 0;
+      const maxPolls = 20; // Maximum 20 polls (10 seconds total after initial delay)
+      const maxErrors = 5; // Stop after 5 consecutive errors
+      const absoluteTimeout = 30000; // Absolute maximum 30 seconds total
+      
+      // Set absolute timeout to prevent infinite spinner
+      absoluteTimeoutRef.current = setTimeout(() => {
+        console.log("[Dashboard] Absolute timeout reached (30s), stopping wait for example books");
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        setWaitingForExampleBooks(false);
+        absoluteTimeoutRef.current = null;
+      }, absoluteTimeout);
+      
       // Add initial delay to show the "Setting up your library" message
       // This gives users time to see the message before we start polling
       const initialDelay = setTimeout(() => {
         // Poll immediately and frequently for faster detection after initial delay
-        let pollCount = 0;
-        const maxPolls = 20; // Maximum 20 polls (10 seconds total after initial delay)
+        const doPoll = async () => {
+          try {
+            pollCount++;
+            console.log(`[Dashboard] Checking for example books (poll ${pollCount}/${maxPolls}...)`);
+            
+            const response = await fetch("/api/books");
+            if (response.ok) {
+              const data = await response.json();
+              errorCount = 0; // Reset error count on success
+              setBooks(data);
+              
+              // If books were found, stop polling
+              if (data && Array.isArray(data) && data.length > 0) {
+                console.log("[Dashboard] Example books found, stopping poll");
+                if (pollIntervalRef.current) {
+                  clearInterval(pollIntervalRef.current);
+                  pollIntervalRef.current = null;
+                }
+                if (absoluteTimeoutRef.current) {
+                  clearTimeout(absoluteTimeoutRef.current);
+                  absoluteTimeoutRef.current = null;
+                }
+                setWaitingForExampleBooks(false);
+                return;
+              }
+            } else {
+              errorCount++;
+              console.warn(`[Dashboard] Fetch books returned status ${response.status}`);
+              
+              // If too many errors, stop waiting
+              if (errorCount >= maxErrors) {
+                console.error(`[Dashboard] Too many errors (${errorCount}), stopping wait for example books`);
+                if (pollIntervalRef.current) {
+                  clearInterval(pollIntervalRef.current);
+                  pollIntervalRef.current = null;
+                }
+                if (absoluteTimeoutRef.current) {
+                  clearTimeout(absoluteTimeoutRef.current);
+                  absoluteTimeoutRef.current = null;
+                }
+                setWaitingForExampleBooks(false);
+                return;
+              }
+            }
+            
+            // Stop if we've reached max polls
+            if (pollCount >= maxPolls) {
+              console.log("[Dashboard] Maximum polls reached, showing dashboard");
+              if (pollIntervalRef.current) {
+                clearInterval(pollIntervalRef.current);
+                pollIntervalRef.current = null;
+              }
+              if (absoluteTimeoutRef.current) {
+                clearTimeout(absoluteTimeoutRef.current);
+                absoluteTimeoutRef.current = null;
+              }
+              setWaitingForExampleBooks(false);
+            }
+          } catch (error) {
+            errorCount++;
+            console.error(`[Dashboard] Error fetching books (attempt ${pollCount}):`, error);
+            
+            // If too many errors, stop waiting
+            if (errorCount >= maxErrors) {
+              console.error(`[Dashboard] Too many consecutive errors (${errorCount}), stopping wait for example books`);
+              if (pollIntervalRef.current) {
+                clearInterval(pollIntervalRef.current);
+                pollIntervalRef.current = null;
+              }
+              if (absoluteTimeoutRef.current) {
+                clearTimeout(absoluteTimeoutRef.current);
+                absoluteTimeoutRef.current = null;
+              }
+              setWaitingForExampleBooks(false);
+            }
+          }
+        };
         
         // Check immediately after delay
-        fetchBooks();
+        doPoll();
         
-        pollIntervalRef.current = setInterval(() => {
-          pollCount++;
-          console.log(`[Dashboard] Checking for example books (poll ${pollCount}/${maxPolls}...)`);
-          fetchBooks();
-          
-          if (pollCount >= maxPolls) {
-            console.log("[Dashboard] Maximum wait time reached, showing dashboard");
-            if (pollIntervalRef.current) {
-              clearInterval(pollIntervalRef.current);
-              pollIntervalRef.current = null;
-            }
-            setWaitingForExampleBooks(false);
-          }
-        }, 500); // Check every 500ms for faster detection
+        // Then poll at intervals
+        pollIntervalRef.current = setInterval(doPoll, 500); // Check every 500ms
       }, 3000); // 3 second initial delay to show the message
       
       return () => {
         clearTimeout(initialDelay);
+        if (absoluteTimeoutRef.current) {
+          clearTimeout(absoluteTimeoutRef.current);
+          absoluteTimeoutRef.current = null;
+        }
         if (pollIntervalRef.current) {
           clearInterval(pollIntervalRef.current);
           pollIntervalRef.current = null;
@@ -308,6 +393,15 @@ export default function Dashboard() {
   useEffect(() => {
     if (waitingForExampleBooks && books.length > 0) {
       console.log("[Dashboard] Example books found, showing dashboard");
+      // Clear any ongoing polling/timeouts
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      if (absoluteTimeoutRef.current) {
+        clearTimeout(absoluteTimeoutRef.current);
+        absoluteTimeoutRef.current = null;
+      }
       setWaitingForExampleBooks(false);
     }
   }, [books.length, waitingForExampleBooks]);
@@ -614,12 +708,20 @@ export default function Dashboard() {
     );
   }
 
-  // Calculate statistics for welcome message
+  // Helper function to check if a book is a sample/example book
+  const isSampleBook = (book: Book): boolean => {
+    return book.title?.includes("Wool") || book.title?.includes("Beach Read") || false;
+  };
+
+  // Calculate statistics for welcome message (excluding sample books)
   const calculateStats = () => {
     let unlockedInsights = 0;
     const totalInsights = 4; // 4 features per book: manuscript-report, marketing-assets, book-covers, landing-page
     
-    books.forEach((book) => {
+    // Filter out sample books from stats
+    const userBooks = books.filter(book => !isSampleBook(book));
+    
+    userBooks.forEach((book) => {
       // 1. Manuscript Report (check assetStatuses or feature status)
       const hasReport = book.assetStatuses?.report === "uploaded" || 
                         book.assetStatuses?.report === "viewed" ||
@@ -648,8 +750,8 @@ export default function Dashboard() {
     
     return {
       unlockedInsights,
-      totalInsights: books.length * totalInsights,
-      activeManuscripts: books.length,
+      totalInsights: userBooks.length * totalInsights,
+      activeManuscripts: userBooks.length,
     };
   };
 
@@ -691,11 +793,13 @@ export default function Dashboard() {
       coverImage,
       genre,
       steps,
+      isSample: isSampleBook(book),
     };
   };
 
   // Map book data to ManuscriptCard format
   const mapBookToManuscriptCard = (book: Book) => {
+    const isSample = isSampleBook(book);
     // Get manuscript status
     const manuscriptStatus = book.manuscriptStatus || "queued";
     const isManuscriptReady = manuscriptStatus === "ready_to_purchase";
@@ -858,6 +962,7 @@ export default function Dashboard() {
       hasPrecannedContent: book.hasPrecannedContent || false,
       manuscriptStatus: manuscriptStatus as "queued" | "working_on" | "ready_to_purchase",
       hasViewedReport,
+      isSample: isSample,
     };
   };
 

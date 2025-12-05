@@ -46,6 +46,7 @@ interface ManuscriptCardProps {
   hasPrecannedContent?: boolean;
   manuscriptStatus?: "queued" | "working_on" | "ready_to_purchase";
   hasViewedReport?: boolean;
+  isSample?: boolean;
   onDelete?: () => void;
 }
 
@@ -60,6 +61,7 @@ export const ManuscriptCard = ({
   hasPrecannedContent = false,
   manuscriptStatus = "queued",
   hasViewedReport = false,
+  isSample = false,
   onDelete
 }: ManuscriptCardProps) => {
   const isManuscriptReady = manuscriptStatus === "ready_to_purchase";
@@ -441,7 +443,14 @@ export const ManuscriptCard = ({
           <div className="flex flex-col gap-4">
             {/* Header */}
             <div>
-              <h2 className="text-xl lg:text-2xl font-bold text-gray-900 tracking-tight mb-2">{title}</h2>
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="text-xl lg:text-2xl font-bold text-gray-900 tracking-tight">{title}</h2>
+                {isSample && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    Sample report
+                  </span>
+                )}
+              </div>
               <p className="text-base text-gray-600 font-medium mb-1">{subtitle}</p>
               <p className="text-sm text-gray-500 leading-relaxed">{wordCount} • {genre.replace(/^[A-Z]+\d+\s*/, '')}</p>
             </div>

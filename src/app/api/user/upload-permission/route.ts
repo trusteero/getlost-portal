@@ -28,8 +28,24 @@ export async function GET(request: NextRequest) {
         )
       );
 
-    // Filter for purchases with null bookId (user-level purchases)
-    const userLevelPurchases = uploadPurchases.filter(p => p.bookId === null || p.bookId === undefined);
+    // Filter for purchases with null/undefined/empty bookId (user-level purchases)
+    const userLevelPurchases = uploadPurchases.filter(p => 
+      p.bookId === null || 
+      p.bookId === undefined || 
+      p.bookId === ""
+    );
+    
+    console.log(`[Upload Permission] User ${session.user.id}: Found ${uploadPurchases.length} total upload purchase(s), ${userLevelPurchases.length} user-level purchase(s)`);
+    if (userLevelPurchases.length > 0) {
+      console.log(`[Upload Permission] Purchase details:`, userLevelPurchases.map(p => ({
+        id: p.id,
+        status: p.status,
+        bookId: p.bookId,
+        paymentMethod: p.paymentMethod,
+        createdAt: p.createdAt,
+        completedAt: p.completedAt,
+      })));
+    }
     
     // Check for completed purchases first
     const completedPurchases = userLevelPurchases.filter(p => p.status === "completed");
@@ -64,7 +80,7 @@ export async function GET(request: NextRequest) {
         ? p.createdAt 
         : (p.createdAt ? new Date(p.createdAt).getTime() / 1000 : 0);
       
-      // Accept if older than 5 minutes (stuck pending) OR very recent (within 5 minutes)
+      // Accept any pending purchase with a payment method (went through checkout)
       // This covers both stuck webhooks and recent purchases
       return createdAt > 0;
     });
