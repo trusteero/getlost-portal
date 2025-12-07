@@ -2,7 +2,7 @@ import { db } from "@/server/db";
 import { books, bookVersions, reports } from "@/server/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
-import { importPrecannedContentForBook } from "./precanned-content";
+import { importPrecannedContentForBook, findPrecannedCoverImageForFilename } from "./precanned-content";
 import { ensureBooksTableColumns, columnExists } from "@/server/db/migrations";
 
 /**
@@ -89,10 +89,11 @@ export async function createExampleBooksForUser(userId: string): Promise<void> {
           bookId: createdBook.id,
           bookVersionId: createdVersion.id,
           precannedKey: exampleBook.key,
+          fileName: `${exampleBook.key}.pdf`, // Pass filename for cover matching
           features: {
             reports: true, // Import reports
             marketing: false, // Don't import marketing (coming soon)
-            covers: false, // Use cover from report instead of separate import
+            covers: true, // Import covers from precanned package
             landingPage: false, // Don't import landing pages (coming soon)
           },
         });
@@ -101,59 +102,61 @@ export async function createExampleBooksForUser(userId: string): Promise<void> {
           console.log(`[Example Books] Imported precanned content for ${exampleBook.title}:`, {
             reportsLinked: importResult.reportsLinked,
             packageKey: importResult.packageKey,
+            primaryCoverImageUrl: importResult.primaryCoverImageUrl,
           });
           
-          // Extract cover image from the completed report's adminNotes
-          if (importResult.reportsLinked > 0) {
+          // Set cover image from the precanned package
+          let coverImageUrl: string | null = null;
+          
+          // First, try to use the primary cover from the precanned package
+          if (importResult.primaryCoverImageUrl) {
+            coverImageUrl = importResult.primaryCoverImageUrl;
+            console.log(`[Example Books] Using primary cover from precanned package for ${exampleBook.title}`);
+          } else {
+            // Fallback: try to find cover image by filename
             try {
-              // Get the completed report for this book version
-              const completedReports = await db
-                .select({
-                  adminNotes: reports.adminNotes,
-                })
-                .from(reports)
-                .where(eq(reports.bookVersionId, createdVersion.id))
-                .orderBy(desc(reports.requestedAt))
-                .limit(5);
-              
-              // Look for cover image data in report adminNotes
-              let coverImageUrl: string | null = null;
-              for (const report of completedReports) {
-                if (report.adminNotes) {
-                  try {
-                    const notes = JSON.parse(report.adminNotes);
-                    if (notes.coverImageData && typeof notes.coverImageData === "string") {
-                      // Use the cover image data URL from the report
-                      coverImageUrl = notes.coverImageData;
-                      console.log(`[Example Books] Found cover image in report for ${exampleBook.title}`);
-                      break;
-                    }
-                  } catch (parseError) {
-                    // Skip invalid JSON
-                    continue;
-                  }
-                }
-              }
-              
-              // Set the book's coverImageUrl from the report
-              if (coverImageUrl) {
-                await db
-                  .update(books)
-                  .set({
-                    coverImageUrl: coverImageUrl,
-                    updatedAt: new Date(),
-                  })
-                  .where(eq(books.id, createdBook.id));
-                console.log(`[Example Books] Set cover image from report for ${exampleBook.title}`);
-              } else {
-                console.log(`[Example Books] No cover image found in report for ${exampleBook.title}`);
+              const foundCoverUrl = await findPrecannedCoverImageForFilename(`${exampleBook.key}.pdf`);
+              if (foundCoverUrl) {
+                coverImageUrl = foundCoverUrl;
+                console.log(`[Example Books] Found cover image by filename for ${exampleBook.title}`);
               }
             } catch (error: any) {
-              console.error(`[Example Books] Error extracting cover from report for ${exampleBook.title}:`, error);
+              console.error(`[Example Books] Error finding cover by filename for ${exampleBook.title}:`, error);
             }
+          }
+          
+          // Set the book's coverImageUrl if we found one
+          if (coverImageUrl) {
+            await db
+              .update(books)
+              .set({
+                coverImageUrl: coverImageUrl,
+                updatedAt: new Date(),
+              })
+              .where(eq(books.id, createdBook.id));
+            console.log(`[Example Books] ✅ Set cover image for ${exampleBook.title}: ${coverImageUrl}`);
+          } else {
+            console.warn(`[Example Books] ⚠️  No cover image found for ${exampleBook.title}`);
           }
         } else {
           console.warn(`[Example Books] Failed to import precanned content for ${exampleBook.key}`);
+          
+          // Fallback: try to find cover image by filename even if precanned import failed
+          try {
+            const foundCoverUrl = await findPrecannedCoverImageForFilename(`${exampleBook.key}.pdf`);
+            if (foundCoverUrl) {
+              await db
+                .update(books)
+                .set({
+                  coverImageUrl: foundCoverUrl,
+                  updatedAt: new Date(),
+                })
+                .where(eq(books.id, createdBook.id));
+              console.log(`[Example Books] ✅ Set cover image from fallback for ${exampleBook.title}: ${foundCoverUrl}`);
+            }
+          } catch (error: any) {
+            console.error(`[Example Books] Error in fallback cover search for ${exampleBook.title}:`, error);
+          }
         }
       } catch (error: any) {
         console.error(`[Example Books] Failed to create example book ${exampleBook.key}:`, error);

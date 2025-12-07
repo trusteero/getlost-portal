@@ -270,15 +270,29 @@ export async function signOut() {
   
   try {
     console.log("🔄 [Auth] Signing out...");
+    
+    // First, clear cookies proactively
+    clearAuthCookies();
+    
     // Call the actual signOut method from Better Auth
     const result = await client.signOut();
     console.log("✅ [Auth] Sign out successful");
+    
+    // Clear cookies again after signOut to ensure they're gone
+    clearAuthCookies();
+    
+    // Wait a moment to ensure cookies are cleared
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Clear one more time for good measure
+    clearAuthCookies();
+    
     return result;
   } catch (error) {
     console.error("❌ [Auth] Error during sign out:", error);
     // Even on error, try to clear cookies as fallback
     clearAuthCookies();
-    throw error;
+    // Don't throw - allow redirect to proceed
   }
 }
 
@@ -286,24 +300,56 @@ export async function signOut() {
 function clearAuthCookies() {
   if (typeof window === "undefined") return;
   
-  // Clear Better Auth cookies
+  // Clear Better Auth cookies - try all possible variations
   const cookiesToClear = [
     "better-auth.session_token",
+    "better-auth.session-token",
+    "better-auth_session_token",
+    "better-auth_session-token",
     "better-auth.session",
     "better-auth.refresh_token",
+    "better-auth.refresh-token",
+    // Also try without prefix
+    "session_token",
+    "session-token",
+    "refresh_token",
+    "refresh-token",
   ];
   
+  const domain = window.location.hostname;
+  const hostnameParts = domain.split('.');
+  
   cookiesToClear.forEach((cookieName) => {
+    // Clear with path=/
     document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
-    document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=${window.location.hostname};`;
+    // Clear with domain
+    document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=${domain};`;
+    // Clear with .domain (for subdomains)
+    if (hostnameParts.length > 1) {
+      const rootDomain = '.' + hostnameParts.slice(-2).join('.');
+      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=${rootDomain};`;
+    }
+    // Clear with secure flag
+    document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;secure;`;
+    // Clear with sameSite
+    document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;sameSite=Lax;`;
+    document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;sameSite=Strict;`;
   });
   
   // Also clear all cookies for the domain as fallback
-  document.cookie.split(";").forEach((c) => {
+  const allCookies = document.cookie.split(";");
+  allCookies.forEach((c) => {
     const cookieName = c.split("=")[0]?.trim();
-    if (cookieName && (cookieName.includes("auth") || cookieName.includes("session"))) {
+    if (cookieName && (cookieName.includes("auth") || cookieName.includes("session") || cookieName.includes("token"))) {
+      // Clear with various options
       document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
-      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=${window.location.hostname};`;
+      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=${domain};`;
+      if (hostnameParts.length > 1) {
+        const rootDomain = '.' + hostnameParts.slice(-2).join('.');
+        document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=${rootDomain};`;
+      }
     }
   });
+  
+  console.log("🧹 [Auth] Cleared all auth cookies");
 }

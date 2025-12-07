@@ -10,6 +10,16 @@ const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "onboarding@resend.de
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 export async function sendEmail({ to, subject, html, text }: EmailOptions) {
+  // Check if email sending is disabled for tests
+  const isTestMode = process.env.DISABLE_EMAIL_IN_TESTS === "true" || process.env.NODE_ENV === "test";
+  
+  if (isTestMode) {
+    console.log("📧 [Email] TEST MODE - Email sending disabled:", { to, subject });
+    console.log("📧 [Email] Would be sent:", { to, subject });
+    console.log("📧 [Email] HTML preview:", html.substring(0, 200) + "...");
+    return true; // Return true to simulate successful send
+  }
+  
   if (!RESEND_API_KEY) {
     console.error("Resend API key not configured");
     // In development, just log the email

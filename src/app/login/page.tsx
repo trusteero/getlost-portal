@@ -30,6 +30,12 @@ function LoginContent() {
 		if (searchParams.get("reset") === "true") {
 			setSuccessMessage("Password reset successfully! You can now sign in with your new password.");
 		}
+		if (searchParams.get("logout") === "true") {
+			// User just logged out - don't auto-redirect, let them stay on login page
+			// Clear any cached session data
+			setError("");
+			setSuccessMessage("");
+		}
 	}, [searchParams]);
 
 	// Check which auth providers are available

@@ -26,6 +26,7 @@ vi.mock("next/navigation", () => ({
 process.env.DATABASE_URL = process.env.DATABASE_URL || "file:./test.db";
 process.env.AUTH_SECRET = process.env.AUTH_SECRET || "test-secret-key-for-testing-only";
 process.env.NODE_ENV = process.env.NODE_ENV || "test";
+process.env.DISABLE_EMAIL_IN_TESTS = "true"; // Disable email sending in tests
 
 // Ensure we're in a server context for tests that import server modules
 // This prevents the "server-side environment variable on client" error

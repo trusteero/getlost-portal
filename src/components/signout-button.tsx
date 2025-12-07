@@ -11,12 +11,15 @@ export default function SignOutButton() {
     setIsLoading(true);
     try {
       await signOut();
+      // Wait longer for cookies to be fully cleared
+      await new Promise(resolve => setTimeout(resolve, 500));
     } catch (error) {
       console.error("Sign out error:", error);
       // Continue with redirect even if signOut fails
     } finally {
-      // Always redirect after sign out attempt
-      window.location.href = "/";
+      // Force a hard redirect to login page with cache busting
+      // Use replace to prevent back button from going to dashboard
+      window.location.replace("/login?logout=true");
     }
   };
 

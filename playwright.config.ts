@@ -52,6 +52,11 @@ export default defineConfig({
     timeout: 120 * 1000,
     stdout: "ignore",
     stderr: "pipe",
+    env: {
+      // Disable email sending during E2E tests
+      DISABLE_EMAIL_IN_TESTS: "true",
+      NODE_ENV: process.env.NODE_ENV || "test",
+    },
   },
 });
 

@@ -787,12 +787,14 @@ export default function AdminDashboard() {
                             setDropdownOpen(false);
                             try {
                               await signOut();
+                              // Wait longer for cookies to be fully cleared
+                              await new Promise(resolve => setTimeout(resolve, 500));
                             } catch (error) {
                               console.error("Sign out error:", error);
                               // Continue with redirect even if signOut fails
                             }
-                            // Always redirect after sign out attempt
-                            window.location.href = "/";
+                            // Force a hard redirect to login page with cache busting
+                            window.location.replace("/login?logout=true");
                           }}
                           className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                         >

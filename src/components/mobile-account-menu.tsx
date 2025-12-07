@@ -54,17 +54,15 @@ export const MobileAccountMenu = ({ isOpen, onClose }: MobileAccountMenuProps) =
   const handleLogout = async () => {
     try {
       await signOut();
+      // Wait longer for cookies to be fully cleared
+      await new Promise(resolve => setTimeout(resolve, 500));
     } catch (error) {
       console.error("Sign out error:", error);
       // Continue with redirect even if signOut fails
     }
     onClose();
-    // Always redirect after sign out attempt
-    router.push('/');
-    // Force a hard reload to ensure session is cleared
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 100);
+    // Force a hard redirect to login page with cache busting
+    window.location.replace('/login?logout=true');
   };
 
   return (
