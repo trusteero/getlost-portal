@@ -137,7 +137,37 @@ export async function GET(
     // Inject base tag - critical for videos in iframes
     // Absolute paths like /api/uploads/... need a base URL to resolve correctly
     let finalHtml = htmlContent;
-    const origin = request.headers.get('origin') || request.nextUrl.origin;
+    
+    // Get the correct origin - prefer env vars over request origin (for Render)
+    const getOrigin = (): string => {
+      // Check for custom domain first (production)
+      const customDomain = process.env.CUSTOM_DOMAIN || process.env.NEXT_PUBLIC_CUSTOM_DOMAIN;
+      if (customDomain) {
+        return customDomain.startsWith("http") ? customDomain : `https://${customDomain}`;
+      }
+      
+      // Check for explicit app URL (from environment)
+      const appUrl = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
+      if (appUrl) {
+        return appUrl;
+      }
+      
+      // Fallback to request origin (for local development)
+      return request.headers.get('origin') || request.nextUrl.origin;
+    };
+    
+    const origin = getOrigin();
+    
+    // Replace any hardcoded localhost URLs with relative paths
+    // This fixes HTML that was created with localhost URLs
+    finalHtml = finalHtml.replace(
+      /https?:\/\/localhost:\d+\//gi,
+      '/'
+    );
+    finalHtml = finalHtml.replace(
+      /https?:\/\/127\.0\.0\.1:\d+\//gi,
+      '/'
+    );
     
     // Remove any existing base tags first
     finalHtml = finalHtml.replace(/<base[^>]*>/gi, '');

@@ -89,6 +89,19 @@ export async function GET(
       .set({ viewedAt: new Date() })
       .where(eq(landingPages.id, page.id));
 
+    // Clean localhost URLs from HTML content
+    if (page.htmlContent && typeof page.htmlContent === 'string') {
+      // Replace any hardcoded localhost URLs with relative paths
+      page.htmlContent = page.htmlContent.replace(
+        /https?:\/\/localhost:\d+\//gi,
+        '/'
+      );
+      page.htmlContent = page.htmlContent.replace(
+        /https?:\/\/127\.0\.0\.1:\d+\//gi,
+        '/'
+      );
+    }
+
     return NextResponse.json(page);
   } catch (error) {
     console.error("Failed to get landing page:", error);

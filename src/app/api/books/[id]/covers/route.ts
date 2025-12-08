@@ -93,6 +93,28 @@ export async function GET(
         .update(bookCovers)
         .set({ viewedAt: new Date() })
         .where(eq(bookCovers.id, primaryCover.id));
+      
+      // Clean localhost URLs from HTML content if it exists in metadata
+      if (primaryCover.metadata) {
+        try {
+          const metadata = JSON.parse(primaryCover.metadata);
+          if (metadata.htmlContent && typeof metadata.htmlContent === 'string') {
+            // Replace any hardcoded localhost URLs with relative paths
+            metadata.htmlContent = metadata.htmlContent.replace(
+              /https?:\/\/localhost:\d+\//gi,
+              '/'
+            );
+            metadata.htmlContent = metadata.htmlContent.replace(
+              /https?:\/\/127\.0\.0\.1:\d+\//gi,
+              '/'
+            );
+            // Update the cover object with cleaned HTML
+            primaryCover.metadata = JSON.stringify(metadata);
+          }
+        } catch {
+          // Invalid metadata, skip cleaning
+        }
+      }
     }
 
     // Return primary cover or first cover, or all covers if none marked
