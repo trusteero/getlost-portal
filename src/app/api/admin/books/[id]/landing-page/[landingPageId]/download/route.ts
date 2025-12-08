@@ -5,15 +5,15 @@ import { books, landingPages } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
 /**
- * GET /api/admin/books/[id]/landing-page/[pageId]/download
+ * GET /api/admin/books/[id]/landing-page/[landingPageId]/download
  * Admin-only route to download a specific landing page version
  * Returns the landing page as an HTML file download
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; pageId: string }> }
+  { params }: { params: Promise<{ id: string; landingPageId: string }> }
 ) {
-  const { id: bookId, pageId } = await params;
+  const { id: bookId, landingPageId } = await params;
   const session = await getSessionFromRequest(request);
 
   if (!session?.user?.id) {
@@ -48,7 +48,7 @@ export async function GET(
         createdAt: landingPages.createdAt,
       })
       .from(landingPages)
-      .where(eq(landingPages.id, pageId))
+      .where(eq(landingPages.id, landingPageId))
       .limit(1);
 
     if (!page) {
