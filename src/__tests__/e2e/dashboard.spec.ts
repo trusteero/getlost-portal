@@ -1,13 +1,22 @@
 import { test, expect } from "@playwright/test";
-import { loginUser, signUpUser } from "./helpers/auth";
+import { loginUser, signUpUser, deleteTestUserByEmail } from "./helpers/auth";
 
 test.describe("Dashboard", () => {
   let testEmail: string;
   let testPassword: string;
+  const createdUsers: string[] = []; // Track users created during tests
 
   test.beforeEach(async ({ page }) => {
     testEmail = `test-${Date.now()}@example.com`;
     testPassword = "TestPassword123!";
+  });
+
+  test.afterEach(async () => {
+    // Clean up users created in this test
+    for (const email of createdUsers) {
+      await deleteTestUserByEmail(email);
+    }
+    createdUsers.length = 0; // Clear the array
   });
 
   test("should show dashboard when logged in", async ({ page }) => {
@@ -41,7 +50,8 @@ test.describe("Dashboard", () => {
 
   test.describe("Example Books for New Users", () => {
     test("should show loading message while creating example books", async ({ page }) => {
-      await signUpUser(page, testEmail, testPassword);
+      const user = await signUpUser(page, testEmail, testPassword);
+      createdUsers.push(user.email);
       await page.goto("/dashboard");
       
       // Should see loading message for new users
@@ -54,7 +64,8 @@ test.describe("Dashboard", () => {
     });
 
     test("should display example books after creation", async ({ page }) => {
-      await signUpUser(page, testEmail, testPassword);
+      const user = await signUpUser(page, testEmail, testPassword);
+      createdUsers.push(user.email);
       await page.goto("/dashboard");
       
       // Wait for books to load (with timeout for example books creation)
@@ -68,7 +79,8 @@ test.describe("Dashboard", () => {
 
   test.describe("Sample Books Labeling", () => {
     test("should display SAMPLE label on sample book covers", async ({ page }) => {
-      await signUpUser(page, testEmail, testPassword);
+      const user = await signUpUser(page, testEmail, testPassword);
+      createdUsers.push(user.email);
       await page.goto("/dashboard");
       
       // Wait for example books to load
@@ -80,7 +92,8 @@ test.describe("Dashboard", () => {
     });
 
     test("should display Sample badge in condensed library", async ({ page }) => {
-      await signUpUser(page, testEmail, testPassword);
+      const user = await signUpUser(page, testEmail, testPassword);
+      createdUsers.push(user.email);
       await page.goto("/dashboard");
       
       await page.waitForTimeout(5000);
@@ -93,7 +106,8 @@ test.describe("Dashboard", () => {
 
   test.describe("Book Ordering and Layout", () => {
     test("should display + button on the right side", async ({ page }) => {
-      await signUpUser(page, testEmail, testPassword);
+      const user = await signUpUser(page, testEmail, testPassword);
+      createdUsers.push(user.email);
       await page.goto("/dashboard");
       await page.waitForTimeout(5000);
       
@@ -110,7 +124,8 @@ test.describe("Dashboard", () => {
     });
 
     test("should allow horizontal scrolling of books", async ({ page }) => {
-      await signUpUser(page, testEmail, testPassword);
+      const user = await signUpUser(page, testEmail, testPassword);
+      createdUsers.push(user.email);
       await page.goto("/dashboard");
       await page.waitForTimeout(5000);
       
@@ -133,7 +148,8 @@ test.describe("Dashboard", () => {
 
   test.describe("Statistics and Counting", () => {
     test("should exclude sample books from statistics", async ({ page }) => {
-      await signUpUser(page, testEmail, testPassword);
+      const user = await signUpUser(page, testEmail, testPassword);
+      createdUsers.push(user.email);
       await page.goto("/dashboard");
       await page.waitForTimeout(5000);
       

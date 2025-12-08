@@ -1,11 +1,23 @@
 import { test, expect } from "@playwright/test";
+import { deleteTestUserByEmail } from "./helpers/auth";
 
 test.describe("Email Verification Flow", () => {
+  const createdUsers: string[] = [];
+
+  test.afterEach(async () => {
+    // Clean up users created in this test
+    for (const email of createdUsers) {
+      await deleteTestUserByEmail(email);
+    }
+    createdUsers.length = 0;
+  });
+
   test("should show verification message after signup", async ({ page }) => {
     await page.goto("/signup");
     
     const email = `test-${Date.now()}@example.com`;
     const password = "TestPassword123!";
+    createdUsers.push(email);
     
     // Fill signup form
     await page.fill('input[name="name"], input[type="text"]', "Test User");

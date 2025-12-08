@@ -1,7 +1,8 @@
-import { Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 /**
  * Helper to sign up a new user
+ * Returns user info including email for cleanup
  */
 export async function signUpUser(
   page: Page,
@@ -26,6 +27,38 @@ export async function signUpUser(
   await page.waitForTimeout(2000);
   
   return { email, password, name };
+}
+
+/**
+ * Helper to delete a test user by email
+ * Uses the test cleanup API endpoint
+ */
+export async function deleteTestUserByEmail(email: string): Promise<void> {
+  try {
+    // Get base URL from environment or default to localhost
+    const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || "http://localhost:3000";
+    
+    const response = await fetch(`${baseURL}/api/test/cleanup/user`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: "Unknown error" }));
+      // Only log warning if it's not a 404 (user might already be deleted)
+      if (response.status !== 404) {
+        console.warn(`Failed to delete test user ${email}:`, error);
+      }
+    } else {
+      console.log(`✅ Deleted test user: ${email}`);
+    }
+  } catch (error) {
+    // Silently fail - cleanup is best effort
+    console.warn(`Failed to delete test user ${email}:`, error);
+  }
 }
 
 /**

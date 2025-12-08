@@ -1,11 +1,12 @@
 import { test, expect } from "@playwright/test";
-import { loginUser, signUpUser } from "./helpers/auth";
+import { loginUser, signUpUser, deleteTestUserByEmail } from "./helpers/auth";
 import path from "path";
 import fs from "fs";
 
 test.describe("Complete Book Upload Flow", () => {
   let testEmail: string;
   let testPassword: string;
+  const createdUsers: string[] = [];
 
   test.beforeEach(async ({ page }) => {
     // Create a unique test user for each test
@@ -13,9 +14,18 @@ test.describe("Complete Book Upload Flow", () => {
     testPassword = "TestPassword123!";
     
     // Sign up and login
-    await signUpUser(page, testEmail, testPassword);
+    const user = await signUpUser(page, testEmail, testPassword);
+    createdUsers.push(user.email);
     // Note: After signup, user needs to verify email, but for testing we'll skip that
     // In a real scenario, you'd need to handle email verification
+  });
+
+  test.afterEach(async () => {
+    // Clean up users created in this test
+    for (const email of createdUsers) {
+      await deleteTestUserByEmail(email);
+    }
+    createdUsers.length = 0;
   });
 
   test("should upload a book and see it in dashboard", async ({ page }) => {

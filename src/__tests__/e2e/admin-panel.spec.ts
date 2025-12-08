@@ -1,13 +1,24 @@
 import { test, expect } from "@playwright/test";
-import { loginUser, signUpUser } from "./helpers/auth";
+import { loginUser, signUpUser, deleteTestUserByEmail } from "./helpers/auth";
 
 test.describe("Admin Panel Access Control", () => {
+  const createdUsers: string[] = [];
+
+  test.afterEach(async () => {
+    // Clean up users created in this test
+    for (const email of createdUsers) {
+      await deleteTestUserByEmail(email);
+    }
+    createdUsers.length = 0;
+  });
+
   test("should prevent non-admin from accessing admin panel", async ({ page }) => {
     // Create regular user
     const email = `test-${Date.now()}@example.com`;
     const password = "TestPassword123!";
     
-    await signUpUser(page, email, password);
+    const user = await signUpUser(page, email, password);
+    createdUsers.push(user.email);
     
     // Try to access admin panel
     await page.goto("/admin");

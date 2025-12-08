@@ -1,9 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { loginUser, signUpUser } from "./helpers/auth";
+import { loginUser, signUpUser, deleteTestUserByEmail } from "./helpers/auth";
 
 test.describe("Precanned Content Integration", () => {
   let testEmail: string;
   let testPassword: string;
+  const createdUsers: string[] = [];
 
   test.beforeEach(async ({ page }) => {
     // Create a unique test user for each test
@@ -11,7 +12,16 @@ test.describe("Precanned Content Integration", () => {
     testPassword = "TestPassword123!";
     
     // Sign up and login
-    await signUpUser(page, testEmail, testPassword);
+    const user = await signUpUser(page, testEmail, testPassword);
+    createdUsers.push(user.email);
+  });
+
+  test.afterEach(async () => {
+    // Clean up users created in this test
+    for (const email of createdUsers) {
+      await deleteTestUserByEmail(email);
+    }
+    createdUsers.length = 0;
   });
 
   test("should automatically import precanned content when uploading matching filename", async ({ page }) => {

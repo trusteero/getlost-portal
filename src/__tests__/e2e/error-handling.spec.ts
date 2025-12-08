@@ -1,15 +1,25 @@
 import { test, expect } from "@playwright/test";
-import { loginUser, signUpUser } from "./helpers/auth";
+import { loginUser, signUpUser, deleteTestUserByEmail } from "./helpers/auth";
 
 test.describe("Error Handling", () => {
   let testEmail: string;
   let testPassword: string;
+  const createdUsers: string[] = [];
 
   test.beforeEach(async ({ page }) => {
     testEmail = `test-${Date.now()}@example.com`;
     testPassword = "TestPassword123!";
     
-    await signUpUser(page, testEmail, testPassword);
+    const user = await signUpUser(page, testEmail, testPassword);
+    createdUsers.push(user.email);
+  });
+
+  test.afterEach(async () => {
+    // Clean up users created in this test
+    for (const email of createdUsers) {
+      await deleteTestUserByEmail(email);
+    }
+    createdUsers.length = 0;
   });
 
   test("should handle network errors gracefully", async ({ page }) => {
