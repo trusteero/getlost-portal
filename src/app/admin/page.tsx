@@ -1116,6 +1116,19 @@ export default function AdminDashboard() {
                                 <span className="text-xs">
                                   {getAssetStatusText(book.reportStatus)}
                                 </span>
+                                {(book.reportStatus === "uploaded" || book.reportStatus === "viewed") && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => {
+                                      window.open(`/api/admin/books/${book.id}/report/view`, '_blank');
+                                    }}
+                                    title="View Report"
+                                  >
+                                    <FileText className="w-3 h-3" />
+                                  </Button>
+                                )}
                               </div>
                             </td>
                             <td className="py-2 px-2">
@@ -1124,6 +1137,19 @@ export default function AdminDashboard() {
                                 <span className="text-xs">
                                   {getAssetStatusText(book.marketingStatus)}
                                 </span>
+                                {(book.marketingStatus === "uploaded" || book.marketingStatus === "viewed") && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => {
+                                      window.open(`/api/admin/books/${book.id}/marketing-assets/view`, '_blank');
+                                    }}
+                                    title="View Marketing Assets"
+                                  >
+                                    <FileText className="w-3 h-3" />
+                                  </Button>
+                                )}
                               </div>
                             </td>
                             <td className="py-2 px-2">
@@ -1132,6 +1158,19 @@ export default function AdminDashboard() {
                                 <span className="text-xs">
                                   {getAssetStatusText(book.coversStatus)}
                                 </span>
+                                {(book.coversStatus === "uploaded" || book.coversStatus === "viewed") && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => {
+                                      window.open(`/api/admin/books/${book.id}/covers/view`, '_blank');
+                                    }}
+                                    title="View Covers"
+                                  >
+                                    <ImageIcon className="w-3 h-3" />
+                                  </Button>
+                                )}
                               </div>
                             </td>
                             <td className="py-2 px-2">
@@ -1140,6 +1179,19 @@ export default function AdminDashboard() {
                                 <span className="text-xs">
                                   {getAssetStatusText(book.landingPageStatus)}
                                 </span>
+                                {(book.landingPageStatus === "uploaded" || book.landingPageStatus === "viewed") && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => {
+                                      window.open(`/api/admin/books/${book.id}/landing-page/view`, '_blank');
+                                    }}
+                                    title="View Landing Page"
+                                  >
+                                    <FileText className="w-3 h-3" />
+                                  </Button>
+                                )}
                               </div>
                             </td>
                             <td className="py-2 px-2 text-xs text-gray-600">
@@ -1738,6 +1790,7 @@ export default function AdminDashboard() {
                   onDelete={(itemId) => handleDeleteAsset(selectedBook.id, "reports", itemId)}
                   activeLabel="Active"
                   uploadButtonColor="bg-blue-600 hover:bg-blue-700"
+                  bookId={selectedBook.id}
                 />
 
                 {/* Marketing Assets */}
@@ -1751,6 +1804,7 @@ export default function AdminDashboard() {
                   onDelete={(itemId) => handleDeleteAsset(selectedBook.id, "marketing-assets", itemId)}
                   activeLabel="Active"
                   uploadButtonColor="bg-purple-600 hover:bg-purple-700"
+                  bookId={selectedBook.id}
                 />
 
                 {/* Book Covers */}
@@ -1764,6 +1818,7 @@ export default function AdminDashboard() {
                   onDelete={(itemId) => handleDeleteAsset(selectedBook.id, "covers", itemId)}
                   activeLabel="Active"
                   uploadButtonColor="bg-orange-600 hover:bg-orange-700"
+                  bookId={selectedBook.id}
                 />
 
                 {/* Landing Pages */}
@@ -1777,6 +1832,7 @@ export default function AdminDashboard() {
                   onDelete={(itemId) => handleDeleteAsset(selectedBook.id, "landing-page", itemId)}
                   activeLabel="Active"
                   uploadButtonColor="bg-indigo-600 hover:bg-indigo-700"
+                  bookId={selectedBook.id}
                 />
               </div>
             )}

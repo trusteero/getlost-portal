@@ -1,6 +1,6 @@
 "use client";
 
-import { FileUp, XCircle, CheckCircle2 } from "lucide-react";
+import { FileUp, XCircle, CheckCircle2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AssetItem {
@@ -25,6 +25,7 @@ interface AssetUploadSectionProps {
   onDelete: (itemId: string) => void;
   activeLabel?: string; // "Active" or "Primary"
   uploadButtonColor?: string; // Tailwind color class
+  bookId?: string; // Book ID for download URLs
 }
 
 export function AssetUploadSection({
@@ -37,6 +38,7 @@ export function AssetUploadSection({
   onDelete,
   activeLabel = "Active",
   uploadButtonColor = "bg-blue-600 hover:bg-blue-700",
+  bookId,
 }: AssetUploadSectionProps) {
   const getUploadDate = (item: AssetItem): Date | null => {
     const dateValue = item.createdAt || item.requestedAt || item.completedAt;
@@ -146,6 +148,33 @@ export function AssetUploadSection({
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 ml-4">
+                      {/* Download Button */}
+                      {bookId && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            // Construct download URL based on asset type
+                            let downloadUrl = '';
+                            if (assetType === "report" || assetType === "preview-report") {
+                              downloadUrl = `/api/admin/books/${bookId}/reports/${item.id}/download`;
+                            } else if (assetType === "marketing-assets") {
+                              downloadUrl = `/api/admin/books/${bookId}/marketing-assets/${item.id}/download`;
+                            } else if (assetType === "covers") {
+                              downloadUrl = `/api/admin/books/${bookId}/covers/${item.id}/download`;
+                            } else if (assetType === "landing-page") {
+                              downloadUrl = `/api/admin/books/${bookId}/landing-page/${item.id}/download`;
+                            }
+                            
+                            if (downloadUrl) {
+                              window.open(downloadUrl, '_blank');
+                            }
+                          }}
+                          title="Download"
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                      )}
                       {/* Version Selector */}
                       {onSetActive && !itemIsActive && (
                         <Button
