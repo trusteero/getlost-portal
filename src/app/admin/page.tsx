@@ -721,7 +721,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-full mx-auto px-2 sm:px-4 lg:px-6">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Link href="/" className="flex items-center space-x-2">
@@ -812,7 +812,7 @@ export default function AdminDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full max-w-full mx-auto px-2 sm:px-4 lg:px-6 py-8">
         {/* Analytics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card>
@@ -969,8 +969,8 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="overflow-x-auto -mx-2 sm:-mx-4 lg:-mx-6 px-2 sm:px-4 lg:px-6">
+                  <table className="w-full text-sm min-w-full">
                     <thead>
                       <tr className="border-b">
                         <th className="text-left py-2 px-2 w-12">Cover</th>
@@ -1312,8 +1312,8 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                  <div className="overflow-x-auto -mx-2 sm:-mx-4 lg:-mx-6 px-2 sm:px-4 lg:px-6">
+                    <table className="w-full text-sm min-w-full">
                       <thead>
                         <tr className="border-b">
                           <th className="text-left py-2 px-4">User</th>
