@@ -190,6 +190,23 @@ export async function POST(
         console.log(`[Cover Upload] Rewrote ${videoReplacements.size} video reference(s) in HTML`);
       }
 
+      // Try to extract first image URL from HTML for imageUrl field (required by database)
+      let extractedImageUrl: string | null = null;
+      if (htmlContent) {
+        // Look for data:image URLs (embedded images)
+        const dataImageMatch = htmlContent.match(/<img[^>]+src=["'](data:image\/[^"']+)["']/i);
+        if (dataImageMatch && dataImageMatch[1]) {
+          // For data URLs, we can't use them directly as imageUrl, so use placeholder
+          extractedImageUrl = "/placeholder.svg";
+        } else {
+          // Look for regular image src URLs
+          const imgMatch = htmlContent.match(/<img[^>]+src=["']([^"']+\.(jpg|jpeg|png|gif|webp|svg))["']/i);
+          if (imgMatch && imgMatch[1]) {
+            extractedImageUrl = imgMatch[1];
+          }
+        }
+      }
+
     const coverId = randomUUID();
 
     // Check if there are any existing covers for this book
@@ -221,12 +238,16 @@ export async function POST(
     });
 
     // Insert into database
+    // imageUrl is NOT NULL in database, so provide fallback
+    // Priority: 1) First video URL, 2) Extracted image from HTML, 3) Placeholder
+    const imageUrlToStore = storedVideoUrl || extractedImageUrl || "/placeholder.svg";
+    
     await db.insert(bookCovers).values({
       id: coverId,
       bookId: id,
       coverType: "html-gallery",
       title: title || null,
-      imageUrl: storedVideoUrl, // Store first video URL if videos were uploaded
+      imageUrl: imageUrlToStore,
       thumbnailUrl: null,
       metadata,
       isPrimary,
