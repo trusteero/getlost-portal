@@ -572,11 +572,11 @@ export const ManuscriptCard = ({
             {updatedSteps.slice(0, 5).map((step) => {
               // Dim other features until manuscript is ready (except manuscript-report itself)
               // Also dim summary if it's locked (no preview report uploaded)
-              // Always dim marketing, covers, and landing pages (they are "Coming soon")
+              // Dim marketing, covers, and landing pages only if they're locked (not complete)
               const isMarketingOrCoverOrLanding = step.id === "marketing-assets" || step.id === "book-covers" || step.id === "landing-page";
               const shouldDim = (!isManuscriptReady && step.id !== "manuscript-report") || 
                                 (step.id === "summary" && step.status === "locked") ||
-                                isMarketingOrCoverOrLanding; // Always dim these features
+                                (isMarketingOrCoverOrLanding && step.status === "locked"); // Only dim if locked, not if complete
               return (
               <div 
                 key={step.id} 

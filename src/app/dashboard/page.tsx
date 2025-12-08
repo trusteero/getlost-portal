@@ -1116,14 +1116,7 @@ export default function Dashboard() {
         return 'locked';
       }
       
-      // For marketing, covers, and landing pages: keep dimmed until user has viewed the report
-      if (featureType === 'marketing-assets' || featureType === 'book-covers' || featureType === 'landing-page') {
-        if (!hasViewedReport) {
-          return 'locked';
-        }
-      }
-      
-      // Check asset statuses from API
+      // Check asset statuses from API FIRST (admin-uploaded assets should be accessible)
       if (book.assetStatuses) {
         let status: "not_requested" | "requested" | "uploaded" | "viewed" | undefined;
         if (featureType === 'marketing-assets') {
@@ -1134,10 +1127,21 @@ export default function Dashboard() {
           status = book.assetStatuses.landingPage;
         }
         
+        // If assets are uploaded/viewed, they're accessible regardless of report viewing
+        if (status === 'uploaded' || status === 'viewed') {
+          return 'complete';
+        }
+        
         if (status === 'requested') {
           return 'processing';
-        } else if (status === 'uploaded' || status === 'viewed') {
-          return 'complete';
+        }
+      }
+      
+      // For marketing, covers, and landing pages: keep dimmed until user has viewed the report
+      // BUT only if assets haven't been uploaded yet
+      if (featureType === 'marketing-assets' || featureType === 'book-covers' || featureType === 'landing-page') {
+        if (!hasViewedReport) {
+          return 'locked';
         }
       }
       
@@ -1172,8 +1176,14 @@ export default function Dashboard() {
         }
       }
       
-      // Other assets (marketing-assets, book-covers, landing-page) are "Coming soon"
+      // For other assets (marketing-assets, book-covers, landing-page), check status
       if (featureType === 'marketing-assets' || featureType === 'book-covers' || featureType === 'landing-page') {
+        if (status === 'complete') {
+          return 'View';
+        }
+        if (status === 'processing') {
+          return 'Processing...';
+        }
         return 'Coming soon';
       }
       

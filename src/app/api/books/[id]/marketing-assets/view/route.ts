@@ -40,26 +40,7 @@ export async function GET(
       return NextResponse.json({ error: "Book not found" }, { status: 404 });
     }
 
-    // Check if marketing-assets feature is unlocked
-    const [feature] = await db
-      .select()
-      .from(bookFeatures)
-      .where(
-        and(
-          eq(bookFeatures.bookId, bookId),
-          eq(bookFeatures.featureType, "marketing-assets")
-        )
-      )
-      .limit(1);
-
-    if (!feature || feature.status === "locked") {
-      return NextResponse.json(
-        { error: "Feature not unlocked. Please purchase the marketing assets first." },
-        { status: 403 }
-      );
-    }
-
-    // Get marketing assets - prefer active one, otherwise get HTML one, otherwise any
+    // Get marketing assets FIRST - if assets exist, allow access (admin may have uploaded)
     const allAssets = await db
       .select()
       .from(marketingAssets)
@@ -86,10 +67,29 @@ export async function GET(
       activeAsset = allAssets[0];
     }
 
+    // If no assets exist, check if feature is unlocked (purchase required)
     if (!activeAsset || !activeAsset.metadata) {
-      console.error('[Marketing Assets View] No active asset found or missing metadata');
+      const [feature] = await db
+        .select()
+        .from(bookFeatures)
+        .where(
+          and(
+            eq(bookFeatures.bookId, bookId),
+            eq(bookFeatures.featureType, "marketing-assets")
+          )
+        )
+        .limit(1);
+
+      if (!feature || feature.status === "locked") {
+        return NextResponse.json(
+          { error: "Marketing assets not found. Please purchase the marketing assets feature first." },
+          { status: 404 }
+        );
+      }
+      
+      // Feature is unlocked but no assets uploaded yet
       return NextResponse.json(
-        { error: "Marketing assets not found" },
+        { error: "Marketing assets not found. Assets are being prepared." },
         { status: 404 }
       );
     }

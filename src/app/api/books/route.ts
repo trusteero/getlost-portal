@@ -101,26 +101,8 @@ export async function GET(request: NextRequest) {
 
         // Helper function to determine asset status for assets linked by bookId
         const getAssetStatusByBookId = async (featureType: string, assetTable: any) => {
-          // Check if feature is requested/purchased
-          const [feature] = await db
-            .select()
-            .from(bookFeatures)
-            .where(
-              and(
-                eq(bookFeatures.bookId, book.id),
-                eq(bookFeatures.featureType, featureType)
-              )
-            )
-            .limit(1);
-
-          const isRequested = feature && (feature.status === "purchased" || feature.status === "requested");
-
-          if (!isRequested) {
-            return "not_requested";
-          }
-
-          // Check if any asset exists (excluding precanned assets for purchased features)
-          // Precanned assets should only count if they were imported before the feature was purchased
+          // FIRST: Check if any asset exists (admin may have uploaded without purchase)
+          // This allows admins to upload assets that users can access immediately
           let anyAsset;
           if (assetTable === marketingAssets) {
             [anyAsset] = await db
@@ -142,53 +124,68 @@ export async function GET(request: NextRequest) {
               .limit(1);
           }
 
-          if (!anyAsset) {
-            return "requested";
-          }
+          // If assets exist, check if they're accessible
+          if (anyAsset) {
+            // Check if feature is requested/purchased (for precanned asset delay logic)
+            const [feature] = await db
+              .select()
+              .from(bookFeatures)
+              .where(
+                and(
+                  eq(bookFeatures.bookId, book.id),
+                  eq(bookFeatures.featureType, featureType)
+                )
+              )
+              .limit(1);
 
-          // Check if the asset is precanned and handle 10-second delay
-          if (anyAsset.metadata) {
-            try {
-              const metadata = JSON.parse(anyAsset.metadata);
-              const isPrecanned = metadata.precanned === true;
-              
-              if (isPrecanned && feature.purchasedAt) {
-                // Get timestamps
-                const assetCreatedAt = anyAsset.createdAt instanceof Date 
-                  ? anyAsset.createdAt.getTime() 
-                  : typeof anyAsset.createdAt === 'number' 
-                    ? anyAsset.createdAt * (anyAsset.createdAt < 10000000000 ? 1000 : 1)
-                    : new Date(anyAsset.createdAt).getTime();
+            const isRequested = feature && (feature.status === "purchased" || feature.status === "requested");
+
+            // Check if the asset is precanned and handle 10-second delay (only if feature was purchased)
+            // Admin-uploaded assets (non-precanned) are always accessible
+            if (anyAsset.metadata && isRequested && feature?.purchasedAt) {
+              try {
+                const metadata = JSON.parse(anyAsset.metadata);
+                const isPrecanned = metadata.precanned === true;
                 
-                const purchasedAt = feature.purchasedAt instanceof Date
-                  ? feature.purchasedAt.getTime()
-                  : typeof feature.purchasedAt === 'number'
-                    ? feature.purchasedAt * (feature.purchasedAt < 10000000000 ? 1000 : 1)
-                    : new Date(feature.purchasedAt).getTime();
-                
-                // If precanned asset was created after purchase, it means it was auto-imported
-                // Don't count it - wait for admin upload
-                if (assetCreatedAt > purchasedAt) {
-                  return "requested";
-                }
-                
-                // If precanned asset existed before purchase, apply 10-second delay
-                // Show "processing" for 10 seconds after purchase, then show as "uploaded"
-                if (assetCreatedAt <= purchasedAt) {
-                  const timeSincePurchase = Date.now() - purchasedAt;
-                  const delayMs = 10 * 1000; // 10 seconds
+                if (isPrecanned) {
+                  // Get timestamps
+                  const assetCreatedAt = anyAsset.createdAt instanceof Date 
+                    ? anyAsset.createdAt.getTime() 
+                    : typeof anyAsset.createdAt === 'number' 
+                      ? anyAsset.createdAt * (anyAsset.createdAt < 10000000000 ? 1000 : 1)
+                      : new Date(anyAsset.createdAt).getTime();
                   
-                  if (timeSincePurchase < delayMs) {
-                    // Still within 10-second delay period
+                  const purchasedAt = feature.purchasedAt instanceof Date
+                    ? feature.purchasedAt.getTime()
+                    : typeof feature.purchasedAt === 'number'
+                      ? feature.purchasedAt * (feature.purchasedAt < 10000000000 ? 1000 : 1)
+                      : new Date(feature.purchasedAt).getTime();
+                  
+                  // If precanned asset was created after purchase, it means it was auto-imported
+                  // Don't count it - wait for admin upload
+                  if (assetCreatedAt > purchasedAt) {
                     return "requested";
                   }
-                  // 10 seconds have passed, precanned asset is now available
+                  
+                  // If precanned asset existed before purchase, apply 10-second delay
+                  // Show "processing" for 10 seconds after purchase, then show as "uploaded"
+                  if (assetCreatedAt <= purchasedAt) {
+                    const timeSincePurchase = Date.now() - purchasedAt;
+                    const delayMs = 10 * 1000; // 10 seconds
+                    
+                    if (timeSincePurchase < delayMs) {
+                      // Still within 10-second delay period
+                      return "requested";
+                    }
+                    // 10 seconds have passed, precanned asset is now available
+                  }
                 }
+                // If not precanned (admin-uploaded), skip delay logic and continue to check viewed status
+              } catch {
+                // Invalid metadata, continue with normal check (treat as admin-uploaded)
               }
-            } catch {
-              // Invalid metadata, continue with normal check
             }
-          }
+            // If no purchase or not precanned, continue to check viewed status (admin-uploaded assets are accessible)
 
           // Check active/primary asset for viewed status
           let activeAsset;
@@ -275,7 +272,7 @@ export async function GET(request: NextRequest) {
             }
           }
 
-          // If no active asset, just return uploaded
+          // If no active asset but anyAsset exists, return uploaded
           if (!activeAsset) {
             return "uploaded";
           }
@@ -286,6 +283,27 @@ export async function GET(request: NextRequest) {
           }
 
           return "uploaded";
+          }
+
+          // No assets exist - check if feature is purchased
+          const [feature] = await db
+            .select()
+            .from(bookFeatures)
+            .where(
+              and(
+                eq(bookFeatures.bookId, book.id),
+                eq(bookFeatures.featureType, featureType)
+              )
+            )
+            .limit(1);
+
+          const isRequested = feature && (feature.status === "purchased" || feature.status === "requested");
+
+          if (isRequested) {
+            return "requested";
+          }
+
+          return "not_requested";
         };
 
         // Calculate report status (reports are linked by bookVersionId)
@@ -461,6 +479,9 @@ export async function GET(request: NextRequest) {
           return false;
         })();
 
+        // Check if this is an example/sample book (Wool or Beach Read)
+        const isSample = book.title?.includes("Wool") || book.title?.includes("Beach Read") || false;
+
         return {
           ...book,
           latestVersion: latestVersion[0],
@@ -474,6 +495,7 @@ export async function GET(request: NextRequest) {
             landingPage: landingPageStatus,
           },
           hasPrecannedContent,
+          isSample,
         };
       })
     );

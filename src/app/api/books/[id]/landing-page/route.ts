@@ -35,25 +35,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Check if feature is unlocked
-    const feature = await db
-      .select()
-      .from(bookFeatures)
-      .where(
-        and(
-          eq(bookFeatures.bookId, id),
-          eq(bookFeatures.featureType, "landing-page")
-        )
-      )
-      .limit(1);
-
-    if (feature.length === 0 || feature[0]!.status === "locked") {
-      return NextResponse.json(
-        { error: "Feature not unlocked" },
-        { status: 403 }
-      );
-    }
-
+    // Get landing page FIRST - if assets exist, allow access (admin may have uploaded)
     // Get landing page - prefer active one
     let landingPage = await db
       .select()
@@ -76,7 +58,27 @@ export async function GET(
     }
 
     if (landingPage.length === 0 || !landingPage[0]) {
-      return NextResponse.json({ error: "Landing page not found" }, { status: 404 });
+      // If no landing page exists, check if feature is unlocked (purchase required)
+      const feature = await db
+        .select()
+        .from(bookFeatures)
+        .where(
+          and(
+            eq(bookFeatures.bookId, id),
+            eq(bookFeatures.featureType, "landing-page")
+          )
+        )
+        .limit(1);
+
+      if (feature.length === 0 || feature[0]!.status === "locked") {
+        return NextResponse.json(
+          { error: "Landing page not found. Please purchase the landing page feature first." },
+          { status: 404 }
+        );
+      }
+      
+      // Feature is unlocked but no landing page uploaded yet
+      return NextResponse.json({ error: "Landing page not found. Landing page is being prepared." }, { status: 404 });
     }
 
     const page = landingPage[0];

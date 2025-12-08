@@ -7,6 +7,7 @@ import { user as betterAuthUser } from "@/server/db/better-auth-schema";
 import { promises as fs } from "fs";
 import path from "path";
 import { bundleReportHtmlFromContent } from "@/server/utils/bundle-report-html";
+import { storeUploadedAsset, findVideoFiles, rewriteVideoReferences } from "@/server/utils/store-uploaded-asset";
 import AdmZip from "adm-zip";
 import { randomUUID } from "crypto";
 
@@ -175,8 +176,45 @@ export async function POST(
         // Directory doesn't exist, skip
       }
       
-      // Bundle images into HTML (creates standalone HTML with embedded images)
-      const htmlContent = await bundleReportHtmlFromContent(rawHtmlContent, searchDirs);
+      // Find and store video files if ZIP was uploaded
+      const videoReplacements = new Map<string, string>();
+      
+      if (isZip) {
+        // Find all video files in the extracted ZIP
+        const videoFiles = await findVideoFiles(tempDir, tempDir);
+        console.log(`[Report Upload] Found ${videoFiles.length} video file(s) in ZIP`);
+        
+        // Store each video file and create URL mapping
+        for (const videoFile of videoFiles) {
+          try {
+            const fileName = path.basename(videoFile.fullPath);
+            const { fileUrl } = await storeUploadedAsset(
+              videoFile.fullPath,
+              id,
+              "report",
+              fileName
+            );
+            
+            // Map both relative path and filename for replacement
+            videoReplacements.set(videoFile.relativePath, fileUrl);
+            videoReplacements.set(fileName, fileUrl);
+            
+            console.log(`[Report Upload] Stored video: ${videoFile.relativePath} -> ${fileUrl}`);
+          } catch (error) {
+            console.error(`[Report Upload] Failed to store video ${videoFile.relativePath}:`, error);
+            // Continue with other videos even if one fails
+          }
+        }
+      }
+      
+      // Bundle images into HTML (videos are handled separately)
+      let htmlContent = await bundleReportHtmlFromContent(rawHtmlContent, searchDirs);
+      
+      // Rewrite video references in HTML to use stored URLs
+      if (videoReplacements.size > 0) {
+        htmlContent = rewriteVideoReferences(htmlContent, videoReplacements);
+        console.log(`[Report Upload] Rewrote ${videoReplacements.size} video reference(s) in HTML`);
+      }
       
       // Save bundled HTML to disk (always save as .html)
       const storedFileName = `${reportId}.html`;

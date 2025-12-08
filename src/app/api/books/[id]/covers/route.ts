@@ -35,25 +35,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Check if feature is unlocked
-    const feature = await db
-      .select()
-      .from(bookFeatures)
-      .where(
-        and(
-          eq(bookFeatures.bookId, id),
-          eq(bookFeatures.featureType, "book-covers")
-        )
-      )
-      .limit(1);
-
-    if (feature.length === 0 || feature[0]!.status === "locked") {
-      return NextResponse.json(
-        { error: "Feature not unlocked" },
-        { status: 403 }
-      );
-    }
-
+    // Get book covers FIRST - if assets exist, allow access (admin may have uploaded)
     // Get book covers - prefer primary one, otherwise get HTML one, otherwise any
     const allCovers = await db
       .select()
@@ -79,6 +61,30 @@ export async function GET(
     // If still no primary cover, use first cover
     if (!primaryCover && allCovers.length > 0) {
       primaryCover = allCovers[0];
+    }
+
+    // If no covers exist, check if feature is unlocked (purchase required)
+    if (allCovers.length === 0) {
+      const feature = await db
+        .select()
+        .from(bookFeatures)
+        .where(
+          and(
+            eq(bookFeatures.bookId, id),
+            eq(bookFeatures.featureType, "book-covers")
+          )
+        )
+        .limit(1);
+
+      if (feature.length === 0 || feature[0]!.status === "locked") {
+        return NextResponse.json(
+          { error: "Book covers not found. Please purchase the book covers feature first." },
+          { status: 403 }
+        );
+      }
+      
+      // Feature is unlocked but no covers uploaded yet
+      return NextResponse.json([]);
     }
 
     // Update viewedAt timestamp when user views the cover
