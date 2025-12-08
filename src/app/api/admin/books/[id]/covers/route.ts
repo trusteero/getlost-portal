@@ -212,7 +212,7 @@ export async function POST(
 
     // Create metadata with HTML content
     const metadata = JSON.stringify({
-      variant: "html-gallery",
+      variant: "html", // Use "html" to match what the view routes expect
       htmlContent: htmlContent,
       originalFileName: file.name,
       uploadedAsZip: isZip,

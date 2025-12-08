@@ -68,11 +68,27 @@ export default function LandingPageView() {
   }
 
   // When landing page HTML exists, render it full-screen in an iframe without any chrome
+  let htmlContent = landingPage.htmlContent || "";
+  
+  // Inject base tag for proper URL resolution (especially for videos)
+  if (htmlContent && typeof htmlContent === 'string') {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    
+    // Remove any existing base tags first
+    htmlContent = htmlContent.replace(/<base[^>]*>/gi, '');
+    
+    // Inject base tag right after <head> tag
+    htmlContent = htmlContent.replace(
+      /<head([^>]*)>/i,
+      `<head$1><base href="${origin}">`
+    );
+  }
+  
   return (
     <div className="w-full h-screen bg-white">
       <iframe
         title={landingPage.title || "Landing Page"}
-        srcDoc={landingPage.htmlContent || ""}
+        srcDoc={htmlContent}
         sandbox="allow-scripts allow-same-origin"
         className="w-full h-full border-0 bg-white"
         style={{ 
