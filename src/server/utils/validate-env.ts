@@ -200,3 +200,48 @@ export function validateAndLogEnvironment(): void {
   }
 }
 
+/**
+ * Validate a specific environment variable is set
+ * Useful for runtime checks in API routes
+ * @param varName - Name of the environment variable
+ * @param description - Description of what the variable is for
+ * @returns The value of the environment variable, or throws if missing
+ */
+export function requireEnv(varName: string, description?: string): string {
+  const value = process.env[varName];
+  if (!value || value.trim() === "") {
+    const errorMessage = description
+      ? `Missing required environment variable: ${varName}. ${description}`
+      : `Missing required environment variable: ${varName}`;
+    throw new Error(errorMessage);
+  }
+  return value;
+}
+
+/**
+ * Get an environment variable with a fallback, but warn if using fallback in production
+ * @param varName - Name of the environment variable
+ * @param fallback - Fallback value to use if not set
+ * @param description - Description of what the variable is for
+ * @returns The environment variable value or fallback
+ */
+export function getEnvWithFallback(
+  varName: string,
+  fallback: string,
+  description?: string
+): string {
+  const value = process.env[varName];
+  if (!value || value.trim() === "") {
+    if (process.env.NODE_ENV === "production") {
+      console.warn(
+        `⚠️  Using fallback for ${varName} in production. Consider setting this environment variable.`
+      );
+      if (description) {
+        console.warn(`   ${description}`);
+      }
+    }
+    return fallback;
+  }
+  return value;
+}
+
