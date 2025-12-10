@@ -165,13 +165,14 @@ export async function POST(
           
           // Also try subdirectories
           const entries = await fs.readdir(bookReportsPath, { withFileTypes: true });
-        for (const entry of entries) {
-          if (entry.isDirectory()) {
-            searchDirs.push(path.join(bookReportsPath, entry.name));
+          for (const entry of entries) {
+            if (entry.isDirectory()) {
+              searchDirs.push(path.join(bookReportsPath, entry.name));
+            }
           }
+        } catch {
+          // Directory doesn't exist, skip
         }
-      } catch {
-        // Directory doesn't exist, skip
       }
 
       // Bundle images into HTML
