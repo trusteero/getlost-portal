@@ -286,9 +286,10 @@ export async function POST(request: NextRequest) {
     });
 
     // Wrap purchase and feature creation in a transaction for data integrity
+    // Note: better-sqlite3 transactions are synchronous, not async
     const purchaseId = crypto.randomUUID();
     
-    await db.transaction(async (tx) => {
+    db.transaction((tx) => {
       // Create purchase record with pending status
       const purchaseValues: any = {
         id: purchaseId,
@@ -306,12 +307,12 @@ export async function POST(request: NextRequest) {
       }
       // For book-upload, we don't include bookId at all (it will be null/undefined)
       
-      await tx.insert(purchases).values(purchaseValues);
+      tx.insert(purchases).values(purchaseValues);
 
       // For book-specific features, create or update feature record
       // User-level features (book-upload) don't need bookFeatures records
       if (featureType !== "book-upload" && bookId) {
-        const existingFeature = await tx
+        const existingFeature = tx
           .select()
           .from(bookFeatures)
           .where(
@@ -320,10 +321,11 @@ export async function POST(request: NextRequest) {
               eq(bookFeatures.featureType, featureType)
             )
           )
-          .limit(1);
+          .limit(1)
+          .all();
 
         if (existingFeature.length > 0) {
-          await tx
+          tx
             .update(bookFeatures)
             .set({
               status: "purchased",
@@ -333,7 +335,7 @@ export async function POST(request: NextRequest) {
             })
             .where(eq(bookFeatures.id, existingFeature[0]!.id));
         } else {
-          await tx.insert(bookFeatures).values({
+          tx.insert(bookFeatures).values({
             id: crypto.randomUUID(),
             bookId,
             featureType,
