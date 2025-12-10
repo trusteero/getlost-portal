@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Database from "better-sqlite3";
 import { env } from "@/env";
+import { isAdminFromRequest } from "@/server/auth";
 
 export const dynamic = 'force-dynamic';
 
@@ -10,13 +11,20 @@ export const dynamic = 'force-dynamic';
  * WARNING: This is a destructive operation!
  * 
  * Usage: POST /api/admin/remove-all-users
- * Requires: Admin authentication (check in the handler)
+ * Requires: Admin authentication
  */
 export async function POST(request: NextRequest) {
+  // Check admin authentication
+  const isAdmin = await isAdminFromRequest(request);
+  
+  if (!isAdmin) {
+    return NextResponse.json(
+      { error: "Forbidden: Admin access required" },
+      { status: 403 }
+    );
+  }
+
   try {
-    // TODO: Add admin authentication check here
-    // For now, this is unprotected - you should add auth!
-    
     // Get database path
     let dbPath = env.DATABASE_URL || "./dev.db";
     if (dbPath.startsWith("file://")) {
