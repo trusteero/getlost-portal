@@ -96,3 +96,4 @@ ls -la uploads/covers/
 3. Ensure path is absolute or relative to project root
 
 
+

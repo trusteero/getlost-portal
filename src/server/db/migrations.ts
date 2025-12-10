@@ -6,6 +6,10 @@
 import Database from "better-sqlite3";
 import { sqlite } from "./index";
 
+// Guard to prevent migrations from running multiple times simultaneously
+let migrationsInitialized = false;
+let migrationsInitializing = false;
+
 export interface ColumnInfo {
   name: string;
   type: string;
@@ -660,17 +664,32 @@ function ensureEssentialTables(): void {
 /**
  * Initialize migrations - call this on app startup
  * This is called automatically when the database connection is established
+ * Uses a guard to prevent multiple simultaneous runs
  */
 export function initializeMigrations(): void {
+  // Guard: prevent multiple simultaneous migration runs
+  if (migrationsInitialized) {
+    console.log("[Migrations] Migrations already initialized, skipping");
+    return;
+  }
+
+  if (migrationsInitializing) {
+    console.log("[Migrations] Migrations already in progress, skipping duplicate call");
+    return;
+  }
+
   if (!sqlite) {
     console.warn("[Migrations] Database not available, skipping migrations");
     return;
   }
 
+  migrationsInitializing = true;
+
   try {
     console.log("[Migrations] Initializing database migrations...");
     
     // First, run Drizzle migrations to create all tables if they don't exist
+    let drizzleSucceeded = false;
     try {
       const path = require("path");
       const fs = require("fs");
@@ -684,12 +703,14 @@ export function initializeMigrations(): void {
         try {
           migrate(db, { migrationsFolder });
           console.log("[Migrations] ✅ Drizzle migrations completed");
+          drizzleSucceeded = true;
         } catch (migrateError: any) {
           // Check if it's just a "table already exists" error
           if (migrateError?.message?.includes("already exists") || 
               migrateError?.message?.includes("duplicate") ||
               migrateError?.cause?.code === "SQLITE_ERROR") {
             console.log("[Migrations] Tables already exist, Drizzle migrations already applied");
+            drizzleSucceeded = true;
           } else {
             // Log the full error for debugging
             console.error("[Migrations] ❌ Drizzle migration error:", migrateError?.message || migrateError);
@@ -706,16 +727,29 @@ export function initializeMigrations(): void {
       // Don't throw - try to continue with table creation
     }
     
-    // Ensure essential tables exist (fallback if Drizzle migrations didn't create them)
-    ensureEssentialTables();
+    // Only run ensureEssentialTables if Drizzle migrations didn't succeed
+    // This saves memory by avoiding duplicate table creation attempts
+    if (!drizzleSucceeded) {
+      console.log("[Migrations] Drizzle migrations didn't succeed, ensuring essential tables...");
+      ensureEssentialTables();
+    } else {
+      console.log("[Migrations] Skipping ensureEssentialTables (Drizzle migrations succeeded)");
+    }
     
     // Then ensure columns exist (adds missing columns to existing tables)
+    // This is lightweight and safe to run multiple times
     ensureBooksTableColumns();
     ensureOtherTableColumns();
-    console.log("[Migrations] Migration check complete");
+    
+    migrationsInitialized = true;
+    console.log("[Migrations] ✅ Migration check complete");
   } catch (error: any) {
     console.error("[Migrations] Error during migration initialization:", error.message);
     // Don't throw - allow app to continue even if migrations fail
+    // Reset flag so we can retry on next call
+    migrationsInitializing = false;
+  } finally {
+    migrationsInitializing = false;
   }
 }
 

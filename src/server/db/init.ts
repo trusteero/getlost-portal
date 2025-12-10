@@ -4,7 +4,23 @@ import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import Database from "better-sqlite3";
 import crypto from "crypto";
 
+// Guard to prevent duplicate initialization
+let databaseInitialized = false;
+let databaseInitializing = false;
+
 export async function initializeDatabase() {
+  // Guard: prevent multiple simultaneous initialization runs
+  if (databaseInitialized) {
+    console.log("🔧 Database already initialized, skipping");
+    return true;
+  }
+
+  if (databaseInitializing) {
+    console.log("🔧 Database initialization already in progress, skipping duplicate call");
+    return true;
+  }
+
+  databaseInitializing = true;
   console.log("🔧 Initializing database...");
 
   try {
@@ -15,6 +31,7 @@ export async function initializeDatabase() {
     
     if (!fs.existsSync(migrationsFolder)) {
       console.log("📦 No migrations folder found, skipping migrations");
+      databaseInitialized = true;
       return true;
     }
 
@@ -40,10 +57,14 @@ export async function initializeDatabase() {
     const result = await db.select({ count: sql<number>`1` }).from(sql`sqlite_master`);
     console.log("✅ Database connection verified");
 
+    databaseInitialized = true;
     return true;
   } catch (error) {
     console.error("❌ Database initialization failed:", error);
+    databaseInitializing = false; // Reset flag so we can retry
     throw error;
+  } finally {
+    databaseInitializing = false;
   }
 }
 
