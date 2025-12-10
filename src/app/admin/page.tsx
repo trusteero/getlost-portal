@@ -199,7 +199,12 @@ function AdminDashboardContent() {
         setAnalytics(analyticsData);
       }
     } catch (error) {
-      console.error("Failed to fetch data:", error);
+      console.error("[Admin] Failed to fetch data:", error);
+      console.error("[Admin] Fetch data error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        activeView,
+      });
     } finally {
       setLoading(false);
     }
@@ -342,7 +347,12 @@ function AdminDashboardContent() {
         setLandingPages(await landingRes.json());
       }
     } catch (error) {
-      console.error("Failed to fetch book assets:", error);
+      console.error("[Admin] Failed to fetch book assets:", error);
+      console.error("[Admin] Fetch book assets error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        selectedBookId: selectedBook?.id,
+      });
     }
   };
 
@@ -373,7 +383,13 @@ function AdminDashboardContent() {
         alert(error.error || "Failed to upload report");
       }
     } catch (error) {
-      console.error("Failed to upload report:", error);
+      console.error("[Admin] Failed to upload report:", error);
+      console.error("[Admin] Upload report error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        bookId: selectedBook?.id,
+        fileName: file?.name,
+      });
       alert("Failed to upload report");
     } finally {
       setUploadingReport(false);
@@ -406,7 +422,13 @@ function AdminDashboardContent() {
         alert(error.error || "Failed to upload marketing asset");
       }
     } catch (error) {
-      console.error("Failed to upload marketing asset:", error);
+      console.error("[Admin] Failed to upload marketing asset:", error);
+      console.error("[Admin] Upload marketing asset error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        bookId: selectedBook?.id,
+        fileName: file?.name,
+      });
       alert("Failed to upload marketing asset");
     } finally {
       setUploadingAsset(null);
@@ -433,7 +455,13 @@ function AdminDashboardContent() {
         alert(error.error || "Failed to upload cover");
       }
     } catch (error) {
-      console.error("Failed to upload cover:", error);
+      console.error("[Admin] Failed to upload cover:", error);
+      console.error("[Admin] Upload cover error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        bookId: selectedBook?.id,
+        fileName: file?.name,
+      });
       alert("Failed to upload cover");
     } finally {
       setUploadingAsset(null);
@@ -460,7 +488,13 @@ function AdminDashboardContent() {
         alert(error.error || "Failed to upload landing page");
       }
     } catch (error) {
-      console.error("Failed to upload landing page:", error);
+      console.error("[Admin] Failed to upload landing page:", error);
+      console.error("[Admin] Upload landing page error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        bookId: selectedBook?.id,
+        fileName: file?.name,
+      });
       alert("Failed to upload landing page");
     } finally {
       setUploadingAsset(null);
@@ -484,7 +518,14 @@ function AdminDashboardContent() {
         alert(error.error || "Failed to delete asset");
       }
     } catch (error) {
-      console.error("Failed to delete asset:", error);
+      console.error("[Admin] Failed to delete asset:", error);
+      console.error("[Admin] Delete asset error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        bookId,
+        assetType,
+        assetId,
+      });
       alert("Failed to delete asset");
     }
   };
@@ -505,7 +546,14 @@ function AdminDashboardContent() {
         alert(error.error || "Failed to set active asset");
       }
     } catch (error) {
-      console.error("Failed to set active asset:", error);
+      console.error("[Admin] Failed to set active asset:", error);
+      console.error("[Admin] Set active asset error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        bookId,
+        assetType,
+        assetId,
+      });
       alert("Failed to set active asset");
     }
   };
@@ -526,7 +574,13 @@ function AdminDashboardContent() {
         alert(error.error || "Failed to set primary cover");
       }
     } catch (error) {
-      console.error("Failed to set primary cover:", error);
+      console.error("[Admin] Failed to set primary cover:", error);
+      console.error("[Admin] Set primary cover error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        bookId,
+        coverId,
+      });
       alert("Failed to set primary cover");
     }
   };
@@ -547,7 +601,13 @@ function AdminDashboardContent() {
         alert(error.error || "Failed to set active report");
       }
     } catch (error) {
-      console.error("Failed to set active report:", error);
+      console.error("[Admin] Failed to set active report:", error);
+      console.error("[Admin] Set active report error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        bookId,
+        reportId,
+      });
       alert("Failed to set active report");
     }
   };
@@ -569,7 +629,13 @@ function AdminDashboardContent() {
         alert(error.error || "Failed to update user role");
       }
     } catch (error) {
-      console.error("Failed to update user role:", error);
+      console.error("[Admin] Failed to update user role:", error);
+      console.error("[Admin] Update user role error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        userId,
+        newRole,
+      });
       alert("Failed to update user role");
     }
   };
@@ -592,7 +658,12 @@ function AdminDashboardContent() {
         alert(error.error || "Failed to delete user");
       }
     } catch (error) {
-      console.error("Failed to delete user:", error);
+      console.error("[Admin] Failed to delete user:", error);
+      console.error("[Admin] Delete user error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        userId,
+      });
       alert("Failed to delete user");
     }
   };
@@ -638,7 +709,13 @@ function AdminDashboardContent() {
         await fetchData();
       }
     } catch (error) {
-      console.error("Failed to update report status:", error);
+      console.error("[Admin] Failed to update report status:", error);
+      console.error("[Admin] Update report status error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        bookId,
+        status,
+      });
     }
   };
 
@@ -791,7 +868,11 @@ function AdminDashboardContent() {
                               // Wait longer for cookies to be fully cleared
                               await new Promise(resolve => setTimeout(resolve, 500));
                             } catch (error) {
-                              console.error("Sign out error:", error);
+                              console.error("[Admin] Sign out error:", error);
+                              console.error("[Admin] Sign out error details:", {
+                                message: error instanceof Error ? error.message : String(error),
+                                stack: error instanceof Error ? error.stack : undefined,
+                              });
                               // Continue with redirect even if signOut fails
                             }
                             // Force a hard redirect to login page with cache busting
@@ -910,7 +991,12 @@ function AdminDashboardContent() {
                 const data = await response.json();
                 alert(JSON.stringify(data, null, 2));
               } catch (error) {
-                alert("Failed to check disk status: " + error);
+                console.error("[Admin] Failed to check disk status:", error);
+                console.error("[Admin] Disk status check error details:", {
+                  message: error instanceof Error ? error.message : String(error),
+                  stack: error instanceof Error ? error.stack : undefined,
+                });
+                alert("Failed to check disk status: " + (error instanceof Error ? error.message : String(error)));
               }
             }}
             title="Check persistent disk status"
@@ -1092,7 +1178,13 @@ function AdminDashboardContent() {
                                           await fetchData();
                                         }
                                       } catch (error) {
-                                        console.error("Failed to update manuscript status:", error);
+                                        console.error("[Admin] Failed to update manuscript status:", error);
+                                        console.error("[Admin] Update manuscript status error details:", {
+                                          message: error instanceof Error ? error.message : String(error),
+                                          stack: error instanceof Error ? error.stack : undefined,
+                                          bookId: book.id,
+                                          status: newStatus,
+                                        });
                                       }
                                     }}
                                     className="text-xs"
@@ -1236,7 +1328,12 @@ function AdminDashboardContent() {
                                         alert(error.error || "Failed to delete book");
                                       }
                                     } catch (error) {
-                                      console.error("Failed to delete book:", error);
+                                      console.error("[Admin] Failed to delete book:", error);
+                                      console.error("[Admin] Delete book error details:", {
+                                        message: error instanceof Error ? error.message : String(error),
+                                        stack: error instanceof Error ? error.stack : undefined,
+                                        bookId: book.id,
+                                      });
                                       alert("Failed to delete book");
                                     }
                                   }}

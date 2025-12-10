@@ -108,38 +108,52 @@ export async function DELETE(request: NextRequest) {
     for (const book of userBooks) {
       try {
         // Delete summaries
-        await db.delete(summaries).where(eq(summaries.bookId, book.id)).catch(() => {});
-      } catch {}
+        await db.delete(summaries).where(eq(summaries.bookId, book.id));
+      } catch (error) {
+        console.warn(`[Test Cleanup] Failed to delete summaries for book ${book.id}:`, error);
+      }
 
       try {
         // Delete landing pages
-        await db.delete(landingPages).where(eq(landingPages.bookId, book.id)).catch(() => {});
-      } catch {}
+        await db.delete(landingPages).where(eq(landingPages.bookId, book.id));
+      } catch (error) {
+        console.warn(`[Test Cleanup] Failed to delete landing pages for book ${book.id}:`, error);
+      }
 
       try {
         // Delete book covers
-        await db.delete(bookCovers).where(eq(bookCovers.bookId, book.id)).catch(() => {});
-      } catch {}
+        await db.delete(bookCovers).where(eq(bookCovers.bookId, book.id));
+      } catch (error) {
+        console.warn(`[Test Cleanup] Failed to delete book covers for book ${book.id}:`, error);
+      }
 
       try {
         // Delete marketing assets
-        await db.delete(marketingAssets).where(eq(marketingAssets.bookId, book.id)).catch(() => {});
-      } catch {}
+        await db.delete(marketingAssets).where(eq(marketingAssets.bookId, book.id));
+      } catch (error) {
+        console.warn(`[Test Cleanup] Failed to delete marketing assets for book ${book.id}:`, error);
+      }
 
       try {
         // Delete purchases
-        await db.delete(purchases).where(eq(purchases.bookId, book.id)).catch(() => {});
-      } catch {}
+        await db.delete(purchases).where(eq(purchases.bookId, book.id));
+      } catch (error) {
+        console.warn(`[Test Cleanup] Failed to delete purchases for book ${book.id}:`, error);
+      }
 
       try {
         // Delete book features
-        await db.delete(bookFeatures).where(eq(bookFeatures.bookId, book.id)).catch(() => {});
-      } catch {}
+        await db.delete(bookFeatures).where(eq(bookFeatures.bookId, book.id));
+      } catch (error) {
+        console.warn(`[Test Cleanup] Failed to delete book features for book ${book.id}:`, error);
+      }
 
       try {
         // Delete digest jobs
-        await db.delete(digestJobs).where(eq(digestJobs.bookId, book.id)).catch(() => {});
-      } catch {}
+        await db.delete(digestJobs).where(eq(digestJobs.bookId, book.id));
+      } catch (error) {
+        console.warn(`[Test Cleanup] Failed to delete digest jobs for book ${book.id}:`, error);
+      }
 
       try {
         // Delete reports (via book versions)
@@ -151,33 +165,61 @@ export async function DELETE(request: NextRequest) {
         const versionIds = bookVersionsList.map(v => v.id);
         
         if (versionIds.length > 0) {
-          await db.delete(reports).where(inArray(reports.bookVersionId, versionIds)).catch(() => {});
+          await db.delete(reports).where(inArray(reports.bookVersionId, versionIds));
         }
-      } catch {}
+      } catch (error) {
+        console.warn(`[Test Cleanup] Failed to delete reports for book ${book.id}:`, error);
+      }
 
       try {
         // Delete book versions
-        await db.delete(bookVersions).where(eq(bookVersions.bookId, book.id)).catch(() => {});
-      } catch {}
+        await db.delete(bookVersions).where(eq(bookVersions.bookId, book.id));
+      } catch (error) {
+        console.warn(`[Test Cleanup] Failed to delete book versions for book ${book.id}:`, error);
+      }
     }
 
     // 3. Delete all books for this user
-    await db.delete(books).where(eq(books.userId, userId)).catch(() => {});
+    try {
+      await db.delete(books).where(eq(books.userId, userId));
+    } catch (error) {
+      console.warn(`[Test Cleanup] Failed to delete books for user ${userId}:`, error);
+    }
 
     // 4. Delete purchases (in case any remain)
-    await db.delete(purchases).where(eq(purchases.userId, userId)).catch(() => {});
+    try {
+      await db.delete(purchases).where(eq(purchases.userId, userId));
+    } catch (error) {
+      console.warn(`[Test Cleanup] Failed to delete purchases for user ${userId}:`, error);
+    }
 
     // 5. Delete notifications
-    await db.delete(notifications).where(eq(notifications.userId, userId)).catch(() => {});
+    try {
+      await db.delete(notifications).where(eq(notifications.userId, userId));
+    } catch (error) {
+      console.warn(`[Test Cleanup] Failed to delete notifications for user ${userId}:`, error);
+    }
 
     // 6. Delete verification tokens
-    await db.delete(verificationTokens).where(eq(verificationTokens.identifier, email.toLowerCase().trim())).catch(() => {});
+    try {
+      await db.delete(verificationTokens).where(eq(verificationTokens.identifier, email.toLowerCase().trim()));
+    } catch (error) {
+      console.warn(`[Test Cleanup] Failed to delete verification tokens for ${email}:`, error);
+    }
 
     // 7. Delete sessions
-    await db.delete(betterAuthSession).where(eq(betterAuthSession.userId, userId)).catch(() => {});
+    try {
+      await db.delete(betterAuthSession).where(eq(betterAuthSession.userId, userId));
+    } catch (error) {
+      console.warn(`[Test Cleanup] Failed to delete sessions for user ${userId}:`, error);
+    }
 
     // 8. Delete accounts
-    await db.delete(betterAuthAccount).where(eq(betterAuthAccount.userId, userId)).catch(() => {});
+    try {
+      await db.delete(betterAuthAccount).where(eq(betterAuthAccount.userId, userId));
+    } catch (error) {
+      console.warn(`[Test Cleanup] Failed to delete accounts for user ${userId}:`, error);
+    }
 
     // 9. Finally, delete the user
     await db.delete(users).where(eq(users.id, userId));

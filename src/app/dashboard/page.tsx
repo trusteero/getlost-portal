@@ -195,7 +195,13 @@ function DashboardContent() {
                 }
               }
             } catch (error) {
-              console.error("Failed to verify/check purchase:", error);
+              console.error("[Dashboard] Failed to verify/check purchase:", error);
+              console.error("[Dashboard] Purchase verification error details:", {
+                message: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                sessionId: params.get('session_id'),
+                purchaseId: params.get('purchaseId'),
+              });
             }
             return false;
           };
@@ -713,7 +719,12 @@ function DashboardContent() {
         router.push("/login");
       }
     } catch (error) {
-      console.error("Failed to fetch books:", error);
+      console.error("[Dashboard] Failed to fetch books:", error);
+      console.error("[Dashboard] Fetch books error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        userId: activeSession?.id,
+      });
     } finally {
       // Only clear loading if we're not waiting for example books
       if (!shouldKeepLoading) {
@@ -767,7 +778,12 @@ function DashboardContent() {
       setHasUploadPermission(false);
       return false;
     } catch (error) {
-      console.error("Failed to check upload permission:", error);
+      console.error("[Dashboard] Failed to check upload permission:", error);
+      console.error("[Dashboard] Permission check error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        userId: activeSession?.id,
+      });
       setHasUploadPermission(false);
       return false;
     } finally {
@@ -856,7 +872,12 @@ function DashboardContent() {
 
       setUploadError("Failed to process payment. Please try again.");
     } catch (error) {
-      console.error("Failed to purchase upload permission:", error);
+      console.error("[Dashboard] Failed to purchase upload permission:", error);
+      console.error("[Dashboard] Purchase error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        userId: activeSession?.id,
+      });
       setUploadError("Failed to process payment. Please try again.");
     } finally {
       setProcessingPayment(false);
@@ -967,6 +988,14 @@ function DashboardContent() {
         }
       }, 100);
     } catch (error) {
+      console.error("[Dashboard] Failed to create book:", error);
+      console.error("[Dashboard] Upload error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        fileName: uploadFile?.name,
+        title: uploadTitle,
+        authorName: uploadAuthorName,
+      });
       setUploadError("Failed to create book. Please try again.");
     } finally {
       setUploading(false);

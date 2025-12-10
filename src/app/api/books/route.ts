@@ -182,8 +182,9 @@ export async function GET(request: NextRequest) {
                   }
                 }
                 // If not precanned (admin-uploaded), skip delay logic and continue to check viewed status
-              } catch {
+              } catch (error) {
                 // Invalid metadata, continue with normal check (treat as admin-uploaded)
+                console.warn(`[Books API] Failed to parse metadata for asset ${anyAsset?.id || 'unknown'}:`, error);
               }
             }
             // If no purchase or not precanned, continue to check viewed status (admin-uploaded assets are accessible)
@@ -215,7 +216,8 @@ export async function GET(request: NextRequest) {
                 try {
                   const metadata = JSON.parse(asset.metadata);
                   return metadata.variant === "html";
-                } catch {
+                } catch (error) {
+                  console.warn(`[Books API] Failed to parse metadata for marketing asset ${asset.id}:`, error);
                   return false;
                 }
               }) || undefined;
@@ -245,7 +247,8 @@ export async function GET(request: NextRequest) {
                 try {
                   const metadata = JSON.parse(cover.metadata);
                   return metadata.variant === "html";
-                } catch {
+                } catch (error) {
+                  console.warn(`[Books API] Failed to parse metadata for cover ${cover.id}:`, error);
                   return false;
                 }
               }) || undefined;
@@ -424,7 +427,9 @@ export async function GET(request: NextRequest) {
                 try {
                   const notes = JSON.parse(report.adminNotes);
                   if (notes.precanned === true) return true;
-                } catch {}
+                } catch (error) {
+                  console.warn(`[Books API] Failed to parse adminNotes for report ${report.id}:`, error);
+                }
               }
             }
           }
@@ -441,7 +446,9 @@ export async function GET(request: NextRequest) {
               try {
                 const metadata = JSON.parse(asset.metadata);
                 if (metadata.precanned === true) return true;
-              } catch {}
+              } catch (error) {
+                console.warn(`[Books API] Failed to parse metadata for marketing asset ${asset.id}:`, error);
+              }
             }
           }
           
@@ -457,7 +464,9 @@ export async function GET(request: NextRequest) {
               try {
                 const metadata = JSON.parse(cover.metadata);
                 if (metadata.precanned === true) return true;
-              } catch {}
+              } catch (error) {
+                console.warn(`[Books API] Failed to parse metadata for cover ${cover.id}:`, error);
+              }
             }
           }
           
@@ -473,7 +482,9 @@ export async function GET(request: NextRequest) {
               try {
                 const metadata = JSON.parse(landing.metadata);
                 if (metadata.precanned === true) return true;
-              } catch {}
+              } catch (error) {
+                console.warn(`[Books API] Failed to parse metadata for landing page ${landing.id}:`, error);
+              }
             }
           }
           
@@ -665,6 +676,10 @@ export async function POST(request: NextRequest) {
       initializeMigrations();
     } catch (migrateError) {
       console.warn("[Books API] Migration check failed, continuing anyway:", migrateError);
+      console.warn("[Books API] Migration error details:", {
+        message: migrateError instanceof Error ? migrateError.message : String(migrateError),
+        stack: migrateError instanceof Error ? migrateError.stack : undefined,
+      });
     }
 
     const newVersion = await db
