@@ -1291,12 +1291,11 @@ function DashboardContent() {
       },
     ];
 
-    // Use digest job word count if available, otherwise estimate from file size
+    // Only show word count if we have accurate data from digest job
+    // Hide inaccurate estimates to avoid confusion
     const wordCount = book.digestJob?.words 
       ? `${book.digestJob.words.toLocaleString()} words`
-      : book.latestVersion?.fileSize 
-        ? `${Math.round((book.latestVersion.fileSize / 1024) * 500).toLocaleString()} words`
-        : "Unknown word count";
+      : null; // Hide word count if not available from digest job
 
     // Use digest job cover URL if available, otherwise use book coverImageUrl
     const coverImage = book.digestJob?.coverUrl || book.coverImageUrl || "/placeholder.svg";

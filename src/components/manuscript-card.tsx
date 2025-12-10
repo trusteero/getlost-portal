@@ -39,7 +39,7 @@ interface ManuscriptCardProps {
   id: string;
   title: string;
   subtitle: string;
-  wordCount: string;
+  wordCount: string | null;
   genre: string;
   steps: ProgressStep[];
   coverImage: string;
@@ -464,7 +464,9 @@ export const ManuscriptCard = ({
                 )}
               </div>
               <p className="text-base text-gray-600 font-medium mb-1">{subtitle}</p>
-              <p className="text-sm text-gray-500 leading-relaxed">{wordCount} • {genre.replace(/^[A-Z]+\d+\s*/, '')}</p>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                {wordCount ? `${wordCount} • ` : ''}{genre.replace(/^[A-Z]+\d+\s*/, '')}
+              </p>
             </div>
 
             {/* Enhanced Progress Tracker - Mobile: Horizontal Scroll, Desktop: 5 Column Grid */}
