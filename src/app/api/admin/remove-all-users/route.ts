@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Database from "better-sqlite3";
 import { env } from "@/env";
-import { isAdminFromRequest } from "@/server/auth";
+import { isAdminFromRequest, getSessionFromRequest } from "@/server/auth";
+import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,18 @@ export async function POST(request: NextRequest) {
       { error: "Forbidden: Admin access required" },
       { status: 403 }
     );
+  }
+
+  // Rate limiting for admin endpoints
+  const session = await getSessionFromRequest(request);
+  const rateLimitResponse = rateLimitMiddleware(
+    request,
+    "admin:remove-all-users",
+    RATE_LIMITS.ADMIN,
+    session?.user?.id
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   try {

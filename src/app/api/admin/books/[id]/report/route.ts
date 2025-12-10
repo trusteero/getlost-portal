@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminFromRequest } from "@/server/auth";
+import { isAdminFromRequest, getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookVersions, reports } from "@/server/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -10,6 +10,7 @@ import { bundleReportHtmlFromContent } from "@/server/utils/bundle-report-html";
 import { storeUploadedAsset, findVideoFiles, rewriteVideoReferences } from "@/server/utils/store-uploaded-asset";
 import AdmZip from "adm-zip";
 import { randomUUID } from "crypto";
+import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 
 export const dynamic = 'force-dynamic';
 
@@ -24,9 +25,19 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Get session to get user ID for analyzedBy field
-  const { getSessionFromRequest } = await import("@/server/auth");
+  // Get session to get user ID for analyzedBy field and rate limiting
   const session = await getSessionFromRequest(request);
+
+  // Rate limiting for admin upload endpoints
+  const rateLimitResponse = rateLimitMiddleware(
+    request,
+    "admin:upload-report",
+    RATE_LIMITS.ADMIN,
+    session?.user?.id
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

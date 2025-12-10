@@ -3,8 +3,19 @@ import { db } from "@/server/db";
 import { purchases, bookFeatures } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import type Stripe from "stripe";
+import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 
 export async function POST(request: NextRequest) {
+  // Rate limiting for webhook endpoint (by IP, not user)
+  // Note: Webhooks should be verified by Stripe signature, but rate limiting adds extra protection
+  const rateLimitResponse = rateLimitMiddleware(
+    request,
+    "webhook:stripe",
+    RATE_LIMITS.WEBHOOK
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 

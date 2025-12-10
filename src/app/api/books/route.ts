@@ -7,6 +7,7 @@ import { extractEpubMetadata } from "@/server/utils/extract-epub-metadata";
 import { promises as fs } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
+import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 import {
   importPrecannedContentForBook,
   findPrecannedCoverImageForFilename,
@@ -512,6 +513,17 @@ export async function POST(request: NextRequest) {
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limiting for book upload endpoint
+  const rateLimitResponse = rateLimitMiddleware(
+    request,
+    "books:upload",
+    RATE_LIMITS.UPLOAD,
+    session.user.id
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   try {

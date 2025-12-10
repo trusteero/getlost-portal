@@ -3,6 +3,7 @@ import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookVersions } from "@/server/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 
 export async function POST(
   request: NextRequest,
@@ -13,6 +14,17 @@ export async function POST(
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limiting for book version upload endpoint
+  const rateLimitResponse = rateLimitMiddleware(
+    request,
+    "books:version-upload",
+    RATE_LIMITS.UPLOAD,
+    session.user.id
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   try {

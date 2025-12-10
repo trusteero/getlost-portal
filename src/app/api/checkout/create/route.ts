@@ -3,6 +3,7 @@ import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, purchases, bookFeatures } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
+import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 
 const FEATURE_PRICES: Record<string, number> = {
   "summary": 0,
@@ -48,6 +49,17 @@ export async function POST(request: NextRequest) {
   
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limiting for checkout/purchase endpoint
+  const rateLimitResponse = rateLimitMiddleware(
+    request,
+    "checkout:create",
+    RATE_LIMITS.PURCHASE,
+    session.user.id
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   try {
