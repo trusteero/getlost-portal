@@ -72,79 +72,82 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        // Update purchase status (only if not already completed)
-        await db
-          .update(purchases)
-          .set({
-            status: "completed",
-            paymentIntentId: session.payment_intent as string,
-            completedAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(eq(purchases.id, purchaseId));
+        // Wrap all database operations in a transaction for data integrity
+        await db.transaction(async (tx) => {
+          // Update purchase status (only if not already completed)
+          await tx
+            .update(purchases)
+            .set({
+              status: "completed",
+              paymentIntentId: session.payment_intent as string,
+              completedAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(purchases.id, purchaseId));
 
-        // Get purchase details after update
-        const [purchase] = await db
-          .select()
-          .from(purchases)
-          .where(eq(purchases.id, purchaseId))
-          .limit(1);
-
-        if (purchase) {
-          // For user-level purchases (book-upload), we don't need to create bookFeatures
-          // The purchase record itself is sufficient
-          if (purchase.featureType === "book-upload") {
-            console.log(`[Webhook] Book upload permission purchased for user ${purchase.userId}`);
-            break; // No bookFeatures needed for user-level purchases
-          }
-
-          // Create or update feature record for book-specific features
-          if (!purchase.bookId) {
-            console.warn(`[Webhook] Purchase ${purchaseId} has no bookId but is not book-upload`);
-            break;
-          }
-
-          // Idempotency: Check if feature already exists and is purchased
-          const existingFeature = await db
+          // Get purchase details after update (within transaction)
+          const [purchase] = await tx
             .select()
-            .from(bookFeatures)
-            .where(
-              and(
-                eq(bookFeatures.bookId, purchase.bookId),
-                eq(bookFeatures.featureType, purchase.featureType)
-              )
-            )
+            .from(purchases)
+            .where(eq(purchases.id, purchaseId))
             .limit(1);
 
-          if (existingFeature.length > 0) {
-            // Idempotency: Only update if not already purchased
-            if (existingFeature[0]!.status === "purchased") {
-              console.log(`[Webhook] Feature ${purchase.featureType} for book ${purchase.bookId} already purchased, skipping duplicate processing`);
-            } else {
-              await db
-                .update(bookFeatures)
-                .set({
-                  status: "purchased",
-                  unlockedAt: new Date(),
-                  purchasedAt: new Date(),
-                  price: purchase.amount,
-                  updatedAt: new Date(),
-                })
-                .where(eq(bookFeatures.id, existingFeature[0]!.id));
-              console.log(`[Webhook] Updated feature ${purchase.featureType} for book ${purchase.bookId} to purchased`);
+          if (purchase) {
+            // For user-level purchases (book-upload), we don't need to create bookFeatures
+            // The purchase record itself is sufficient
+            if (purchase.featureType === "book-upload") {
+              console.log(`[Webhook] Book upload permission purchased for user ${purchase.userId}`);
+              return; // No bookFeatures needed for user-level purchases
             }
-          } else {
-            await db.insert(bookFeatures).values({
-              bookId: purchase.bookId,
-              featureType: purchase.featureType,
-              status: "purchased",
-              unlockedAt: new Date(),
-              purchasedAt: new Date(),
-              price: purchase.amount,
-            });
-            console.log(`[Webhook] Created feature ${purchase.featureType} for book ${purchase.bookId}`);
+
+            // Create or update feature record for book-specific features
+            if (!purchase.bookId) {
+              console.warn(`[Webhook] Purchase ${purchaseId} has no bookId but is not book-upload`);
+              return;
+            }
+
+            // Idempotency: Check if feature already exists and is purchased
+            const existingFeature = await tx
+              .select()
+              .from(bookFeatures)
+              .where(
+                and(
+                  eq(bookFeatures.bookId, purchase.bookId),
+                  eq(bookFeatures.featureType, purchase.featureType)
+                )
+              )
+              .limit(1);
+
+            if (existingFeature.length > 0) {
+              // Idempotency: Only update if not already purchased
+              if (existingFeature[0]!.status === "purchased") {
+                console.log(`[Webhook] Feature ${purchase.featureType} for book ${purchase.bookId} already purchased, skipping duplicate processing`);
+              } else {
+                await tx
+                  .update(bookFeatures)
+                  .set({
+                    status: "purchased",
+                    unlockedAt: new Date(),
+                    purchasedAt: new Date(),
+                    price: purchase.amount,
+                    updatedAt: new Date(),
+                  })
+                  .where(eq(bookFeatures.id, existingFeature[0]!.id));
+                console.log(`[Webhook] Updated feature ${purchase.featureType} for book ${purchase.bookId} to purchased`);
+              }
+            } else {
+              await tx.insert(bookFeatures).values({
+                bookId: purchase.bookId,
+                featureType: purchase.featureType,
+                status: "purchased",
+                unlockedAt: new Date(),
+                purchasedAt: new Date(),
+                price: purchase.amount,
+              });
+              console.log(`[Webhook] Created feature ${purchase.featureType} for book ${purchase.bookId}`);
+            }
           }
-        }
+        });
 
         break;
       }
