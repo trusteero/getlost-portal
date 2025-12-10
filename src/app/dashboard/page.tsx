@@ -803,10 +803,10 @@ export default function Dashboard() {
       if (purchaseResponse.ok) {
         const data = await purchaseResponse.json();
         console.log("[Dashboard] Purchase response:", data);
-        // Check if purchase was successful or if user already has permission
-        if (data.purchase?.status === "completed" || data.message?.includes("already purchased")) {
-          // Purchase successful or already exists - refresh permission and open upload modal
-          console.log("[Dashboard] Purchase successful, checking permission...");
+        // Check if purchase was successful or if user already has REMAINING permission
+        if (data.purchase?.status === "completed" || (data.message?.includes("already purchased") && data.remainingPermissions > 0)) {
+          // Purchase successful or already has remaining permissions - refresh permission and open upload modal
+          console.log("[Dashboard] Purchase successful or has remaining permissions, checking permission...");
           // Wait a moment for database to be updated
           await new Promise(resolve => setTimeout(resolve, 200));
           const hasPermission = await checkUploadPermission();
@@ -818,6 +818,12 @@ export default function Dashboard() {
           } else {
             console.warn("[Dashboard] Permission check returned false after purchase");
           }
+          return;
+        } else if (data.message?.includes("already purchased") && data.remainingPermissions === 0) {
+          // User has purchases but has used all permissions - this shouldn't happen, but handle gracefully
+          console.warn("[Dashboard] User has purchases but no remaining permissions - this should have been caught earlier");
+          setShowPaymentModal(false);
+          // Don't open upload modal - they need to purchase again
           return;
         }
       }
