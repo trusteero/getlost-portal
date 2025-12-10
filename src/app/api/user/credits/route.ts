@@ -58,36 +58,16 @@ export async function GET(request: NextRequest) {
       })));
     }
 
-    // Count completed purchases for the credits display
+    // Count ONLY completed purchases for the credits display
+    // Pending purchases do NOT count - user must wait for payment to complete
     const completedPurchases = userLevelPurchases.filter(p => p.status === "completed");
     
-    // Also check for pending purchases that have a payment method
-    // (these went through checkout and should be valid, even if webhook hasn't processed them yet)
-    // Accept any pending purchase with payment method (regardless of age) to match upload-permission logic
-    const validPendingPurchases = userLevelPurchases.filter(p => {
-      if (p.status !== "pending") return false;
-      if (!p.paymentMethod) return false; // Must have payment method (went through checkout)
-      const createdAt = typeof p.createdAt === 'number' ? p.createdAt : (p.createdAt ? new Date(p.createdAt).getTime() / 1000 : 0);
-      return createdAt > 0; // Valid timestamp
-    });
+    console.log(`[Credits] User ${session.user.id}: Found ${completedPurchases.length} completed purchase(s)`);
     
-    // Also check for any other statuses that might indicate a valid purchase
-    // (e.g., if webhook set it to a different status)
-    const otherValidPurchases = userLevelPurchases.filter(p => {
-      if (p.status === "completed" || p.status === "pending") return false; // Already counted
-      // If it has a payment method and completedAt, it's likely valid
-      return !!(p.paymentMethod && p.completedAt);
-    });
+    const uploadCount = completedPurchases.length;
     
-    // Count all valid purchases
-    const allValidPurchases = [...completedPurchases, ...validPendingPurchases, ...otherValidPurchases];
-    
-    console.log(`[Credits] User ${session.user.id}: Found ${completedPurchases.length} completed, ${validPendingPurchases.length} valid pending, ${otherValidPurchases.length} other valid purchase(s)`);
-    
-    const uploadCount = allValidPurchases.length;
-    
-    // Calculate total funds spent (in cents, convert to dollars)
-    const totalSpent = allValidPurchases.reduce((sum, purchase) => sum + (purchase.amount || 0), 0);
+    // Calculate total funds spent (in cents, convert to dollars) - only from completed purchases
+    const totalSpent = completedPurchases.reduce((sum, purchase) => sum + (purchase.amount || 0), 0);
     const totalSpentDollars = totalSpent / 100;
 
     // Count actual books uploaded by this user (excluding sample books)
@@ -110,10 +90,10 @@ export async function GET(request: NextRequest) {
     console.log(`[Credits] User ${session.user.id}: ${uploadCount} valid purchase(s), ${booksUploadedCount} book(s) uploaded, total spent: $${totalSpentDollars.toFixed(2)}`);
 
     return NextResponse.json({
-      uploadPermissionsPurchased: uploadCount, // Number of times user purchased upload permission
+      uploadPermissionsPurchased: uploadCount, // Number of times user purchased upload permission (only completed)
       booksUploaded: booksUploadedCount, // Number of books actually uploaded
       totalSpent: totalSpentDollars,
-      uploadPurchases: allValidPurchases.map(p => ({
+      uploadPurchases: completedPurchases.map(p => ({
         id: p.id,
         amount: p.amount / 100, // Convert cents to dollars
         completedAt: p.completedAt,
