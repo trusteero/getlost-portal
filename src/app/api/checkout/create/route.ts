@@ -285,12 +285,12 @@ export async function POST(request: NextRequest) {
       apiVersion: "2025-11-17.clover", // Use API version expected by Stripe package types
     });
 
-    // Wrap purchase and feature creation in a transaction for data integrity
-    // Note: better-sqlite3 transactions are synchronous, not async
+    // Create purchase record directly (no transaction needed for single insert)
+    // Note: better-sqlite3 transactions can be tricky, so we'll use direct insert
     const purchaseId = crypto.randomUUID();
     console.log(`[Checkout] Creating purchase ${purchaseId} for user ${session.user.id}, feature ${featureType}`);
     
-    db.transaction((tx) => {
+    try {
       // Create purchase record with pending status
       const purchaseValues: any = {
         id: purchaseId,
@@ -308,13 +308,13 @@ export async function POST(request: NextRequest) {
       }
       // For book-upload, we don't include bookId at all (it will be null/undefined)
       
-      tx.insert(purchases).values(purchaseValues);
-      console.log(`[Checkout] ✅ Inserted purchase ${purchaseId} into database (within transaction)`);
+      await db.insert(purchases).values(purchaseValues);
+      console.log(`[Checkout] ✅ Inserted purchase ${purchaseId} into database`);
 
       // For book-specific features, create or update feature record
       // User-level features (book-upload) don't need bookFeatures records
       if (featureType !== "book-upload" && bookId) {
-        const existingFeature = tx
+        const existingFeature = await db
           .select()
           .from(bookFeatures)
           .where(
@@ -323,11 +323,10 @@ export async function POST(request: NextRequest) {
               eq(bookFeatures.featureType, featureType)
             )
           )
-          .limit(1)
-          .all();
+          .limit(1);
 
         if (existingFeature.length > 0) {
-          tx
+          await db
             .update(bookFeatures)
             .set({
               status: "purchased",
@@ -337,7 +336,7 @@ export async function POST(request: NextRequest) {
             })
             .where(eq(bookFeatures.id, existingFeature[0]!.id));
         } else {
-          tx.insert(bookFeatures).values({
+          await db.insert(bookFeatures).values({
             id: crypto.randomUUID(),
             bookId,
             featureType,
@@ -347,29 +346,40 @@ export async function POST(request: NextRequest) {
           });
         }
       }
-    });
-    
-    // Verify purchase was created
-    const [verifyPurchase] = await db
-      .select()
-      .from(purchases)
-      .where(eq(purchases.id, purchaseId))
-      .limit(1);
-    
-    if (!verifyPurchase) {
-      console.error(`[Checkout] ❌ Purchase ${purchaseId} was not created! Transaction may have failed.`);
+      
+      // Verify purchase was created
+      const [verifyPurchase] = await db
+        .select()
+        .from(purchases)
+        .where(eq(purchases.id, purchaseId))
+        .limit(1);
+      
+      if (!verifyPurchase) {
+        console.error(`[Checkout] ❌ Purchase ${purchaseId} was not created! Insert may have failed.`);
+        return NextResponse.json(
+          { error: "Failed to create purchase record" },
+          { status: 500 }
+        );
+      }
+      
+      console.log(`[Checkout] ✅ Verified purchase ${purchaseId} exists in database:`, {
+        id: verifyPurchase.id,
+        status: verifyPurchase.status,
+        userId: verifyPurchase.userId,
+        featureType: verifyPurchase.featureType,
+      });
+    } catch (insertError: any) {
+      console.error(`[Checkout] ❌ Failed to create purchase ${purchaseId}:`, insertError);
+      console.error(`[Checkout] Error details:`, {
+        message: insertError?.message,
+        stack: insertError?.stack,
+        code: insertError?.code,
+      });
       return NextResponse.json(
-        { error: "Failed to create purchase record" },
+        { error: "Failed to create purchase record", details: insertError?.message },
         { status: 500 }
       );
     }
-    
-    console.log(`[Checkout] ✅ Verified purchase ${purchaseId} exists in database:`, {
-      id: verifyPurchase.id,
-      status: verifyPurchase.status,
-      userId: verifyPurchase.userId,
-      featureType: verifyPurchase.featureType,
-    });
 
     // Get base URL for redirects
     const baseURL = getBaseURL(request);
