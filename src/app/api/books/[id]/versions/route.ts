@@ -40,6 +40,16 @@ export async function POST(
       return NextResponse.json({ error: "File is required" }, { status: 400 });
     }
 
+    // Server-side file size validation
+    const { validateFileSize } = await import("@/server/utils/validate-file-size");
+    const fileSizeValidation = validateFileSize(file);
+    if (!fileSizeValidation.isValid) {
+      return NextResponse.json(
+        { error: fileSizeValidation.error },
+        { status: 400 }
+      );
+    }
+
     // Get the latest version number
     const latestVersion = await db
       .select()

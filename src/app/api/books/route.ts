@@ -528,6 +528,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "File is required" }, { status: 400 });
     }
 
+    // Server-side file size validation
+    const { validateFileSize } = await import("@/server/utils/validate-file-size");
+    const fileSizeValidation = validateFileSize(file);
+    if (!fileSizeValidation.isValid) {
+      return NextResponse.json(
+        { error: fileSizeValidation.error },
+        { status: 400 }
+      );
+    }
+
+    // Validate cover image size if provided
+    if (coverImage) {
+      const coverSizeValidation = validateFileSize(coverImage);
+      if (!coverSizeValidation.isValid) {
+        return NextResponse.json(
+          { error: `Cover image: ${coverSizeValidation.error}` },
+          { status: 400 }
+        );
+      }
+    }
+
     // Use filename (without extension) as title if title not provided
     const bookTitle = title?.trim() || path.basename(file.name, path.extname(file.name));
 

@@ -137,6 +137,16 @@ export async function PATCH(
 
       const coverImage = formData.get("coverImage") as File | null;
       if (coverImage) {
+        // Server-side file size validation
+        const { validateFileSize } = await import("@/server/utils/validate-file-size");
+        const coverSizeValidation = validateFileSize(coverImage);
+        if (!coverSizeValidation.isValid) {
+          return NextResponse.json(
+            { error: `Cover image: ${coverSizeValidation.error}` },
+            { status: 400 }
+          );
+        }
+
         // Save cover image to file system (same as POST endpoint)
         // Use process.cwd() to ensure we resolve from project root
         const coverStoragePath = process.env.COVER_STORAGE_PATH || path.join(process.cwd(), 'uploads', 'covers');

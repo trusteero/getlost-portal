@@ -40,6 +40,16 @@ export async function POST(
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
+    // Server-side file size validation
+    const { validateFileSize } = await import("@/server/utils/validate-file-size");
+    const fileSizeValidation = validateFileSize(file);
+    if (!fileSizeValidation.isValid) {
+      return NextResponse.json(
+        { error: fileSizeValidation.error },
+        { status: 400 }
+      );
+    }
+
     // Validate file type - accept ZIP or HTML
     const isZip = file.name.endsWith('.zip') || file.type === 'application/zip' || file.type === 'application/x-zip-compressed';
     const isHtml = file.name.endsWith('.html') && file.type === 'text/html';
