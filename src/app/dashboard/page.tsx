@@ -1262,7 +1262,7 @@ function DashboardContent() {
         title: "Manuscript Report",
         status: getFeatureStatus("manuscript-report"),
         action: "View a comprehensive review and marketing report.",
-        price: getFeatureStatus("manuscript-report") === 'complete' ? null : "$149.99",
+        price: null, // Price removed per user request
         buttonText: getButtonText("manuscript-report", getFeatureStatus("manuscript-report")),
       },
       {
