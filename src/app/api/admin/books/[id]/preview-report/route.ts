@@ -49,13 +49,19 @@ export async function POST(
       );
     }
 
-    // Validate it's a ZIP or HTML file
+    // Server-side file type validation for asset upload (ZIP or HTML)
+    const { validateAssetOrHtmlFileType } = await import("@/server/utils/validate-file-type");
+    const fileTypeValidation = validateAssetOrHtmlFileType(file);
+    if (!fileTypeValidation.isValid) {
+      return NextResponse.json(
+        { error: fileTypeValidation.error },
+        { status: 400 }
+      );
+    }
+
+    // Determine file type for processing
     const isZip = file.name.endsWith('.zip') || file.type === 'application/zip' || file.type === 'application/x-zip-compressed';
     const isHtml = file.name.endsWith('.html') && file.type === 'text/html';
-    
-    if (!isZip && !isHtml) {
-      return NextResponse.json({ error: "Only ZIP files (containing HTML + assets) or HTML files are allowed" }, { status: 400 });
-    }
 
     // Get the latest version of the book
     const [latestVersion] = await db

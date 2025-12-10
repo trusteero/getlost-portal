@@ -570,12 +570,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Server-side file type validation for manuscript
+    const { validateManuscriptFileType } = await import("@/server/utils/validate-file-type");
+    const fileTypeValidation = validateManuscriptFileType(file);
+    if (!fileTypeValidation.isValid) {
+      return NextResponse.json(
+        { error: fileTypeValidation.error },
+        { status: 400 }
+      );
+    }
+
     // Validate cover image size if provided
     if (coverImage) {
       const coverSizeValidation = validateFileSize(coverImage);
       if (!coverSizeValidation.isValid) {
         return NextResponse.json(
           { error: `Cover image: ${coverSizeValidation.error}` },
+          { status: 400 }
+        );
+      }
+
+      // Server-side file type validation for cover image
+      const { validateImageFileType } = await import("@/server/utils/validate-file-type");
+      const coverTypeValidation = validateImageFileType(coverImage);
+      if (!coverTypeValidation.isValid) {
+        return NextResponse.json(
+          { error: `Cover image: ${coverTypeValidation.error}` },
           { status: 400 }
         );
       }

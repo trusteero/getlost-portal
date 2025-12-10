@@ -55,14 +55,20 @@ export async function POST(
       );
     }
 
-    // Check file type
+    // Server-side file type validation for report
+    const { validateReportFileType } = await import("@/server/utils/validate-file-type");
+    const fileTypeValidation = validateReportFileType(file);
+    if (!fileTypeValidation.isValid) {
+      return NextResponse.json(
+        { error: fileTypeValidation.error },
+        { status: 400 }
+      );
+    }
+
+    // Determine file type for processing
     const fileType = file.type;
     const isHtml = fileType === "text/html" || file.name.endsWith(".html");
     const isPdf = fileType === "application/pdf" || file.name.endsWith(".pdf");
-
-    if (!isHtml && !isPdf) {
-      return NextResponse.json({ error: "File must be HTML or PDF" }, { status: 400 });
-    }
 
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     const reportStoragePath =

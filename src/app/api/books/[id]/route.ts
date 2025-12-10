@@ -147,6 +147,16 @@ export async function PATCH(
           );
         }
 
+        // Server-side file type validation for cover image
+        const { validateImageFileType } = await import("@/server/utils/validate-file-type");
+        const coverTypeValidation = validateImageFileType(coverImage);
+        if (!coverTypeValidation.isValid) {
+          return NextResponse.json(
+            { error: `Cover image: ${coverTypeValidation.error}` },
+            { status: 400 }
+          );
+        }
+
         // Save cover image to file system (same as POST endpoint)
         // Use process.cwd() to ensure we resolve from project root
         const coverStoragePath = process.env.COVER_STORAGE_PATH || path.join(process.cwd(), 'uploads', 'covers');

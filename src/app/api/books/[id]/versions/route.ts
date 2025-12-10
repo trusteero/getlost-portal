@@ -62,6 +62,16 @@ export async function POST(
       );
     }
 
+    // Server-side file type validation for manuscript
+    const { validateManuscriptFileType } = await import("@/server/utils/validate-file-type");
+    const fileTypeValidation = validateManuscriptFileType(file);
+    if (!fileTypeValidation.isValid) {
+      return NextResponse.json(
+        { error: fileTypeValidation.error },
+        { status: 400 }
+      );
+    }
+
     // Get the latest version number
     const latestVersion = await db
       .select()
