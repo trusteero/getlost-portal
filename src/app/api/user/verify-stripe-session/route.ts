@@ -72,39 +72,68 @@ export async function POST(request: NextRequest) {
       console.log(`[Verify Session] Session ${sessionId} status: ${checkoutSession.payment_status}, status: ${checkoutSession.status}`);
 
       // If payment is completed, update the purchase
-      // Check both payment_status and status - either "paid" or "complete" indicates success
+      // Stripe checkout session is complete when:
+      // - status is "complete" (session completed)
+      // - payment_status is "paid" (payment succeeded)
+      // - status is NOT "expired" or "open" (not still in progress)
       const isPaymentComplete = 
-        (checkoutSession.payment_status === "paid" || checkoutSession.status === "complete") &&
-        checkoutSession.status !== "expired" &&
-        checkoutSession.status !== "open"; // Not still open/expired
+        checkoutSession.status === "complete" || 
+        (checkoutSession.payment_status === "paid" && checkoutSession.status !== "expired" && checkoutSession.status !== "open");
       
       console.log(`[Verify Session] Payment check: payment_status=${checkoutSession.payment_status}, status=${checkoutSession.status}, isPaymentComplete=${isPaymentComplete}`);
+      console.log(`[Verify Session] Full session data:`, {
+        id: checkoutSession.id,
+        status: checkoutSession.status,
+        payment_status: checkoutSession.payment_status,
+        payment_intent: checkoutSession.payment_intent,
+        client_reference_id: checkoutSession.client_reference_id,
+      });
       
       if (isPaymentComplete) {
         // Update purchase status (idempotent - safe to call multiple times)
-        db.transaction((tx) => {
-          tx.update(purchases)
-            .set({
-              status: "completed",
-              paymentIntentId: checkoutSession.payment_intent as string,
-              completedAt: new Date(),
-              updatedAt: new Date(),
-            })
-            .where(eq(purchases.id, purchaseId));
-        });
+        // Use direct update (better-sqlite3 doesn't need transaction for single operation)
+        await db
+          .update(purchases)
+          .set({
+            status: "completed",
+            paymentIntentId: checkoutSession.payment_intent as string,
+            completedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(purchases.id, purchaseId));
 
-        // Get updated purchase
+        // Get updated purchase to verify the update worked
         const [updatedPurchase] = await db
           .select()
           .from(purchases)
           .where(eq(purchases.id, purchaseId))
           .limit(1);
 
+        if (!updatedPurchase) {
+          console.error(`[Verify Session] ❌ Purchase ${purchaseId} not found after update!`);
+          return NextResponse.json({
+            success: false,
+            error: "Purchase not found after update",
+            purchaseId,
+          }, { status: 500 });
+        }
+
+        if (updatedPurchase.status !== "completed") {
+          console.error(`[Verify Session] ❌ Purchase ${purchaseId} status is still "${updatedPurchase.status}", not "completed"!`);
+          return NextResponse.json({
+            success: false,
+            error: "Purchase status update failed",
+            purchase: updatedPurchase,
+            hasPermission: false,
+          }, { status: 500 });
+        }
+
         console.log(`[Verify Session] ✅ Updated purchase ${purchaseId} to completed status`);
         console.log(`[Verify Session] Updated purchase details:`, {
-          id: updatedPurchase?.id,
-          status: updatedPurchase?.status,
-          completedAt: updatedPurchase?.completedAt,
+          id: updatedPurchase.id,
+          status: updatedPurchase.status,
+          completedAt: updatedPurchase.completedAt,
+          paymentIntentId: updatedPurchase.paymentIntentId,
         });
 
         return NextResponse.json({
