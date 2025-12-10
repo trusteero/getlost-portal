@@ -102,22 +102,36 @@ export async function POST(request: NextRequest) {
 
     // Concurrent purchase prevention: Check for existing pending purchase
     // This prevents duplicate charges if user clicks multiple times
-    const existingPendingPurchase = await db
-      .select()
-      .from(purchases)
-      .where(
-        and(
-          eq(purchases.userId, session.user.id),
-          eq(purchases.featureType, featureType),
-          eq(purchases.status, "pending"),
-          featureType === "book-upload" 
-            ? isNull(purchases.bookId)
-            : bookId 
-              ? eq(purchases.bookId, bookId)
-              : isNull(purchases.bookId)
-        )
-      )
-      .limit(1);
+    const existingPendingPurchase = featureType === "book-upload"
+      ? // For user-level purchases, bookId must be null
+        await db
+          .select()
+          .from(purchases)
+          .where(
+            and(
+              eq(purchases.userId, session.user.id),
+              eq(purchases.featureType, featureType),
+              eq(purchases.status, "pending"),
+              isNull(purchases.bookId)
+            )
+          )
+          .limit(1)
+      : bookId
+        ? // For book-specific features, match the bookId
+          await db
+            .select()
+            .from(purchases)
+            .where(
+              and(
+                eq(purchases.userId, session.user.id),
+                eq(purchases.featureType, featureType),
+                eq(purchases.status, "pending"),
+                eq(purchases.bookId, bookId)
+              )
+            )
+            .limit(1)
+        : // No bookId provided for book-specific feature - shouldn't happen, but handle gracefully
+          [];
 
     if (existingPendingPurchase.length > 0) {
       const pending = existingPendingPurchase[0]!;
