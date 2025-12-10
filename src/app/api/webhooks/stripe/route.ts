@@ -46,21 +46,44 @@ export async function POST(request: NextRequest) {
         const purchaseId = session.client_reference_id || session.metadata?.purchaseId;
 
         if (!purchaseId) {
-          console.error("No purchase ID in session");
+          console.error("[Webhook] No purchase ID in session");
           break;
         }
 
-        // Update purchase status
+        // Idempotency check: Get purchase details first to check if already processed
+        const [existingPurchase] = await db
+          .select()
+          .from(purchases)
+          .where(eq(purchases.id, purchaseId))
+          .limit(1);
+
+        if (!existingPurchase) {
+          console.error(`[Webhook] Purchase ${purchaseId} not found in database`);
+          break;
+        }
+
+        // Idempotency: Skip if already completed
+        if (existingPurchase.status === "completed") {
+          console.log(`[Webhook] Purchase ${purchaseId} already completed, skipping duplicate event ${event.id}`);
+          return NextResponse.json({ 
+            received: true, 
+            message: "Already processed",
+            purchaseId 
+          });
+        }
+
+        // Update purchase status (only if not already completed)
         await db
           .update(purchases)
           .set({
             status: "completed",
             paymentIntentId: session.payment_intent as string,
             completedAt: new Date(),
+            updatedAt: new Date(),
           })
           .where(eq(purchases.id, purchaseId));
 
-        // Get purchase details
+        // Get purchase details after update
         const [purchase] = await db
           .select()
           .from(purchases)
@@ -81,6 +104,7 @@ export async function POST(request: NextRequest) {
             break;
           }
 
+          // Idempotency: Check if feature already exists and is purchased
           const existingFeature = await db
             .select()
             .from(bookFeatures)
@@ -93,16 +117,22 @@ export async function POST(request: NextRequest) {
             .limit(1);
 
           if (existingFeature.length > 0) {
-            await db
-              .update(bookFeatures)
-              .set({
-                status: "purchased",
-                unlockedAt: new Date(),
-                purchasedAt: new Date(),
-                price: purchase.amount,
-                updatedAt: new Date(),
-              })
-              .where(eq(bookFeatures.id, existingFeature[0]!.id));
+            // Idempotency: Only update if not already purchased
+            if (existingFeature[0]!.status === "purchased") {
+              console.log(`[Webhook] Feature ${purchase.featureType} for book ${purchase.bookId} already purchased, skipping duplicate processing`);
+            } else {
+              await db
+                .update(bookFeatures)
+                .set({
+                  status: "purchased",
+                  unlockedAt: new Date(),
+                  purchasedAt: new Date(),
+                  price: purchase.amount,
+                  updatedAt: new Date(),
+                })
+                .where(eq(bookFeatures.id, existingFeature[0]!.id));
+              console.log(`[Webhook] Updated feature ${purchase.featureType} for book ${purchase.bookId} to purchased`);
+            }
           } else {
             await db.insert(bookFeatures).values({
               bookId: purchase.bookId,
@@ -112,6 +142,7 @@ export async function POST(request: NextRequest) {
               purchasedAt: new Date(),
               price: purchase.amount,
             });
+            console.log(`[Webhook] Created feature ${purchase.featureType} for book ${purchase.bookId}`);
           }
         }
 
@@ -122,12 +153,43 @@ export async function POST(request: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session;
         const purchaseId = session.client_reference_id || session.metadata?.purchaseId;
 
-        if (purchaseId) {
-          await db
-            .update(purchases)
-            .set({ status: "failed" })
-            .where(eq(purchases.id, purchaseId));
+        if (!purchaseId) {
+          console.error("[Webhook] No purchase ID in failed payment session");
+          break;
         }
+
+        // Idempotency check: Get purchase details first
+        const [existingPurchase] = await db
+          .select()
+          .from(purchases)
+          .where(eq(purchases.id, purchaseId))
+          .limit(1);
+
+        if (!existingPurchase) {
+          console.error(`[Webhook] Purchase ${purchaseId} not found for failed payment`);
+          break;
+        }
+
+        // Idempotency: Only update if not already in final state
+        if (existingPurchase.status === "failed" || existingPurchase.status === "refunded") {
+          console.log(`[Webhook] Purchase ${purchaseId} already in ${existingPurchase.status} state, skipping duplicate event ${event.id}`);
+          return NextResponse.json({ 
+            received: true, 
+            message: "Already processed",
+            purchaseId 
+          });
+        }
+
+        // Update purchase status to failed
+        await db
+          .update(purchases)
+          .set({ 
+            status: "failed",
+            updatedAt: new Date(),
+          })
+          .where(eq(purchases.id, purchaseId));
+        
+        console.log(`[Webhook] Marked purchase ${purchaseId} as failed`);
         break;
       }
 
