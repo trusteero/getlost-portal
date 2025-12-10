@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { BookOpen, Plus, RefreshCw, Users, Upload, X, Loader2, FileText, CreditCard } from "lucide-react";
 import { CondensedLibrary } from "@/components/condensed-library";
 import { ManuscriptCard } from "@/components/manuscript-card";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 // Force dynamic rendering to prevent prerendering errors
 export const dynamic = 'force-dynamic';
@@ -56,7 +57,7 @@ interface Book {
   hasPrecannedContent?: boolean;
 }
 
-export default function Dashboard() {
+function DashboardContent() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
   const [books, setBooks] = useState<Book[]>([]);
@@ -1606,5 +1607,14 @@ export default function Dashboard() {
           </div>
         )}
     </main>
+  );
+}
+
+// Wrap dashboard in error boundary
+export default function Dashboard() {
+  return (
+    <ErrorBoundary>
+      <DashboardContent />
+    </ErrorBoundary>
   );
 }

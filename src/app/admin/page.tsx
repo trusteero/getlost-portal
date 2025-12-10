@@ -22,6 +22,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { AssetUploadSection } from "@/components/admin/asset-upload-section";
+import { ErrorBoundary } from "@/components/error-boundary";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -108,7 +109,7 @@ interface User {
 type SortField = "title" | "user" | "status" | "createdAt" | "updatedAt";
 type SortDirection = "asc" | "desc";
 
-export default function AdminDashboard() {
+function AdminDashboardContent() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
   const [books, setBooks] = useState<Book[]>([]);
@@ -1840,5 +1841,14 @@ export default function AdminDashboard() {
         </Sheet>
       </main>
     </div>
+  );
+}
+
+// Wrap admin dashboard in error boundary
+export default function AdminDashboard() {
+  return (
+    <ErrorBoundary>
+      <AdminDashboardContent />
+    </ErrorBoundary>
   );
 }

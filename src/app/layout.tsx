@@ -5,6 +5,7 @@ import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
 import { Providers } from "./providers";
+import { ErrorBoundaryWrapper } from "@/components/error-boundary-wrapper";
 
 export const metadata: Metadata = {
 	title: "Get Lost - Professional Manuscript Analysis for Authors",
@@ -29,9 +30,11 @@ export default function RootLayout({
 	return (
 		<html lang="en" className={`${geist.variable}`}>
 			<body>
-				<TRPCReactProvider>
-					<Providers>{children}</Providers>
-				</TRPCReactProvider>
+				<ErrorBoundaryWrapper>
+					<TRPCReactProvider>
+						<Providers>{children}</Providers>
+					</TRPCReactProvider>
+				</ErrorBoundaryWrapper>
 			</body>
 		</html>
 	);
