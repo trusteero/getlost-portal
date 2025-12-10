@@ -859,13 +859,23 @@ function DashboardContent() {
             }),
           });
 
+          const checkoutData = await checkoutResponse.json();
+          
           if (checkoutResponse.ok) {
-            const checkoutData = await checkoutResponse.json();
             if (checkoutData.url) {
               // Redirect to Stripe checkout
+              console.log("[Dashboard] Redirecting to Stripe checkout:", checkoutData.url);
               window.location.href = checkoutData.url;
               return;
+            } else {
+              console.error("[Dashboard] Checkout response OK but no URL:", checkoutData);
+              setUploadError("Failed to get checkout URL. Please try again.");
             }
+          } else {
+            // Handle error response
+            console.error("[Dashboard] Checkout failed:", checkoutResponse.status, checkoutData);
+            const errorMessage = checkoutData.error || checkoutData.message || "Failed to create checkout session";
+            setUploadError(errorMessage);
           }
         }
       }

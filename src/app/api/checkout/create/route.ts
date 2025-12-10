@@ -136,10 +136,12 @@ export async function POST(request: NextRequest) {
     if (existingPendingPurchase.length > 0) {
       const pending = existingPendingPurchase[0]!;
       console.log(`[Checkout] ⚠️  Found existing pending purchase ${pending.id} for user ${session.user.id}, feature ${featureType}, bookId ${bookId || "null"}`);
+      console.log(`[Checkout] Purchase details: status=${pending.status}, paymentIntentId=${pending.paymentIntentId || "null"}`);
       
       // If we have a Stripe session ID stored in paymentIntentId (temporarily stored there),
       // retrieve the checkout URL from Stripe
       if (process.env.STRIPE_SECRET_KEY && pending.paymentIntentId) {
+        console.log(`[Checkout] Attempting to retrieve Stripe session ${pending.paymentIntentId}`);
         try {
           const Stripe = (await import("stripe")).default;
           const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -240,16 +242,25 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // No Stripe secret key or no paymentIntentId, delete the old purchase
-        console.log(`[Checkout] ⚠️  No Stripe session ID stored for purchase ${pending.id}, deleting old purchase`);
-        await db
-          .delete(purchases)
-          .where(eq(purchases.id, pending.id));
+        console.log(`[Checkout] ⚠️  No Stripe session ID stored for purchase ${pending.id} (STRIPE_SECRET_KEY=${!!process.env.STRIPE_SECRET_KEY}, paymentIntentId=${!!pending.paymentIntentId}), deleting old purchase`);
+        try {
+          await db
+            .delete(purchases)
+            .where(eq(purchases.id, pending.id));
+          console.log(`[Checkout] ✅ Deleted old purchase ${pending.id}`);
+        } catch (deleteError) {
+          console.error(`[Checkout] ❌ Failed to delete old purchase ${pending.id}:`, deleteError);
+          // Continue anyway - try to create new purchase
+        }
         // Fall through to create a new purchase and checkout session
       }
       
       // If we reach here, we've deleted the old purchase and will create a new one
       // Fall through to create a new purchase and checkout session
+      console.log(`[Checkout] 🔄 Proceeding to create new purchase after cleaning up old one`);
     }
+
+    console.log(`[Checkout] Creating new checkout session for user ${session.user.id}, feature ${featureType}, bookId ${bookId || "null"}`);
 
     // Check if we should force simulated purchases (for testing)
     const useSimulatedPurchases = process.env.USE_SIMULATED_PURCHASES === "true";
