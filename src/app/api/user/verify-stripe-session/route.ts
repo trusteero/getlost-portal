@@ -26,21 +26,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the purchase
-    const [purchase] = await db
+    // Get the purchase - first try without userId check to see if it exists at all
+    const [purchaseWithoutUserCheck] = await db
       .select()
       .from(purchases)
-      .where(
-        and(
-          eq(purchases.id, purchaseId),
-          eq(purchases.userId, session.user.id)
-        )
-      )
+      .where(eq(purchases.id, purchaseId))
       .limit(1);
 
-    if (!purchase) {
-      return NextResponse.json({ error: "Purchase not found" }, { status: 404 });
+    if (!purchaseWithoutUserCheck) {
+      console.error(`[Verify Session] ❌ Purchase ${purchaseId} not found in database at all`);
+      return NextResponse.json({ 
+        error: "Purchase not found",
+        purchaseId,
+        userId: session.user.id,
+      }, { status: 404 });
     }
+
+    // Check if purchase belongs to this user
+    if (purchaseWithoutUserCheck.userId !== session.user.id) {
+      console.error(`[Verify Session] ❌ Purchase ${purchaseId} belongs to user ${purchaseWithoutUserCheck.userId}, but session user is ${session.user.id}`);
+      return NextResponse.json({ 
+        error: "Purchase not found for this user",
+        purchaseId,
+      }, { status: 404 });
+    }
+
+    const purchase = purchaseWithoutUserCheck;
+    console.log(`[Verify Session] Found purchase ${purchaseId}:`, {
+      id: purchase.id,
+      userId: purchase.userId,
+      status: purchase.status,
+      featureType: purchase.featureType,
+      bookId: purchase.bookId,
+      createdAt: purchase.createdAt,
+    });
 
     // If already completed, return success
     if (purchase.status === "completed") {

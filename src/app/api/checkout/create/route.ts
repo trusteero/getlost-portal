@@ -288,6 +288,7 @@ export async function POST(request: NextRequest) {
     // Wrap purchase and feature creation in a transaction for data integrity
     // Note: better-sqlite3 transactions are synchronous, not async
     const purchaseId = crypto.randomUUID();
+    console.log(`[Checkout] Creating purchase ${purchaseId} for user ${session.user.id}, feature ${featureType}`);
     
     db.transaction((tx) => {
       // Create purchase record with pending status
@@ -308,6 +309,7 @@ export async function POST(request: NextRequest) {
       // For book-upload, we don't include bookId at all (it will be null/undefined)
       
       tx.insert(purchases).values(purchaseValues);
+      console.log(`[Checkout] ✅ Inserted purchase ${purchaseId} into database (within transaction)`);
 
       // For book-specific features, create or update feature record
       // User-level features (book-upload) don't need bookFeatures records
@@ -345,6 +347,28 @@ export async function POST(request: NextRequest) {
           });
         }
       }
+    });
+    
+    // Verify purchase was created
+    const [verifyPurchase] = await db
+      .select()
+      .from(purchases)
+      .where(eq(purchases.id, purchaseId))
+      .limit(1);
+    
+    if (!verifyPurchase) {
+      console.error(`[Checkout] ❌ Purchase ${purchaseId} was not created! Transaction may have failed.`);
+      return NextResponse.json(
+        { error: "Failed to create purchase record" },
+        { status: 500 }
+      );
+    }
+    
+    console.log(`[Checkout] ✅ Verified purchase ${purchaseId} exists in database:`, {
+      id: verifyPurchase.id,
+      status: verifyPurchase.status,
+      userId: verifyPurchase.userId,
+      featureType: verifyPurchase.featureType,
     });
 
     // Get base URL for redirects
@@ -398,9 +422,27 @@ export async function POST(request: NextRequest) {
         .where(eq(purchases.id, purchaseId));
     }
 
+    // Final verification - ensure purchase still exists before returning
+    const [finalPurchase] = await db
+      .select()
+      .from(purchases)
+      .where(eq(purchases.id, purchaseId))
+      .limit(1);
+    
+    if (!finalPurchase) {
+      console.error(`[Checkout] ❌ Purchase ${purchaseId} was deleted or doesn't exist after creating Stripe session!`);
+      return NextResponse.json(
+        { error: "Purchase was not created properly" },
+        { status: 500 }
+      );
+    }
+    
+    console.log(`[Checkout] ✅ Purchase ${purchaseId} verified and ready, returning checkout URL`);
+
     return NextResponse.json({ 
       sessionId: checkoutSession.id,
-      url: checkoutSession.url 
+      url: checkoutSession.url,
+      purchaseId: purchaseId, // Include purchase ID in response for debugging
     });
   } catch (error: any) {
     console.error("Failed to create checkout session:", error);
