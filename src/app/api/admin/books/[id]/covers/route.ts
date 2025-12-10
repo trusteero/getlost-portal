@@ -9,6 +9,7 @@ import { storeUploadedAsset, findVideoFiles, rewriteVideoReferences } from "@/se
 import { promises as fs } from "fs";
 import path from "path";
 import AdmZip from "adm-zip";
+import { getEnvWithFallback } from "@/server/utils/validate-env";
 
 export const dynamic = 'force-dynamic';
 
@@ -138,20 +139,33 @@ export async function POST(
       }
       
       // 2. Book reports directory (common location for images)
-      const bookReportsPath = process.env.BOOK_REPORTS_PATH || "/Users/eerogetlost/book-reports";
-      try {
-        await fs.access(bookReportsPath);
-        searchDirs.push(bookReportsPath);
-        
-        // Also try subdirectories
-        const entries = await fs.readdir(bookReportsPath, { withFileTypes: true });
-        for (const entry of entries) {
-          if (entry.isDirectory()) {
-            searchDirs.push(path.join(bookReportsPath, entry.name));
-          }
+      // In production, require BOOK_REPORTS_PATH to be set (no hardcoded fallback)
+      const bookReportsPath = getEnvWithFallback(
+        "BOOK_REPORTS_PATH",
+        process.env.NODE_ENV === "production" ? "" : "./book-reports",
+        "Path to book reports directory (required in production)"
+      );
+      
+      if (!bookReportsPath || bookReportsPath.trim() === "") {
+        // Skip this directory if not set in production
+        if (process.env.NODE_ENV === "production") {
+          console.warn("[Covers] BOOK_REPORTS_PATH not set, skipping book reports directory");
         }
-      } catch {
-        // Directory doesn't exist, skip
+      } else {
+        try {
+          await fs.access(bookReportsPath);
+          searchDirs.push(bookReportsPath);
+          
+          // Also try subdirectories
+          const entries = await fs.readdir(bookReportsPath, { withFileTypes: true });
+          for (const entry of entries) {
+            if (entry.isDirectory()) {
+              searchDirs.push(path.join(bookReportsPath, entry.name));
+            }
+          }
+        } catch {
+          // Directory doesn't exist, skip
+        }
       }
 
       // Find and store video files if ZIP was uploaded

@@ -1,7 +1,18 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { getEnvWithFallback } from "./validate-env";
 
-const BOOK_REPORTS_PATH = process.env.BOOK_REPORTS_PATH || "/Users/eerogetlost/book-reports";
+// Get BOOK_REPORTS_PATH with fallback (required in production)
+const BOOK_REPORTS_PATH = getEnvWithFallback(
+  "BOOK_REPORTS_PATH",
+  process.env.NODE_ENV === "production" ? "" : "./book-reports",
+  "Path to book reports directory (required in production)"
+);
+
+// Validate that BOOK_REPORTS_PATH is set in production
+if ((!BOOK_REPORTS_PATH || BOOK_REPORTS_PATH.trim() === "") && process.env.NODE_ENV === "production") {
+  console.warn("[Demo Reports] BOOK_REPORTS_PATH not set in production. Demo reports functionality may be limited.");
+}
 
 /**
  * Normalize a filename for comparison (lowercase, remove spaces, special chars)

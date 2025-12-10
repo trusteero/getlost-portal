@@ -11,6 +11,7 @@ import { storeUploadedAsset, findVideoFiles, rewriteVideoReferences } from "@/se
 import AdmZip from "adm-zip";
 import { randomUUID } from "crypto";
 import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
+import { getEnvWithFallback } from "@/server/utils/validate-env";
 
 export const dynamic = 'force-dynamic';
 
@@ -181,7 +182,19 @@ export async function POST(
       }
       
       // 3. Book reports directory
-      const bookReportsPath = process.env.BOOK_REPORTS_PATH || "/Users/eerogetlost/book-reports";
+      // In production, require BOOK_REPORTS_PATH to be set (no hardcoded fallback)
+      const bookReportsPath = getEnvWithFallback(
+        "BOOK_REPORTS_PATH",
+        process.env.NODE_ENV === "production" ? "" : "./book-reports",
+        "Path to book reports directory (required in production)"
+      );
+      
+      if (!bookReportsPath || bookReportsPath.trim() === "") {
+        return NextResponse.json(
+          { error: "BOOK_REPORTS_PATH environment variable is required" },
+          { status: 500 }
+        );
+      }
       try {
         await fs.access(bookReportsPath);
         searchDirs.push(bookReportsPath);
