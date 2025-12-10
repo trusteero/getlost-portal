@@ -151,49 +151,52 @@ export async function POST(
     }
 
     // Simulated purchase (Stripe not configured or free feature)
-    // Create purchase record
+    // Wrap purchase and feature creation in a transaction for data integrity
     const purchaseId = crypto.randomUUID();
-    await db.insert(purchases).values({
-      id: purchaseId,
-      userId: session.user.id,
-      bookId: id,
-      featureType,
-      amount: price,
-      currency: "USD",
-      paymentMethod: useSimulatedPurchases ? "simulated" : (useStripe ? "stripe" : "simulated"),
-      status: "completed", // Auto-complete for simulated purchases
-      completedAt: new Date(),
-    });
-
-    // Create or update feature record
     const featureId = existingFeature.length > 0 
       ? existingFeature[0]!.id 
       : crypto.randomUUID();
 
-    if (existingFeature.length > 0) {
-      await db
-        .update(bookFeatures)
-        .set({
+    await db.transaction(async (tx) => {
+      // Create purchase record
+      await tx.insert(purchases).values({
+        id: purchaseId,
+        userId: session.user.id,
+        bookId: id,
+        featureType,
+        amount: price,
+        currency: "USD",
+        paymentMethod: useSimulatedPurchases ? "simulated" : (useStripe ? "stripe" : "simulated"),
+        status: "completed", // Auto-complete for simulated purchases
+        completedAt: new Date(),
+      });
+
+      // Create or update feature record
+      if (existingFeature.length > 0) {
+        await tx
+          .update(bookFeatures)
+          .set({
+            status: "purchased", // Changed from "unlocked" to "purchased" to indicate asset is requested
+            unlockedAt: new Date(),
+            purchasedAt: new Date(),
+            price,
+            updatedAt: new Date(),
+          })
+          .where(eq(bookFeatures.id, featureId));
+      } else {
+        await tx.insert(bookFeatures).values({
+          id: featureId,
+          bookId: id,
+          featureType,
           status: "purchased", // Changed from "unlocked" to "purchased" to indicate asset is requested
           unlockedAt: new Date(),
           purchasedAt: new Date(),
           price,
-          updatedAt: new Date(),
-        })
-        .where(eq(bookFeatures.id, featureId));
-    } else {
-      await db.insert(bookFeatures).values({
-        id: featureId,
-        bookId: id,
-        featureType,
-        status: "purchased", // Changed from "unlocked" to "purchased" to indicate asset is requested
-        unlockedAt: new Date(),
-        purchasedAt: new Date(),
-        price,
-      });
-    }
+        });
+      }
+    });
 
-    // Fetch updated feature
+    // Fetch updated feature after transaction completes
     const updatedFeature = await db
       .select()
       .from(bookFeatures)

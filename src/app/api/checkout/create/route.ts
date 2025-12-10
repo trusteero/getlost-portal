@@ -123,61 +123,65 @@ export async function POST(request: NextRequest) {
       apiVersion: "2025-11-17.clover", // Use API version expected by Stripe package types
     });
 
-    // Create purchase record with pending status
+    // Wrap purchase and feature creation in a transaction for data integrity
     const purchaseId = crypto.randomUUID();
-    const purchaseValues: any = {
-      id: purchaseId,
-      userId: session.user.id,
-      featureType,
-      amount: price,
-      currency: "USD",
-      paymentMethod: "stripe",
-      status: "pending",
-    };
     
-    // Only include bookId if it's not a user-level purchase
-    if (featureType !== "book-upload" && bookId) {
-      purchaseValues.bookId = bookId;
-    }
-    // For book-upload, we don't include bookId at all (it will be null/undefined)
-    
-    await db.insert(purchases).values(purchaseValues);
+    await db.transaction(async (tx) => {
+      // Create purchase record with pending status
+      const purchaseValues: any = {
+        id: purchaseId,
+        userId: session.user.id,
+        featureType,
+        amount: price,
+        currency: "USD",
+        paymentMethod: "stripe",
+        status: "pending",
+      };
+      
+      // Only include bookId if it's not a user-level purchase
+      if (featureType !== "book-upload" && bookId) {
+        purchaseValues.bookId = bookId;
+      }
+      // For book-upload, we don't include bookId at all (it will be null/undefined)
+      
+      await tx.insert(purchases).values(purchaseValues);
 
-    // For book-specific features, create or update feature record
-    // User-level features (book-upload) don't need bookFeatures records
-    if (featureType !== "book-upload" && bookId) {
-      const existingFeature = await db
-        .select()
-        .from(bookFeatures)
-        .where(
-          and(
-            eq(bookFeatures.bookId, bookId),
-            eq(bookFeatures.featureType, featureType)
+      // For book-specific features, create or update feature record
+      // User-level features (book-upload) don't need bookFeatures records
+      if (featureType !== "book-upload" && bookId) {
+        const existingFeature = await tx
+          .select()
+          .from(bookFeatures)
+          .where(
+            and(
+              eq(bookFeatures.bookId, bookId),
+              eq(bookFeatures.featureType, featureType)
+            )
           )
-        )
-        .limit(1);
+          .limit(1);
 
-      if (existingFeature.length > 0) {
-        await db
-          .update(bookFeatures)
-          .set({
+        if (existingFeature.length > 0) {
+          await tx
+            .update(bookFeatures)
+            .set({
+              status: "purchased",
+              purchasedAt: new Date(),
+              price,
+              updatedAt: new Date(),
+            })
+            .where(eq(bookFeatures.id, existingFeature[0]!.id));
+        } else {
+          await tx.insert(bookFeatures).values({
+            id: crypto.randomUUID(),
+            bookId,
+            featureType,
             status: "purchased",
             purchasedAt: new Date(),
             price,
-            updatedAt: new Date(),
-          })
-          .where(eq(bookFeatures.id, existingFeature[0]!.id));
-      } else {
-        await db.insert(bookFeatures).values({
-          id: crypto.randomUUID(),
-          bookId,
-          featureType,
-          status: "purchased",
-          purchasedAt: new Date(),
-          price,
-        });
+          });
+        }
       }
-    }
+    });
 
     // Get base URL for redirects
     const baseURL = getBaseURL(request);
