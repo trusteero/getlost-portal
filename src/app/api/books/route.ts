@@ -540,6 +540,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "File is required" }, { status: 400 });
     }
 
+    // Validate required fields
+    if (!title || !title.trim()) {
+      return NextResponse.json({ error: "Book title is required" }, { status: 400 });
+    }
+
+    if (!authorName || !authorName.trim()) {
+      return NextResponse.json({ error: "Author name is required" }, { status: 400 });
+    }
+
     // Server-side file size validation
     const { validateFileSize } = await import("@/server/utils/validate-file-size");
     const fileSizeValidation = validateFileSize(file);
@@ -561,8 +570,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Use filename (without extension) as title if title not provided
-    const bookTitle = title?.trim() || path.basename(file.name, path.extname(file.name));
+    // Title is required, so use the provided title
+    const bookTitle = title.trim();
 
     // Generate book ID first
     const bookId = randomUUID();

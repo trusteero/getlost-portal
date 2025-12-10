@@ -912,19 +912,26 @@ function DashboardContent() {
       return;
     }
 
+    // Validate required fields
+    if (!uploadTitle.trim()) {
+      setUploadError("Book title is required");
+      return;
+    }
+
+    if (!uploadAuthorName.trim()) {
+      setUploadError("Author name is required");
+      return;
+    }
+
     setUploading(true);
     setUploadError("");
 
     try {
       const formData = new FormData();
-      // Title is optional - will use filename if not provided
-      if (uploadTitle.trim()) {
-        formData.append("title", uploadTitle.trim());
-      }
-      // Author name is optional
-      if (uploadAuthorName.trim()) {
-        formData.append("authorName", uploadAuthorName.trim());
-      }
+      // Title is required
+      formData.append("title", uploadTitle.trim());
+      // Author name is required
+      formData.append("authorName", uploadAuthorName.trim());
       // Author bio is optional
       if (uploadAuthorBio.trim()) {
         formData.append("authorBio", uploadAuthorBio.trim());
@@ -1379,20 +1386,25 @@ function DashboardContent() {
 
                 <form onSubmit={handleUploadSubmit} className="space-y-6">
                   <div>
-                    <Label htmlFor="title">Book Title <span className="text-gray-400 font-normal">(optional)</span></Label>
+                    <Label htmlFor="title">
+                      Book Title <span className="text-red-500">*</span>
+                    </Label>
                     <Input
                       id="title"
                       type="text"
                       value={uploadTitle}
                       onChange={(e) => setUploadTitle(e.target.value)}
-                      placeholder="Enter your book title (will use filename if not provided)"
+                      placeholder="Enter your book title"
                       className="mt-1"
                       disabled={uploading}
+                      required
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="authorName">Author Name <span className="text-gray-400 font-normal">(optional)</span></Label>
+                    <Label htmlFor="authorName">
+                      Author Name <span className="text-red-500">*</span>
+                    </Label>
                     <Input
                       id="authorName"
                       type="text"
@@ -1401,6 +1413,7 @@ function DashboardContent() {
                       placeholder="Enter author name"
                       className="mt-1"
                       disabled={uploading}
+                      required
                     />
                   </div>
 
@@ -1515,7 +1528,7 @@ function DashboardContent() {
                     <Button
                       type="submit"
                       className="bg-emerald-600 hover:bg-emerald-700"
-                      disabled={uploading || !uploadTitle.trim() || !uploadFile}
+                      disabled={uploading || !uploadTitle.trim() || !uploadAuthorName.trim() || !uploadFile}
                     >
                       {uploading ? (
                         <>
