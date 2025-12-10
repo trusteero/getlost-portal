@@ -7,7 +7,22 @@ interface EmailOptions {
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+// Use the same URL resolution logic as Better Auth to prevent state_mismatch errors
+// Prefer custom domain, then BETTER_AUTH_URL, then NEXT_PUBLIC_APP_URL
+const getAppUrl = (): string => {
+  const customDomain = process.env.CUSTOM_DOMAIN || process.env.NEXT_PUBLIC_CUSTOM_DOMAIN;
+  if (customDomain) {
+    // Ensure it has https:// protocol
+    const domainUrl = customDomain.startsWith("http") 
+      ? customDomain 
+      : `https://${customDomain}`;
+    return domainUrl;
+  }
+  return process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+};
+
+const APP_URL = getAppUrl();
 
 export async function sendEmail({ to, subject, html, text }: EmailOptions) {
   // Check if email sending is disabled for tests
@@ -289,7 +304,9 @@ export async function sendPasswordResetEmail(email: string, token: string) {
 }
 
 export async function sendWelcomeEmail(email: string, name?: string) {
-  const dashboardUrl = `${APP_URL}/dashboard`;
+  // Link to login page instead of dashboard to avoid state_mismatch errors
+  // Users need to sign in first after email verification
+  const loginUrl = `${APP_URL}/login?verified=true`;
 
   const html = `
     <!DOCTYPE html>
@@ -387,7 +404,7 @@ export async function sendWelcomeEmail(email: string, name?: string) {
               <div class="feature">Receive marketing strategies and insights</div>
             </div>
 
-            <a href="${dashboardUrl}" class="button" style="color: white !important;">Go to Dashboard</a>
+            <a href="${loginUrl}" class="button" style="color: white !important;">Sign In to Dashboard</a>
           </div>
 
           <div class="footer">
