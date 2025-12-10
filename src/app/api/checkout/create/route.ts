@@ -137,14 +137,86 @@ export async function POST(request: NextRequest) {
       const pending = existingPendingPurchase[0]!;
       console.log(`[Checkout] ⚠️  Found existing pending purchase ${pending.id} for user ${session.user.id}, feature ${featureType}, bookId ${bookId || "null"}`);
       
-      // Return existing pending purchase instead of creating a new one
-      // This prevents duplicate charges
+      // If we have a Stripe session ID stored in paymentIntentId (temporarily stored there),
+      // retrieve the checkout URL from Stripe
+      if (process.env.STRIPE_SECRET_KEY && pending.paymentIntentId) {
+        try {
+          const Stripe = (await import("stripe")).default;
+          const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+            apiVersion: "2025-11-17.clover",
+          });
+          
+          // Retrieve the session using the stored session ID
+          const sessionId = pending.paymentIntentId;
+          const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
+          
+          if (checkoutSession && checkoutSession.url) {
+            console.log(`[Checkout] ✅ Retrieved existing Stripe session ${sessionId} for purchase ${pending.id}`);
+            return NextResponse.json({
+              message: "Purchase already in progress",
+              purchaseId: pending.id,
+              existingPurchase: true,
+              sessionId: checkoutSession.id,
+              url: checkoutSession.url, // Return the checkout URL
+            });
+          }
+        } catch (stripeError) {
+          console.warn(`[Checkout] Failed to retrieve Stripe session for purchase ${pending.id}:`, stripeError);
+          // Fall through to try searching by metadata
+        }
+      }
+      
+      // Fallback: Search for the session using the purchase ID in metadata
+      if (process.env.STRIPE_SECRET_KEY) {
+        try {
+          const Stripe = (await import("stripe")).default;
+          const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+            apiVersion: "2025-11-17.clover",
+          });
+          
+          // Search for the session using the purchase ID in metadata
+          const sessions = await stripe.checkout.sessions.list({
+            limit: 100,
+          });
+          
+          const matchingSession = sessions.data.find(
+            (s) => s.client_reference_id === pending.id || s.metadata?.purchaseId === pending.id
+          );
+          
+          if (matchingSession && matchingSession.url) {
+            console.log(`[Checkout] ✅ Found existing Stripe session ${matchingSession.id} for purchase ${pending.id} (via metadata search)`);
+            // Update the purchase record with the session ID for future use
+            await db
+              .update(purchases)
+              .set({
+                paymentIntentId: matchingSession.id, // Store session ID temporarily
+                updatedAt: new Date(),
+              })
+              .where(eq(purchases.id, pending.id));
+            
+            return NextResponse.json({
+              message: "Purchase already in progress",
+              purchaseId: pending.id,
+              existingPurchase: true,
+              sessionId: matchingSession.id,
+              url: matchingSession.url, // Return the checkout URL
+            });
+          }
+        } catch (stripeError) {
+          console.warn(`[Checkout] Failed to search Stripe sessions for purchase ${pending.id}:`, stripeError);
+        }
+      }
+      
+      // If we can't find the session, return the purchase info but indicate no URL available
+      // The frontend should handle this by showing an error or allowing retry
       return NextResponse.json({
-        message: "Purchase already in progress",
+        message: "Purchase already in progress, but checkout session not found. Please try again.",
         purchaseId: pending.id,
         existingPurchase: true,
-        sessionId: null, // No new session created
-      });
+        sessionId: null,
+        url: null,
+        error: "SESSION_NOT_FOUND",
+      }, { status: 409 }); // Conflict status
     }
 
     // Check if we should force simulated purchases (for testing)
@@ -267,6 +339,19 @@ export async function POST(request: NextRequest) {
         purchaseId,
       },
     });
+
+    // Store the Stripe session ID in the purchase record for future retrieval
+    // We'll use paymentIntentId field temporarily to store the session ID
+    // (it will be overwritten with the actual payment intent when payment completes)
+    if (checkoutSession.id) {
+      await db
+        .update(purchases)
+        .set({
+          paymentIntentId: checkoutSession.id, // Temporarily store session ID here
+          updatedAt: new Date(),
+        })
+        .where(eq(purchases.id, purchaseId));
+    }
 
     return NextResponse.json({ 
       sessionId: checkoutSession.id,
