@@ -51,14 +51,23 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    console.log(`[Webhook] 📥 Received Stripe webhook event: ${event.type} (id: ${event.id})`);
+    
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const purchaseId = session.client_reference_id || session.metadata?.purchaseId;
 
+        console.log(`[Webhook] Processing checkout.session.completed for session ${session.id}`);
+        console.log(`[Webhook] Purchase ID from session: ${purchaseId}`);
+
         if (!purchaseId) {
-          console.error("[Webhook] No purchase ID in session");
-          break;
+          console.error("[Webhook] ❌ No purchase ID in session");
+          return NextResponse.json({ 
+            received: true, 
+            error: "No purchase ID in session",
+            warning: true
+          });
         }
 
         // Idempotency check: Get purchase details first to check if already processed
@@ -69,13 +78,19 @@ export async function POST(request: NextRequest) {
           .limit(1);
 
         if (!existingPurchase) {
-          console.error(`[Webhook] Purchase ${purchaseId} not found in database`);
-          break;
+          console.error(`[Webhook] ❌ Purchase ${purchaseId} not found in database`);
+          return NextResponse.json({ 
+            received: true, 
+            error: `Purchase ${purchaseId} not found`,
+            warning: true
+          });
         }
+
+        console.log(`[Webhook] Found purchase ${purchaseId} with status: ${existingPurchase.status}`);
 
         // Idempotency: Skip if already completed
         if (existingPurchase.status === "completed") {
-          console.log(`[Webhook] Purchase ${purchaseId} already completed, skipping duplicate event ${event.id}`);
+          console.log(`[Webhook] ✅ Purchase ${purchaseId} already completed, skipping duplicate event ${event.id}`);
           return NextResponse.json({ 
             received: true, 
             message: "Already processed",
@@ -84,83 +99,95 @@ export async function POST(request: NextRequest) {
         }
 
         // Wrap all database operations in a transaction for data integrity
-        await db.transaction(async (tx) => {
-          // Update purchase status (only if not already completed)
-          await tx
-            .update(purchases)
-            .set({
-              status: "completed",
-              paymentIntentId: session.payment_intent as string,
-              completedAt: new Date(),
-              updatedAt: new Date(),
-            })
-            .where(eq(purchases.id, purchaseId));
+        try {
+          await db.transaction(async (tx) => {
+            // Update purchase status (only if not already completed)
+            await tx
+              .update(purchases)
+              .set({
+                status: "completed",
+                paymentIntentId: session.payment_intent as string,
+                completedAt: new Date(),
+                updatedAt: new Date(),
+              })
+              .where(eq(purchases.id, purchaseId));
 
-          // Get purchase details after update (within transaction)
-          const [purchase] = await tx
-            .select()
-            .from(purchases)
-            .where(eq(purchases.id, purchaseId))
-            .limit(1);
+            console.log(`[Webhook] ✅ Updated purchase ${purchaseId} to completed status`);
 
-          if (purchase) {
-            // For user-level purchases (book-upload), we don't need to create bookFeatures
-            // The purchase record itself is sufficient
-            if (purchase.featureType === "book-upload") {
-              console.log(`[Webhook] Book upload permission purchased for user ${purchase.userId}`);
-              return; // No bookFeatures needed for user-level purchases
-            }
-
-            // Create or update feature record for book-specific features
-            if (!purchase.bookId) {
-              console.warn(`[Webhook] Purchase ${purchaseId} has no bookId but is not book-upload`);
-              return;
-            }
-
-            // Idempotency: Check if feature already exists and is purchased
-            const existingFeature = await tx
+            // Get purchase details after update (within transaction)
+            const [purchase] = await tx
               .select()
-              .from(bookFeatures)
-              .where(
-                and(
-                  eq(bookFeatures.bookId, purchase.bookId),
-                  eq(bookFeatures.featureType, purchase.featureType)
-                )
-              )
+              .from(purchases)
+              .where(eq(purchases.id, purchaseId))
               .limit(1);
 
-            if (existingFeature.length > 0) {
-              // Idempotency: Only update if not already purchased
-              if (existingFeature[0]!.status === "purchased") {
-                console.log(`[Webhook] Feature ${purchase.featureType} for book ${purchase.bookId} already purchased, skipping duplicate processing`);
-              } else {
-                await tx
-                  .update(bookFeatures)
-                  .set({
-                    status: "purchased",
-                    unlockedAt: new Date(),
-                    purchasedAt: new Date(),
-                    price: purchase.amount,
-                    updatedAt: new Date(),
-                  })
-                  .where(eq(bookFeatures.id, existingFeature[0]!.id));
-                console.log(`[Webhook] Updated feature ${purchase.featureType} for book ${purchase.bookId} to purchased`);
+            if (purchase) {
+              // For user-level purchases (book-upload), we don't need to create bookFeatures
+              // The purchase record itself is sufficient
+              if (purchase.featureType === "book-upload") {
+                console.log(`[Webhook] ✅ Book upload permission purchased for user ${purchase.userId} (purchase ${purchaseId})`);
+                return; // No bookFeatures needed for user-level purchases
               }
-            } else {
-              await tx.insert(bookFeatures).values({
-                bookId: purchase.bookId,
-                featureType: purchase.featureType,
-                status: "purchased",
-                unlockedAt: new Date(),
-                purchasedAt: new Date(),
-                price: purchase.amount,
-              });
-              console.log(`[Webhook] Created feature ${purchase.featureType} for book ${purchase.bookId}`);
-            }
-          }
-        });
 
-        break;
+              // Create or update feature record for book-specific features
+              if (!purchase.bookId) {
+                console.warn(`[Webhook] Purchase ${purchaseId} has no bookId but is not book-upload`);
+                return;
+              }
+
+              // Idempotency: Check if feature already exists and is purchased
+              const existingFeature = await tx
+                .select()
+                .from(bookFeatures)
+                .where(
+                  and(
+                    eq(bookFeatures.bookId, purchase.bookId),
+                    eq(bookFeatures.featureType, purchase.featureType)
+                  )
+                )
+                .limit(1);
+
+              if (existingFeature.length > 0) {
+                // Idempotency: Only update if not already purchased
+                if (existingFeature[0]!.status === "purchased") {
+                  console.log(`[Webhook] Feature ${purchase.featureType} for book ${purchase.bookId} already purchased, skipping duplicate processing`);
+                } else {
+                  await tx
+                    .update(bookFeatures)
+                    .set({
+                      status: "purchased",
+                      unlockedAt: new Date(),
+                      purchasedAt: new Date(),
+                      price: purchase.amount,
+                      updatedAt: new Date(),
+                    })
+                    .where(eq(bookFeatures.id, existingFeature[0]!.id));
+                  console.log(`[Webhook] ✅ Updated feature ${purchase.featureType} for book ${purchase.bookId} to purchased`);
+                }
+              } else {
+                await tx.insert(bookFeatures).values({
+                  bookId: purchase.bookId,
+                  featureType: purchase.featureType,
+                  status: "purchased",
+                  unlockedAt: new Date(),
+                  purchasedAt: new Date(),
+                  price: purchase.amount,
+                });
+                console.log(`[Webhook] ✅ Created feature ${purchase.featureType} for book ${purchase.bookId}`);
+              }
+            }
+          });
+
+          console.log(`[Webhook] ✅ Successfully processed checkout.session.completed for purchase ${purchaseId}`);
+          return NextResponse.json({ 
+            received: true, 
+            message: "Purchase completed successfully",
+            purchaseId 
+          });
+        } catch (transactionError) {
+          console.error(`[Webhook] ❌ Transaction failed for purchase ${purchaseId}:`, transactionError);
+          throw transactionError; // Re-throw to be caught by outer try-catch
+        }
       }
 
       case "checkout.session.async_payment_failed": {
