@@ -579,7 +579,7 @@ function AdminDashboardContent() {
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         bookId,
-        coverId,
+        assetId,
       });
       alert("Failed to set primary cover");
     }
