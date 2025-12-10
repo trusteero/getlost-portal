@@ -1305,7 +1305,7 @@ function DashboardContent() {
       title: book.title,
       subtitle: book.description || "",
       wordCount,
-      genre: "FICTION", // Default genre, could be enhanced with actual genre data
+      genre: null, // Genre not available yet
       steps,
       coverImage,
       hasPrecannedContent: book.hasPrecannedContent || false,
