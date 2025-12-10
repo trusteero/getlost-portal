@@ -1183,7 +1183,7 @@ function AdminDashboardContent() {
                                           message: error instanceof Error ? error.message : String(error),
                                           stack: error instanceof Error ? error.stack : undefined,
                                           bookId: book.id,
-                                          status: newStatus,
+                                          status: "working_on",
                                         });
                                       }
                                     }}
