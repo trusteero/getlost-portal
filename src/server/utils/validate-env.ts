@@ -166,17 +166,26 @@ export function validateEnvironmentVariables(options?: {
 }
 
 /**
- * Validate and log environment variables at startup
- * Call this in your app initialization
+ * Validate only critical environment variables that would cause immediate failures
+ * Returns true if critical vars are present, throws if missing in production
  */
-export function validateAndLogEnvironment(): void {
-  const result = validateEnvironmentVariables({
-    skipInDevelopment: false, // Always validate, but be lenient in dev
-  });
+export function validateCriticalEnvironmentVariables(): void {
+  const criticalVars = [
+    { name: "DATABASE_URL", description: "Database connection string" },
+    { name: "NEXT_PUBLIC_APP_URL", description: "Public URL of the application" },
+  ];
 
-  if (result.errors.length > 0) {
-    console.error("\n🚨 Environment Variable Validation Failed:\n");
-    result.errors.forEach((error) => console.error(error));
+  const missing: string[] = [];
+  for (const config of criticalVars) {
+    const value = process.env[config.name];
+    if (!value || value.trim() === "") {
+      missing.push(`${config.name} - ${config.description}`);
+    }
+  }
+
+  if (missing.length > 0) {
+    console.error("\n🚨 Missing Critical Environment Variables:\n");
+    missing.forEach((varName) => console.error(`❌ ${varName}`));
     console.error(
       "\n💡 Tip: Set these variables in your Render dashboard or .env file\n"
     );
@@ -184,9 +193,29 @@ export function validateAndLogEnvironment(): void {
     // In production, throw error to prevent app from starting
     if (process.env.NODE_ENV === "production") {
       throw new Error(
-        `Missing required environment variables. Check logs above for details.`
+        `Missing critical environment variables: ${missing.map(m => m.split(' - ')[0]).join(', ')}`
       );
     }
+  }
+}
+
+/**
+ * Validate and log environment variables at startup
+ * Call this in your app initialization
+ * This logs warnings but doesn't throw (except for critical vars)
+ */
+export function validateAndLogEnvironment(): void {
+  const result = validateEnvironmentVariables({
+    skipInDevelopment: false, // Always validate, but be lenient in dev
+  });
+
+  if (result.errors.length > 0) {
+    console.warn("\n⚠️  Environment Variable Issues (non-critical):\n");
+    result.errors.forEach((error) => console.warn(error));
+    console.warn(
+      "\n💡 Tip: Set these variables in your Render dashboard or .env file\n"
+    );
+    // Don't throw - these are warnings, not critical failures
   }
 
   if (result.warnings.length > 0) {
@@ -195,7 +224,7 @@ export function validateAndLogEnvironment(): void {
     console.warn("");
   }
 
-  if (result.isValid && result.warnings.length === 0) {
+  if (result.isValid && result.warnings.length === 0 && result.errors.length === 0) {
     console.log("✅ Environment variables validated successfully\n");
   }
 }
