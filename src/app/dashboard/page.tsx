@@ -177,11 +177,18 @@ function DashboardContent() {
               
               if (verifyResponse.ok) {
                 const verifyData = await verifyResponse.json();
+                console.log(`[Dashboard] Verify response:`, verifyData);
                 if (verifyData.hasPermission) {
                   console.log(`[Dashboard] ✅ Purchase ${purchaseId} verified and completed`);
                   setShowUploadModal(true);
+                  setShowPaymentModal(false);
                   return true;
+                } else {
+                  console.log(`[Dashboard] ⚠️  Purchase ${purchaseId} verified but hasPermission is false:`, verifyData.message);
                 }
+              } else {
+                const errorData = await verifyResponse.json().catch(() => ({}));
+                console.error(`[Dashboard] Verify response not OK:`, verifyResponse.status, errorData);
               }
               
               // If verification didn't work, check purchase status directly
@@ -208,13 +215,22 @@ function DashboardContent() {
           
           // Try to verify and open upload modal
           verifyAndCheckPurchase().then((purchaseFound) => {
-            if (!purchaseFound) {
+            console.log(`[Dashboard] Purchase verification result: ${purchaseFound}`);
+            if (purchaseFound) {
+              // Purchase was verified and upload modal should be open
+              console.log(`[Dashboard] ✅ Purchase verified, upload modal should be open`);
+            } else {
               // If verification didn't work, fall back to general permission check with retries
+              console.log(`[Dashboard] Purchase verification failed, falling back to permission check with retries`);
               const checkAndOpen = async () => {
                 const hasPermission = await checkUploadPermission();
                 console.log(`[Dashboard] Permission check after payment: ${hasPermission}`);
                 if (hasPermission) {
+                  console.log(`[Dashboard] ✅ Permission found, opening upload modal`);
                   setShowUploadModal(true);
+                  setShowPaymentModal(false);
+                } else {
+                  console.log(`[Dashboard] ⚠️  Permission not found yet, will retry...`);
                 }
               };
               
@@ -222,10 +238,28 @@ function DashboardContent() {
               checkAndOpen();
               
               // Retry after delays (webhook might still be processing)
-              setTimeout(checkAndOpen, 1000); // Retry after 1 second
-              setTimeout(checkAndOpen, 3000); // Retry after 3 seconds
-              setTimeout(checkAndOpen, 5000); // Retry after 5 seconds
+              setTimeout(() => {
+                console.log(`[Dashboard] Retrying permission check (1s delay)...`);
+                checkAndOpen();
+              }, 1000);
+              setTimeout(() => {
+                console.log(`[Dashboard] Retrying permission check (3s delay)...`);
+                checkAndOpen();
+              }, 3000);
+              setTimeout(() => {
+                console.log(`[Dashboard] Retrying permission check (5s delay)...`);
+                checkAndOpen();
+              }, 5000);
             }
+          }).catch((error) => {
+            console.error(`[Dashboard] Error in purchase verification:`, error);
+            // Fall back to permission check
+            checkUploadPermission().then((hasPermission) => {
+              if (hasPermission) {
+                setShowUploadModal(true);
+                setShowPaymentModal(false);
+              }
+            });
           });
         } else {
           // Refresh books for book-specific features

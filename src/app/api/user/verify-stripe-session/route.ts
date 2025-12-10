@@ -72,20 +72,26 @@ export async function POST(request: NextRequest) {
       console.log(`[Verify Session] Session ${sessionId} status: ${checkoutSession.payment_status}, status: ${checkoutSession.status}`);
 
       // If payment is completed, update the purchase
-      if (
-        checkoutSession.payment_status === "paid" &&
-        checkoutSession.status === "complete"
-      ) {
-        // Update purchase status
-        await db
-          .update(purchases)
-          .set({
-            status: "completed",
-            paymentIntentId: checkoutSession.payment_intent as string,
-            completedAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(eq(purchases.id, purchaseId));
+      // Check both payment_status and status - either "paid" or "complete" indicates success
+      const isPaymentComplete = 
+        (checkoutSession.payment_status === "paid" || checkoutSession.status === "complete") &&
+        checkoutSession.status !== "expired" &&
+        checkoutSession.status !== "open"; // Not still open/expired
+      
+      console.log(`[Verify Session] Payment check: payment_status=${checkoutSession.payment_status}, status=${checkoutSession.status}, isPaymentComplete=${isPaymentComplete}`);
+      
+      if (isPaymentComplete) {
+        // Update purchase status (idempotent - safe to call multiple times)
+        db.transaction((tx) => {
+          tx.update(purchases)
+            .set({
+              status: "completed",
+              paymentIntentId: checkoutSession.payment_intent as string,
+              completedAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(purchases.id, purchaseId));
+        });
 
         // Get updated purchase
         const [updatedPurchase] = await db
@@ -95,6 +101,11 @@ export async function POST(request: NextRequest) {
           .limit(1);
 
         console.log(`[Verify Session] ✅ Updated purchase ${purchaseId} to completed status`);
+        console.log(`[Verify Session] Updated purchase details:`, {
+          id: updatedPurchase?.id,
+          status: updatedPurchase?.status,
+          completedAt: updatedPurchase?.completedAt,
+        });
 
         return NextResponse.json({
           success: true,
@@ -104,6 +115,7 @@ export async function POST(request: NextRequest) {
         });
       } else {
         // Payment not completed yet
+        console.log(`[Verify Session] ⚠️  Payment not complete: payment_status=${checkoutSession.payment_status}, status=${checkoutSession.status}`);
         return NextResponse.json({
           success: false,
           purchase,
