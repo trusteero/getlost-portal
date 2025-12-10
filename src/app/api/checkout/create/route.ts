@@ -150,15 +150,25 @@ export async function POST(request: NextRequest) {
           const sessionId = pending.paymentIntentId;
           const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
           
-          if (checkoutSession && checkoutSession.url) {
-            console.log(`[Checkout] ✅ Retrieved existing Stripe session ${sessionId} for purchase ${pending.id}`);
-            return NextResponse.json({
-              message: "Purchase already in progress",
-              purchaseId: pending.id,
-              existingPurchase: true,
-              sessionId: checkoutSession.id,
-              url: checkoutSession.url, // Return the checkout URL
-            });
+          if (checkoutSession) {
+            // Check if session is still valid (not expired and not completed)
+            if (checkoutSession.status === "open" && checkoutSession.url) {
+              console.log(`[Checkout] ✅ Retrieved existing valid Stripe session ${sessionId} for purchase ${pending.id}`);
+              return NextResponse.json({
+                message: "Purchase already in progress",
+                purchaseId: pending.id,
+                existingPurchase: true,
+                sessionId: checkoutSession.id,
+                url: checkoutSession.url, // Return the checkout URL
+              });
+            } else {
+              // Session is expired or completed, delete the old purchase and create a new one
+              console.log(`[Checkout] ⚠️  Stripe session ${sessionId} is ${checkoutSession.status}, deleting old purchase and creating new one`);
+              await db
+                .delete(purchases)
+                .where(eq(purchases.id, pending.id));
+              // Fall through to create a new purchase and checkout session
+            }
           }
         } catch (stripeError) {
           console.warn(`[Checkout] Failed to retrieve Stripe session for purchase ${pending.id}:`, stripeError);
@@ -183,40 +193,62 @@ export async function POST(request: NextRequest) {
             (s) => s.client_reference_id === pending.id || s.metadata?.purchaseId === pending.id
           );
           
-          if (matchingSession && matchingSession.url) {
-            console.log(`[Checkout] ✅ Found existing Stripe session ${matchingSession.id} for purchase ${pending.id} (via metadata search)`);
-            // Update the purchase record with the session ID for future use
+          if (matchingSession) {
+            // Check if session is still valid (not expired and not completed)
+            if (matchingSession.status === "open" && matchingSession.url) {
+              console.log(`[Checkout] ✅ Found existing valid Stripe session ${matchingSession.id} for purchase ${pending.id} (via metadata search)`);
+              // Update the purchase record with the session ID for future use
+              await db
+                .update(purchases)
+                .set({
+                  paymentIntentId: matchingSession.id, // Store session ID temporarily
+                  updatedAt: new Date(),
+                })
+                .where(eq(purchases.id, pending.id));
+              
+              return NextResponse.json({
+                message: "Purchase already in progress",
+                purchaseId: pending.id,
+                existingPurchase: true,
+                sessionId: matchingSession.id,
+                url: matchingSession.url, // Return the checkout URL
+              });
+            } else {
+              // Session is expired or completed, delete the old purchase and create a new one
+              console.log(`[Checkout] ⚠️  Stripe session ${matchingSession.id} is ${matchingSession.status}, deleting old purchase and creating new one`);
+              await db
+                .delete(purchases)
+                .where(eq(purchases.id, pending.id));
+              // Fall through to create a new purchase and checkout session
+            }
+          } else {
+            // No matching session found, delete the old purchase
+            console.log(`[Checkout] ⚠️  No matching Stripe session found for purchase ${pending.id}, deleting old purchase`);
             await db
-              .update(purchases)
-              .set({
-                paymentIntentId: matchingSession.id, // Store session ID temporarily
-                updatedAt: new Date(),
-              })
+              .delete(purchases)
               .where(eq(purchases.id, pending.id));
-            
-            return NextResponse.json({
-              message: "Purchase already in progress",
-              purchaseId: pending.id,
-              existingPurchase: true,
-              sessionId: matchingSession.id,
-              url: matchingSession.url, // Return the checkout URL
-            });
+            // Fall through to create a new purchase and checkout session
           }
         } catch (stripeError) {
           console.warn(`[Checkout] Failed to search Stripe sessions for purchase ${pending.id}:`, stripeError);
+          // If search fails, delete the old purchase and create a new one
+          console.log(`[Checkout] ⚠️  Stripe session search failed, deleting old purchase ${pending.id} and creating new one`);
+          await db
+            .delete(purchases)
+            .where(eq(purchases.id, pending.id));
+          // Fall through to create a new purchase and checkout session
         }
+      } else {
+        // No Stripe secret key or no paymentIntentId, delete the old purchase
+        console.log(`[Checkout] ⚠️  No Stripe session ID stored for purchase ${pending.id}, deleting old purchase`);
+        await db
+          .delete(purchases)
+          .where(eq(purchases.id, pending.id));
+        // Fall through to create a new purchase and checkout session
       }
       
-      // If we can't find the session, return the purchase info but indicate no URL available
-      // The frontend should handle this by showing an error or allowing retry
-      return NextResponse.json({
-        message: "Purchase already in progress, but checkout session not found. Please try again.",
-        purchaseId: pending.id,
-        existingPurchase: true,
-        sessionId: null,
-        url: null,
-        error: "SESSION_NOT_FOUND",
-      }, { status: 409 }); // Conflict status
+      // If we reach here, we've deleted the old purchase and will create a new one
+      // Fall through to create a new purchase and checkout session
     }
 
     // Check if we should force simulated purchases (for testing)
