@@ -168,6 +168,8 @@ function DashboardContent() {
           // Verify Stripe session and update purchase if needed (fallback if webhook hasn't processed)
           const verifyAndCheckPurchase = async () => {
             try {
+              console.log(`[Dashboard] 🔍 Starting purchase verification: sessionId=${sessionId}, purchaseId=${purchaseId}`);
+              
               // First, verify the Stripe session and update purchase if payment completed
               const verifyResponse = await fetch('/api/user/verify-stripe-session', {
                 method: 'POST',
@@ -175,31 +177,47 @@ function DashboardContent() {
                 body: JSON.stringify({ sessionId, purchaseId }),
               });
               
+              console.log(`[Dashboard] Verify response status: ${verifyResponse.status}`);
+              
               if (verifyResponse.ok) {
                 const verifyData = await verifyResponse.json();
-                console.log(`[Dashboard] Verify response:`, verifyData);
+                console.log(`[Dashboard] Verify response data:`, JSON.stringify(verifyData, null, 2));
                 if (verifyData.hasPermission) {
                   console.log(`[Dashboard] ✅ Purchase ${purchaseId} verified and completed`);
                   setShowUploadModal(true);
                   setShowPaymentModal(false);
                   return true;
                 } else {
-                  console.log(`[Dashboard] ⚠️  Purchase ${purchaseId} verified but hasPermission is false:`, verifyData.message);
+                  console.log(`[Dashboard] ⚠️  Purchase ${purchaseId} verified but hasPermission is false:`, verifyData.message || verifyData.error);
+                  console.log(`[Dashboard] Verify data details:`, {
+                    success: verifyData.success,
+                    hasPermission: verifyData.hasPermission,
+                    purchaseStatus: verifyData.purchase?.status,
+                    message: verifyData.message,
+                  });
                 }
               } else {
                 const errorData = await verifyResponse.json().catch(() => ({}));
-                console.error(`[Dashboard] Verify response not OK:`, verifyResponse.status, errorData);
+                console.error(`[Dashboard] Verify response not OK:`, verifyResponse.status, JSON.stringify(errorData, null, 2));
               }
               
               // If verification didn't work, check purchase status directly
+              console.log(`[Dashboard] Checking purchase status directly: purchaseId=${purchaseId}`);
               const checkResponse = await fetch(`/api/user/check-purchase?purchaseId=${purchaseId}`);
               if (checkResponse.ok) {
                 const checkData = await checkResponse.json();
+                console.log(`[Dashboard] Check purchase response:`, JSON.stringify(checkData, null, 2));
                 if (checkData.hasPermission) {
                   console.log(`[Dashboard] Purchase ${purchaseId} found, hasPermission: true`);
                   setShowUploadModal(true);
+                  setShowPaymentModal(false);
                   return true;
+                } else {
+                  console.log(`[Dashboard] Purchase ${purchaseId} found but hasPermission is false:`, checkData);
                 }
+              } else {
+                const errorData = await checkResponse.json().catch(() => ({}));
+                console.error(`[Dashboard] Check purchase response not OK:`, checkResponse.status, JSON.stringify(errorData, null, 2));
               }
             } catch (error) {
               console.error("[Dashboard] Failed to verify/check purchase:", error);
@@ -795,7 +813,7 @@ function DashboardContent() {
     }
     setCheckingPermission(true);
     try {
-      const response = await fetch("/api/user/upload-permission");
+        const response = await fetch("/api/user/upload-permission");
       if (response.ok) {
         const data = await response.json();
         const hasPermission = data.hasPermission === true;
@@ -803,10 +821,16 @@ function DashboardContent() {
           hasPermission,
           purchase: data.purchase,
           pending: data.pending,
-          rawData: data
+          permissionsPurchased: data.permissionsPurchased,
+          booksUploaded: data.booksUploaded,
+          remainingPermissions: data.remainingPermissions,
+          rawData: JSON.stringify(data, null, 2)
         });
         setHasUploadPermission(hasPermission);
         return hasPermission;
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("[Dashboard] Upload permission check failed:", response.status, errorData);
       }
       console.warn("[Dashboard] Upload permission check failed:", response.status);
       setHasUploadPermission(false);
