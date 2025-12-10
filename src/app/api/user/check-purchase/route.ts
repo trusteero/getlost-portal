@@ -46,8 +46,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       purchase,
       isUserLevelPurchase,
-      hasPermission: purchase.status === "completed" || 
-                     (purchase.status === "pending" && isUserLevelPurchase), // Grant permission for pending user-level purchases
+      hasPermission: purchase.status === "completed", // Only completed purchases grant permission
     });
   } catch (error) {
     console.error("Failed to check purchase:", error);

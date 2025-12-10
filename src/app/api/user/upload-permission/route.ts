@@ -47,20 +47,11 @@ export async function GET(request: NextRequest) {
       })));
     }
     
-    // Count valid upload permissions purchased (completed + valid pending)
+    // Count valid upload permissions purchased (ONLY completed purchases)
+    // Pending purchases do NOT grant permission - user must wait for payment to complete
     const completedPurchases = userLevelPurchases.filter(p => p.status === "completed");
     
-    // Count valid pending purchases (those with payment method)
-    const validPendingPurchases = userLevelPurchases.filter(p => {
-      if (p.status !== "pending") return false;
-      if (!p.paymentMethod) return false;
-      const createdAt = typeof p.createdAt === 'number' 
-        ? p.createdAt 
-        : (p.createdAt ? new Date(p.createdAt).getTime() / 1000 : 0);
-      return createdAt > 0;
-    });
-    
-    const totalPermissionsPurchased = completedPurchases.length + validPendingPurchases.length;
+    const totalPermissionsPurchased = completedPurchases.length;
     
     // Count books uploaded by this user (excluding sample books)
     const userBooks = await db
@@ -98,35 +89,22 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // User has permission - return purchase details
+    // User has permission - return purchase details (only completed purchases)
     let purchaseToReturn = null;
-    let isPending = false;
     
     if (completedPurchases.length > 0) {
-      // Prefer completed purchases
+      // Return most recent completed purchase
       purchaseToReturn = completedPurchases.sort((a, b) => {
         const aTime = a.completedAt?.getTime() || 0;
         const bTime = b.completedAt?.getTime() || 0;
         return bTime - aTime; // Most recent first
       })[0];
-    } else if (validPendingPurchases.length > 0) {
-      // Fall back to pending purchases if no completed ones
-      purchaseToReturn = validPendingPurchases.sort((a, b) => {
-        const aTime = typeof a.createdAt === 'number' 
-          ? a.createdAt 
-          : (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
-        const bTime = typeof b.createdAt === 'number' 
-          ? b.createdAt 
-          : (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
-        return bTime - aTime;
-      })[0];
-      isPending = true;
     }
     
     return NextResponse.json({
       hasPermission: true,
       purchase: purchaseToReturn,
-      pending: isPending,
+      pending: false, // Always false - only completed purchases grant permission
       permissionsPurchased: totalPermissionsPurchased,
       booksUploaded: booksUploaded,
       remainingPermissions: remainingPermissions,
