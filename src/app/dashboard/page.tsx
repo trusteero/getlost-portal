@@ -164,28 +164,45 @@ export default function Dashboard() {
           // Close payment modal if open
           setShowPaymentModal(false);
           
-          // First, check if the specific purchase exists (even if pending)
-          const checkSpecificPurchase = async () => {
+          // Verify Stripe session and update purchase if needed (fallback if webhook hasn't processed)
+          const verifyAndCheckPurchase = async () => {
             try {
-              const response = await fetch(`/api/user/check-purchase?purchaseId=${purchaseId}`);
-              if (response.ok) {
-                const data = await response.json();
-                if (data.hasPermission) {
+              // First, verify the Stripe session and update purchase if payment completed
+              const verifyResponse = await fetch('/api/user/verify-stripe-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId, purchaseId }),
+              });
+              
+              if (verifyResponse.ok) {
+                const verifyData = await verifyResponse.json();
+                if (verifyData.hasPermission) {
+                  console.log(`[Dashboard] ✅ Purchase ${purchaseId} verified and completed`);
+                  setShowUploadModal(true);
+                  return true;
+                }
+              }
+              
+              // If verification didn't work, check purchase status directly
+              const checkResponse = await fetch(`/api/user/check-purchase?purchaseId=${purchaseId}`);
+              if (checkResponse.ok) {
+                const checkData = await checkResponse.json();
+                if (checkData.hasPermission) {
                   console.log(`[Dashboard] Purchase ${purchaseId} found, hasPermission: true`);
                   setShowUploadModal(true);
                   return true;
                 }
               }
             } catch (error) {
-              console.error("Failed to check specific purchase:", error);
+              console.error("Failed to verify/check purchase:", error);
             }
             return false;
           };
           
-          // Check the specific purchase first (async, don't await in useEffect)
-          checkSpecificPurchase().then((purchaseFound) => {
+          // Try to verify and open upload modal
+          verifyAndCheckPurchase().then((purchaseFound) => {
             if (!purchaseFound) {
-              // If specific purchase check didn't work, fall back to general permission check
+              // If verification didn't work, fall back to general permission check with retries
               const checkAndOpen = async () => {
                 const hasPermission = await checkUploadPermission();
                 console.log(`[Dashboard] Permission check after payment: ${hasPermission}`);
@@ -197,7 +214,7 @@ export default function Dashboard() {
               // Check immediately
               checkAndOpen();
               
-              // Webhook might take a moment to process, so retry fetching after delays
+              // Retry after delays (webhook might still be processing)
               setTimeout(checkAndOpen, 1000); // Retry after 1 second
               setTimeout(checkAndOpen, 3000); // Retry after 3 seconds
               setTimeout(checkAndOpen, 5000); // Retry after 5 seconds
