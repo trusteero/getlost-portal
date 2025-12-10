@@ -13,7 +13,11 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const { name, currentPassword, newPassword } = await request.json();
+    const { name: rawName, currentPassword, newPassword } = await request.json();
+
+    // Sanitize user input to prevent XSS attacks
+    const { sanitizeTitle } = await import("@/server/utils/sanitize-input");
+    const name = rawName ? sanitizeTitle(rawName) : null;
 
     // Get current user
     const user = await db
@@ -29,7 +33,7 @@ export async function PATCH(request: NextRequest) {
     const userData = user[0]!;
     const updateData: any = {};
 
-    // Update name if provided
+    // Update name if provided (use sanitized value)
     if (name && name !== userData.name) {
       updateData.name = name;
     }

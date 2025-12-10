@@ -132,8 +132,13 @@ export async function PATCH(
 
     if (contentType?.includes("multipart/form-data") || contentType?.includes("boundary=")) {
       const formData = await request.formData();
-      title = formData.get("title") as string;
-      description = formData.get("description") as string;
+      const rawTitle = formData.get("title") as string;
+      const rawDescription = formData.get("description") as string;
+      
+      // Sanitize user input to prevent XSS attacks
+      const { sanitizeTitle, sanitizeDescription } = await import("@/server/utils/sanitize-input");
+      title = sanitizeTitle(rawTitle) || rawTitle; // Fallback to raw if sanitization returns null
+      description = sanitizeDescription(rawDescription) || "";
 
       const coverImage = formData.get("coverImage") as File | null;
       if (coverImage) {
@@ -180,8 +185,13 @@ export async function PATCH(
       }
     } else {
       const body = await request.json();
-      title = body.title;
-      description = body.description;
+      const rawTitle = body.title;
+      const rawDescription = body.description;
+      
+      // Sanitize user input to prevent XSS attacks
+      const { sanitizeTitle, sanitizeDescription } = await import("@/server/utils/sanitize-input");
+      title = sanitizeTitle(rawTitle) || rawTitle; // Fallback to raw if sanitization returns null
+      description = sanitizeDescription(rawDescription) || "";
     }
 
     // Verify book ownership

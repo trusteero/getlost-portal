@@ -551,12 +551,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "File is required" }, { status: 400 });
     }
 
-    // Validate required fields
-    if (!title || !title.trim()) {
+    // Sanitize all user input to prevent XSS attacks
+    const { sanitizeTitle, sanitizeDescription, sanitizeSummary } = await import("@/server/utils/sanitize-input");
+    
+    const sanitizedTitle = sanitizeTitle(title);
+    const sanitizedAuthorName = sanitizeTitle(authorName);
+    const sanitizedAuthorBio = sanitizeDescription(authorBio);
+    const sanitizedDescription = sanitizeDescription(description);
+    const sanitizedSummary = sanitizeSummary(summary);
+
+    // Validate required fields (after sanitization)
+    if (!sanitizedTitle) {
       return NextResponse.json({ error: "Book title is required" }, { status: 400 });
     }
 
-    if (!authorName || !authorName.trim()) {
+    if (!sanitizedAuthorName) {
       return NextResponse.json({ error: "Author name is required" }, { status: 400 });
     }
 
@@ -601,8 +610,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Title is required, so use the provided title
-    const bookTitle = title.trim();
+    // Use sanitized values
+    const bookTitle = sanitizedTitle;
 
     // Generate book ID first
     const bookId = randomUUID();
@@ -638,20 +647,21 @@ export async function POST(request: NextRequest) {
     ensureBooksTableColumns();
 
     // Build insert values - only include columns that exist
+    // Use sanitized values to prevent XSS
     const insertValues: any = {
       id: bookId,
       userId: session.user.id,
       title: bookTitle,
-      description,
+      description: sanitizedDescription,
       coverImageUrl,
     };
 
     // Only add optional columns if they exist
     if (columnExists("getlostportal_book", "authorName")) {
-      insertValues.authorName = authorName?.trim() || null;
+      insertValues.authorName = sanitizedAuthorName;
     }
     if (columnExists("getlostportal_book", "authorBio")) {
-      insertValues.authorBio = authorBio?.trim() || null;
+      insertValues.authorBio = sanitizedAuthorBio;
     }
     if (columnExists("getlostportal_book", "manuscriptStatus")) {
       insertValues.manuscriptStatus = "queued"; // Initial status is queued
@@ -713,7 +723,7 @@ export async function POST(request: NextRequest) {
         fileType,
         fileData: fileBase64,
         mimeType: fileType,
-        summary,
+        summary: sanitizedSummary,
       })
       .returning();
 

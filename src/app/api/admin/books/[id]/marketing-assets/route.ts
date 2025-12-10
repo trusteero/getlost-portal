@@ -38,7 +38,11 @@ export async function POST(
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
-    const title = formData.get("title") as string | null;
+    const rawTitle = formData.get("title") as string | null;
+
+    // Sanitize user input to prevent XSS attacks
+    const { sanitizeTitle } = await import("@/server/utils/sanitize-input");
+    const title = sanitizeTitle(rawTitle);
 
     if (!file || !title) {
       return NextResponse.json({ error: "ZIP file and title are required" }, { status: 400 });
