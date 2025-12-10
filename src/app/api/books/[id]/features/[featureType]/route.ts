@@ -150,6 +150,57 @@ export async function POST(
       );
     }
 
+    // Concurrent purchase prevention: Check for existing pending or completed purchase
+    // This prevents duplicate charges if user clicks multiple times
+    const existingPurchase = await db
+      .select()
+      .from(purchases)
+      .where(
+        and(
+          eq(purchases.userId, session.user.id),
+          eq(purchases.bookId, id),
+          eq(purchases.featureType, featureType),
+          // Check for both pending and completed purchases
+          // If pending, we should wait for it to complete
+          // If completed, feature should already be unlocked
+        )
+      )
+      .limit(1);
+
+    if (existingPurchase.length > 0) {
+      const existing = existingPurchase[0]!;
+      
+      if (existing.status === "pending") {
+        console.log(`[Feature Purchase] ⚠️  Found existing pending purchase ${existing.id} for book ${id}, feature ${featureType}`);
+        return NextResponse.json({
+          message: "Purchase already in progress. Please wait for it to complete.",
+          purchaseId: existing.id,
+          existingPurchase: true,
+        });
+      }
+      
+      if (existing.status === "completed") {
+        // Purchase already completed, check if feature is unlocked
+        const feature = await db
+          .select()
+          .from(bookFeatures)
+          .where(
+            and(
+              eq(bookFeatures.bookId, id),
+              eq(bookFeatures.featureType, featureType)
+            )
+          )
+          .limit(1);
+        
+        if (feature.length > 0 && feature[0]!.status !== "locked") {
+          return NextResponse.json({
+            message: "Feature already unlocked",
+            feature: feature[0],
+          });
+        }
+      }
+    }
+
     // Simulated purchase (Stripe not configured or free feature)
     // Wrap purchase and feature creation in a transaction for data integrity
     const purchaseId = crypto.randomUUID();

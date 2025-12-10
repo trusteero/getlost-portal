@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, purchases, bookFeatures } from "@/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 
 const FEATURE_PRICES: Record<string, number> = {
@@ -98,6 +98,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         error: "This feature is free. Use the direct unlock endpoint." 
       }, { status: 400 });
+    }
+
+    // Concurrent purchase prevention: Check for existing pending purchase
+    // This prevents duplicate charges if user clicks multiple times
+    const existingPendingPurchase = await db
+      .select()
+      .from(purchases)
+      .where(
+        and(
+          eq(purchases.userId, session.user.id),
+          eq(purchases.featureType, featureType),
+          eq(purchases.status, "pending"),
+          featureType === "book-upload" 
+            ? isNull(purchases.bookId)
+            : bookId 
+              ? eq(purchases.bookId, bookId)
+              : isNull(purchases.bookId)
+        )
+      )
+      .limit(1);
+
+    if (existingPendingPurchase.length > 0) {
+      const pending = existingPendingPurchase[0]!;
+      console.log(`[Checkout] ⚠️  Found existing pending purchase ${pending.id} for user ${session.user.id}, feature ${featureType}, bookId ${bookId || "null"}`);
+      
+      // Return existing pending purchase instead of creating a new one
+      // This prevents duplicate charges
+      return NextResponse.json({
+        message: "Purchase already in progress",
+        purchaseId: pending.id,
+        existingPurchase: true,
+        sessionId: null, // No new session created
+      });
     }
 
     // Check if we should force simulated purchases (for testing)
