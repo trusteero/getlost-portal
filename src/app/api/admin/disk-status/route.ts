@@ -24,7 +24,7 @@ function getDiskUsage(diskPath: string): {
     const lines = dfOutput.trim().split('\n');
     if (lines.length >= 2 && lines[1]) {
       const parts = lines[1].split(/\s+/);
-      if (parts.length >= 4) {
+      if (parts.length >= 4 && parts[1] && parts[2] && parts[3]) {
         // df output: Filesystem 1K-blocks Used Available Use% Mounted
         const total = parseInt(parts[1], 10) * 1024; // Convert KB to bytes
         const used = parseInt(parts[2], 10) * 1024;
