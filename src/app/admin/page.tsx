@@ -138,12 +138,35 @@ function AdminDashboardContent() {
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState<string>("");
   const [savingTitle, setSavingTitle] = useState<boolean>(false);
+  
+  // Disk usage state
+  const [diskStatus, setDiskStatus] = useState<{
+    usage?: { usagePercent: number; freeFormatted: string; totalFormatted: string };
+    warning?: { level: 'warning' | 'critical'; message: string };
+    warnings?: string[];
+  } | null>(null);
 
   // Debug users data
   useEffect(() => {
     console.log("Users state updated:", users.length, "users");
     console.log("Active view:", activeView);
   }, [users, activeView]);
+
+  const fetchDiskStatus = async () => {
+    try {
+      const response = await fetch("/api/admin/disk-status");
+      if (response.ok) {
+        const data = await response.json();
+        setDiskStatus({
+          usage: data.disk?.usage || undefined,
+          warning: data.disk?.warning || undefined,
+          warnings: data.warnings || undefined,
+        });
+      }
+    } catch (error) {
+      console.error("[Admin] Failed to fetch disk status:", error);
+    }
+  };
 
   // Check if user is admin
   useEffect(() => {
@@ -174,8 +197,18 @@ function AdminDashboardContent() {
 
     if (session) {
       checkAdmin();
+      fetchDiskStatus();
     }
   }, [isPending, session]);
+
+  // Fetch disk status periodically (every 5 minutes)
+  useEffect(() => {
+    if (session) {
+      fetchDiskStatus();
+      const interval = setInterval(fetchDiskStatus, 5 * 60 * 1000); // 5 minutes
+      return () => clearInterval(interval);
+    }
+  }, [session]);
 
   const fetchData = async () => {
     try {
@@ -998,6 +1031,39 @@ function AdminDashboardContent() {
           </Card>
         </div>
 
+        {/* Disk Usage Warning Banner */}
+        {diskStatus?.warning && (
+          <div className={`mb-4 p-4 rounded-lg border-2 ${
+            diskStatus.warning.level === 'critical' 
+              ? 'bg-red-50 border-red-300 text-red-900' 
+              : 'bg-yellow-50 border-yellow-300 text-yellow-900'
+          }`}>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="font-semibold mb-1">
+                  {diskStatus.warning.level === 'critical' ? '🚨 Critical Disk Warning' : '⚠️ Disk Usage Warning'}
+                </div>
+                <div className="text-sm">{diskStatus.warning.message}</div>
+                {diskStatus.usage && (
+                  <div className="text-xs mt-2 opacity-90">
+                    Disk Usage: {diskStatus.usage.usagePercent}% ({diskStatus.usage.freeFormatted} free of {diskStatus.usage.totalFormatted})
+                  </div>
+                )}
+                <div className="text-xs mt-2 opacity-75">
+                  💡 To upgrade: Render Dashboard → Service → Disks → Edit → Increase size
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setDiskStatus(null)}
+                className="ml-4"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* View Switcher */}
         <div className="mb-6 flex space-x-2">
@@ -1029,7 +1095,34 @@ function AdminDashboardContent() {
               try {
                 const response = await fetch("/api/admin/disk-status");
                 const data = await response.json();
-                alert(JSON.stringify(data, null, 2));
+                
+                // Format the response nicely
+                let message = "📊 Disk Status\n\n";
+                message += `Disk Path: ${data.disk.path}\n`;
+                message += `Status: ${data.disk.status}\n`;
+                
+                if (data.disk.usage) {
+                  message += `\n💾 Disk Usage:\n`;
+                  message += `  Total: ${data.disk.usage.totalFormatted}\n`;
+                  message += `  Used: ${data.disk.usage.usedFormatted}\n`;
+                  message += `  Free: ${data.disk.usage.freeFormatted}\n`;
+                  message += `  Usage: ${data.disk.usage.usagePercent}%\n`;
+                }
+                
+                message += `\n📁 Database:\n`;
+                message += `  Path: ${data.database.path}\n`;
+                message += `  Size: ${data.database.sizeFormatted}\n`;
+                message += `  Tables: ${data.database.tables}\n`;
+                message += `  Status: ${data.database.status}\n`;
+                
+                if (data.warnings && data.warnings.length > 0) {
+                  message += `\n⚠️ Warnings:\n`;
+                  data.warnings.forEach((w: string) => {
+                    message += `  • ${w}\n`;
+                  });
+                }
+                
+                alert(message);
               } catch (error) {
                 console.error("[Admin] Failed to check disk status:", error);
                 console.error("[Admin] Disk status check error details:", {
@@ -1043,6 +1136,11 @@ function AdminDashboardContent() {
           >
             <Settings className="w-4 h-4 mr-2" />
             Disk Status
+            {diskStatus?.warning && (
+              <span className={`ml-2 w-2 h-2 rounded-full ${
+                diskStatus.warning.level === 'critical' ? 'bg-red-500' : 'bg-yellow-500'
+              }`} />
+            )}
           </Button>
           <Link href="/admin/database">
             <Button variant="outline" title="View database">
