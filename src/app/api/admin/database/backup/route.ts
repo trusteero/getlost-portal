@@ -1,14 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminFromRequest } from "@/server/auth";
-import { readFileSync, existsSync, statSync } from "fs";
+import { createReadStream, existsSync, statSync } from "fs";
 import path from "path";
 import { env } from "@/env";
+import { Readable } from "stream";
 
 export const dynamic = 'force-dynamic';
 
 /**
+ * Convert a Node.js Readable stream to a Web ReadableStream
+ */
+function nodeStreamToWebStream(nodeStream: Readable): ReadableStream {
+  return new ReadableStream({
+    start(controller) {
+      nodeStream.on('data', (chunk) => {
+        controller.enqueue(chunk);
+      });
+      nodeStream.on('end', () => {
+        controller.close();
+      });
+      nodeStream.on('error', (error) => {
+        controller.error(error);
+      });
+    },
+    cancel() {
+      nodeStream.destroy();
+    },
+  });
+}
+
+/**
  * GET /api/admin/database/backup
- * Download a backup of the database file
+ * Download a backup of the database file (streaming to avoid memory issues)
  */
 export async function GET(request: NextRequest) {
   const isAdmin = await isAdminFromRequest(request);
@@ -39,14 +62,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Read database file
-    const dbBuffer = readFileSync(dbPath);
+    // Get file stats for Content-Length header
     const stats = statSync(dbPath);
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
     const filename = `db-backup-${timestamp}.sqlite`;
 
-    // Return file as download
-    return new NextResponse(dbBuffer, {
+    // Create a readable stream from the file (doesn't load entire file into memory)
+    const fileStream = createReadStream(dbPath);
+    const webStream = nodeStreamToWebStream(fileStream);
+
+    // Return file as streaming download
+    return new NextResponse(webStream, {
       headers: {
         "Content-Type": "application/x-sqlite3",
         "Content-Disposition": `attachment; filename="${filename}"`,
