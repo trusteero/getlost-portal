@@ -37,7 +37,8 @@
 		"list-users": "node scripts/list-users.js",
 		"delete-user": "node scripts/delete-user.js",
 		"db:reset": "./scripts/reset-db.sh",
-		"seed:precanned": "node scripts/seed-precanned-content.js"
+		"seed:precanned": "node scripts/seed-precanned-content.js",
+		"backup:db": "node scripts/backup-database.js"
 	},
 	"dependencies": {
 		"@auth/drizzle-adapter": "^1.7.2",

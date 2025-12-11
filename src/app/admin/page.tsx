@@ -1148,6 +1148,33 @@ function AdminDashboardContent() {
               Database
             </Button>
           </Link>
+          <Button 
+            variant="outline" 
+            onClick={async () => {
+              try {
+                const response = await fetch("/api/admin/database/backup");
+                if (!response.ok) {
+                  throw new Error("Backup failed");
+                }
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `db-backup-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)}.sqlite`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+              } catch (error) {
+                console.error("[Admin] Failed to backup database:", error);
+                alert("Failed to backup database: " + (error instanceof Error ? error.message : String(error)));
+              }
+            }}
+            title="Download database backup"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Backup DB
+          </Button>
         </div>
 
         {/* Books/Users Table */}
