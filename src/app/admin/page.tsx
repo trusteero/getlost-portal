@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession, signOut } from "@/lib/auth-client";
-import { Clock, CheckCircle, AlertCircle, XCircle, Settings, LogOut, BookOpen, Users, RefreshCw, User, UserX, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Home, TrendingUp, Loader2, Image as ImageIcon, ExternalLink, Mail, MoreHorizontal, Shield, HelpCircle, FileUp, FileText } from "lucide-react";
+import { Clock, CheckCircle, AlertCircle, XCircle, Settings, LogOut, BookOpen, Users, RefreshCw, User, UserX, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Home, TrendingUp, Loader2, Image as ImageIcon, ExternalLink, Mail, MoreHorizontal, Shield, HelpCircle, FileUp, FileText, Edit2, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -133,6 +133,11 @@ function AdminDashboardContent() {
   const [covers, setCovers] = useState<any[]>([]);
   const [landingPages, setLandingPages] = useState<any[]>([]);
   const [uploadingAsset, setUploadingAsset] = useState<string | null>(null);
+  
+  // Book title editing state
+  const [editingBookId, setEditingBookId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState<string>("");
+  const [savingTitle, setSavingTitle] = useState<boolean>(false);
 
   // Debug users data
   useEffect(() => {
@@ -725,6 +730,41 @@ function AdminDashboardContent() {
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
+  const handleSaveTitle = async (bookId: string) => {
+    if (!editingTitle.trim()) {
+      alert("Title cannot be empty");
+      return;
+    }
+
+    setSavingTitle(true);
+    try {
+      const response = await fetch(`/api/admin/books/${bookId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: editingTitle.trim() }),
+      });
+
+      if (response.ok) {
+        await fetchData();
+        setEditingBookId(null);
+        setEditingTitle("");
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to update title");
+      }
+    } catch (error) {
+      console.error("[Admin] Failed to update book title:", error);
+      console.error("[Admin] Update title error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        bookId,
+      });
+      alert("Failed to update title");
+    } finally {
+      setSavingTitle(false);
+    }
+  };
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -1139,7 +1179,75 @@ function AdminDashboardContent() {
                             </td>
                             <td className="py-2 px-2">
                               <div className="max-w-xs">
-                                <div className="font-medium truncate">{book.title}</div>
+                                {editingBookId === book.id ? (
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="text"
+                                      value={editingTitle}
+                                      onChange={(e) => setEditingTitle(e.target.value)}
+                                      onKeyDown={async (e) => {
+                                        if (e.key === "Enter") {
+                                          await handleSaveTitle(book.id);
+                                        } else if (e.key === "Escape") {
+                                          setEditingBookId(null);
+                                          setEditingTitle("");
+                                        }
+                                      }}
+                                      className="flex-1 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      autoFocus
+                                    />
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0"
+                                      onClick={async () => await handleSaveTitle(book.id)}
+                                      disabled={savingTitle}
+                                    >
+                                      {savingTitle ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <Save className="w-3 h-3" />
+                                      )}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0"
+                                      onClick={() => {
+                                        setEditingBookId(null);
+                                        setEditingTitle("");
+                                      }}
+                                      disabled={savingTitle}
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1 group">
+                                    <div 
+                                      className="font-medium truncate flex-1 cursor-pointer hover:text-blue-600"
+                                      onClick={() => {
+                                        setEditingBookId(book.id);
+                                        setEditingTitle(book.title);
+                                      }}
+                                      title="Click to edit title"
+                                    >
+                                      {book.title}
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => {
+                                        setEditingBookId(book.id);
+                                        setEditingTitle(book.title);
+                                      }}
+                                      title="Edit title"
+                                    >
+                                      <Edit2 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                )}
                                 {book.description && (
                                   <div className="text-xs text-gray-500 truncate">{book.description}</div>
                                 )}

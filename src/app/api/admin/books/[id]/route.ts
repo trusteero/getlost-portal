@@ -17,6 +17,77 @@ import { eq } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic';
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const isAdmin = await isAdminFromRequest(request);
+  const { id: bookId } = await params;
+
+  if (!isAdmin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    const body = await request.json();
+    const { title, description } = body;
+
+    // Sanitize user input to prevent XSS attacks
+    const { sanitizeTitle, sanitizeDescription } = await import("@/server/utils/sanitize-input");
+    const sanitizedTitle = sanitizeTitle(title);
+    const sanitizedDescription = sanitizeDescription(description);
+
+    // Verify book exists
+    const [book] = await db
+      .select()
+      .from(books)
+      .where(eq(books.id, bookId))
+      .limit(1);
+
+    if (!book) {
+      return NextResponse.json({ error: "Book not found" }, { status: 404 });
+    }
+
+    // Update book
+    const updateData: any = {
+      updatedAt: new Date(),
+    };
+
+    if (sanitizedTitle !== null) {
+      updateData.title = sanitizedTitle;
+    }
+
+    if (sanitizedDescription !== null) {
+      updateData.description = sanitizedDescription;
+    }
+
+    await db
+      .update(books)
+      .set(updateData)
+      .where(eq(books.id, bookId));
+
+    // Return updated book
+    const [updatedBook] = await db
+      .select()
+      .from(books)
+      .where(eq(books.id, bookId))
+      .limit(1);
+
+    return NextResponse.json(updatedBook);
+  } catch (error) {
+    console.error("[Admin] Failed to update book:", error);
+    console.error("[Admin] Update book error details:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      bookId,
+    });
+    return NextResponse.json(
+      { error: "Failed to update book" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
