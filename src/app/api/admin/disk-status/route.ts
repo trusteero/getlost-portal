@@ -22,21 +22,23 @@ function getDiskUsage(diskPath: string): {
     // Try to use df command (works on Linux/macOS)
     const dfOutput = execSync(`df -k "${diskPath}"`, { encoding: 'utf-8' });
     const lines = dfOutput.trim().split('\n');
-    if (lines.length >= 2) {
+    if (lines.length >= 2 && lines[1]) {
       const parts = lines[1].split(/\s+/);
-      // df output: Filesystem 1K-blocks Used Available Use% Mounted
-      const total = parseInt(parts[1], 10) * 1024; // Convert KB to bytes
-      const used = parseInt(parts[2], 10) * 1024;
-      const free = parseInt(parts[3], 10) * 1024;
-      const usagePercent = Math.round((used / total) * 100);
-      
-      return {
-        total,
-        free,
-        used,
-        usagePercent,
-        available: true,
-      };
+      if (parts.length >= 4) {
+        // df output: Filesystem 1K-blocks Used Available Use% Mounted
+        const total = parseInt(parts[1], 10) * 1024; // Convert KB to bytes
+        const used = parseInt(parts[2], 10) * 1024;
+        const free = parseInt(parts[3], 10) * 1024;
+        const usagePercent = Math.round((used / total) * 100);
+        
+        return {
+          total,
+          free,
+          used,
+          usagePercent,
+          available: true,
+        };
+      }
     }
   } catch (error) {
     console.warn("[Disk Status] Could not get disk usage via df:", error);
