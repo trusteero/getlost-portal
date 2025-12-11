@@ -3,6 +3,19 @@
 import { Check, Lock, MoreVertical, Download, Eye, Trash2, Loader2, CreditCard, X } from "lucide-react";
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+
+// Decode HTML entities in text (client-side utility)
+function decodeHtmlEntities(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/&#x27;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"');
+}
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -456,7 +469,7 @@ export const ManuscriptCard = ({
             {/* Header */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-xl lg:text-2xl font-bold text-gray-900 tracking-tight">{title}</h2>
+                <h2 className="text-xl lg:text-2xl font-bold text-gray-900 tracking-tight">{decodeHtmlEntities(title)}</h2>
                 {isSample && (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     Sample report

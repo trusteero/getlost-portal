@@ -4,6 +4,19 @@ import React from 'react';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 
+// Decode HTML entities in text (client-side utility)
+function decodeHtmlEntities(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/&#x27;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"');
+}
+
 interface ProgressStep {
   id: string;
   status: 'complete' | 'locked' | 'processing';
@@ -142,7 +155,7 @@ export function CondensedLibrary({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <div className="text-base font-bold text-gray-900 truncate">
-                      {manuscript.title}
+                      {decodeHtmlEntities(manuscript.title)}
                     </div>
                     {manuscript.isSample && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 shrink-0">

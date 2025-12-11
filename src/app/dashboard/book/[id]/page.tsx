@@ -689,7 +689,7 @@ export default function BookDetail() {
                             placeholder="Book title"
                           />
                         ) : (
-                          <h2 className="text-2xl font-bold text-gray-900">{bookData.title}</h2>
+                          <h2 className="text-2xl font-bold text-gray-900">{bookData.title?.replace(/&#x27;/g, "'").replace(/&#39;/g, "'") || bookData.title}</h2>
                         )}
                         <p className="text-sm text-gray-500 mt-1">
                           Added {new Date(bookData.createdAt).toLocaleDateString()}

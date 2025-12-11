@@ -46,11 +46,13 @@ export function sanitizeText(input: string | null | undefined, maxLength: number
     .replace(/&#x3D;/g, '=');
 
   // Escape remaining special characters that could be used in XSS
+  // Note: Apostrophes (') are safe and don't need encoding - they're commonly used in titles/names
   sanitized = sanitized
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
+    // Don't encode apostrophes - they're safe and commonly used in titles/names
+    // .replace(/'/g, '&#x27;')
     .replace(/\//g, '&#x2F;');
 
   // Normalize whitespace (collapse multiple spaces, preserve newlines)
