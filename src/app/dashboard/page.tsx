@@ -953,7 +953,7 @@ function DashboardContent() {
   };
 
   // Upload functionality
-  const supportedFormats = process.env.NEXT_PUBLIC_SUPPORTED_FORMATS || ".docx,.pdf,.epub";
+  const supportedFormats = process.env.NEXT_PUBLIC_SUPPORTED_FORMATS || ".docx,.pdf,.epub,.txt,.doc";
   const formatList = supportedFormats.split(",").map(f => f.trim());
 
   const handleDrag = useCallback((e: React.DragEvent) => {
