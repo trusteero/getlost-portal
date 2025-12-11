@@ -1426,10 +1426,11 @@ function DashboardContent() {
               </>
             )}
           </button>
-          <button className="w-full md:w-auto btn-premium-sapphire text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-sapphire-500">
+          {/* Referral button - Hidden for now, will be enabled later */}
+          {/* <button className="w-full md:w-auto btn-premium-sapphire text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-sapphire-500">
             <Users className="w-4 h-4 inline-block align-middle" />
             Refer an Author
-          </button>
+          </button> */}
         </div>
 
         {books.length > 0 && (
