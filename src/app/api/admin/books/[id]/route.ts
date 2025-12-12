@@ -30,7 +30,7 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    const { title, description } = body;
+    const { title, description, coverImageUrl } = body;
 
     // Sanitize user input to prevent XSS attacks
     const { sanitizeTitle, sanitizeDescription } = await import("@/server/utils/sanitize-input");
@@ -59,6 +59,11 @@ export async function PATCH(
 
     if (sanitizedDescription !== null) {
       updateData.description = sanitizedDescription;
+    }
+
+    // Allow updating coverImageUrl (for setting a specific cover as the primary display image)
+    if (coverImageUrl !== undefined) {
+      updateData.coverImageUrl = coverImageUrl || null;
     }
 
     await db

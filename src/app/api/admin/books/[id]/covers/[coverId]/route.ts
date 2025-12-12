@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
-import { bookCovers } from "@/server/db/schema";
+import { bookCovers, books } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic';
@@ -58,6 +58,23 @@ export async function PATCH(
         .update(bookCovers)
         .set({ isPrimary: false })
         .where(eq(bookCovers.bookId, id));
+      
+      // Also update the book's coverImageUrl to match the primary cover
+      const [cover] = await db
+        .select({ imageUrl: bookCovers.imageUrl })
+        .from(bookCovers)
+        .where(eq(bookCovers.id, coverId))
+        .limit(1);
+      
+      if (cover && cover.imageUrl) {
+        await db
+          .update(books)
+          .set({ 
+            coverImageUrl: cover.imageUrl,
+            updatedAt: new Date(),
+          })
+          .where(eq(books.id, id));
+      }
     }
 
     // Update this cover

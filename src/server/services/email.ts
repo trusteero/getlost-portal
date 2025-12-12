@@ -26,15 +26,43 @@ const APP_URL = getAppUrl();
 
 export async function sendEmail({ to, subject, html, text }: EmailOptions) {
   // Check if email sending is disabled for tests
-  const isTestMode = process.env.DISABLE_EMAIL_IN_TESTS === "true" || process.env.NODE_ENV === "test";
+  // Check multiple conditions to ensure we catch test mode
+  const disableEmailFlag = process.env.DISABLE_EMAIL_IN_TESTS === "true";
+  const isTestNodeEnv = process.env.NODE_ENV === "test";
+  const isTestMode = disableEmailFlag || isTestNodeEnv;
+  
+  // Log environment for debugging
+  if (!isTestMode) {
+    console.log("📧 [Email] Environment check:", {
+      DISABLE_EMAIL_IN_TESTS: process.env.DISABLE_EMAIL_IN_TESTS,
+      NODE_ENV: process.env.NODE_ENV,
+      disableEmailFlag,
+      isTestNodeEnv,
+      isTestMode,
+    });
+  }
   
   if (isTestMode) {
-    console.log("📧 [Email] TEST MODE - Email sending disabled:", { to, subject });
+    console.log("📧 [Email] TEST MODE - Email sending disabled:", { 
+      to, 
+      subject,
+      DISABLE_EMAIL_IN_TESTS: process.env.DISABLE_EMAIL_IN_TESTS,
+      NODE_ENV: process.env.NODE_ENV,
+    });
     console.log("📧 [Email] Would be sent:", { to, subject });
     console.log("📧 [Email] HTML preview:", html.substring(0, 200) + "...");
     return true; // Return true to simulate successful send
   }
   
+  // Double-check test mode before making API call (defensive check)
+  // This prevents emails from being sent even if the first check somehow failed
+  const finalTestModeCheck = process.env.DISABLE_EMAIL_IN_TESTS === "true" || process.env.NODE_ENV === "test";
+  if (finalTestModeCheck) {
+    console.warn("📧 [Email] WARNING: Test mode detected in final check - preventing email send");
+    console.log("📧 [Email] Would be sent:", { to, subject });
+    return true;
+  }
+
   if (!RESEND_API_KEY) {
     console.error("Resend API key not configured");
     // In development, just log the email

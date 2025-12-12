@@ -216,6 +216,17 @@ export async function POST(request: Request) {
 
 		const createdUser = newUser[0]!;
 
+		// In test mode, auto-verify email so user can log in immediately
+		if (isTestMode) {
+			await db
+				.update(users)
+				.set({
+					emailVerified: new Date(),
+				})
+				.where(eq(users.id, createdUser.id));
+			console.log("✅ [Signup] Auto-verified email for test user");
+		}
+
 		// Create example books for the user
 		// In test mode, wait for completion to ensure books are ready
 		// Reuse isTestMode from earlier in the function

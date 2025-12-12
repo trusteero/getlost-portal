@@ -54,8 +54,11 @@ export default defineConfig({
     stderr: "pipe",
     env: {
       // Disable email sending during E2E tests
+      // Force these to override any .env file values
       DISABLE_EMAIL_IN_TESTS: "true",
-      NODE_ENV: process.env.NODE_ENV || "test",
+      NODE_ENV: "test",
+      // Also unset RESEND_API_KEY to prevent accidental sends
+      RESEND_API_KEY: "",
     },
   },
 });
