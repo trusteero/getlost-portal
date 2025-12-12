@@ -8,8 +8,14 @@ export async function GET(
 ) {
   const { filename } = await params;
 
-  console.log(`[Covers API] Request for cover: ${filename}`);
-  console.log(`[Covers API] process.cwd(): ${process.cwd()}`);
+  // Check if filename looks like a UUID (uploaded file) vs precanned content
+  // UUID format: 8-4-4-4-12 hex characters (e.g., "8625796c-bffb-45aa-ba6e-2e77a1ff6d8a")
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z]+$/i;
+  const isLikelyUploadedFile = uuidPattern.test(filename);
+  
+  // For uploaded files (UUIDs), only check the standard covers directory
+  // For precanned files (like "wool.jpg", "beach_read.jpg"), check all locations
+  const shouldCheckPrecanned = !isLikelyUploadedFile;
 
   try {
     // First, try the standard covers directory
@@ -19,41 +25,33 @@ export async function GET(
     let filePath = path.join(coverDir, filename);
     let resolvedPath = path.resolve(filePath);
     
-    console.log(`[Covers API] coverDir: ${coverDir}`);
-    console.log(`[Covers API] filePath: ${filePath}`);
-    console.log(`[Covers API] resolvedPath: ${resolvedPath}`);
-    
     // Security: Ensure the requested file is within the covers directory
     if (!resolvedPath.startsWith(coverDir)) {
       console.error(`[Covers API] Security check failed: ${resolvedPath} does not start with ${coverDir}`);
       return NextResponse.json({ error: "Invalid file path" }, { status: 403 });
     }
     
-    // Check if directory exists
-    try {
-      await fs.access(coverDir);
-      console.log(`[Covers API] Directory exists: ${coverDir}`);
-    } catch {
-      console.error(`[Covers API] Directory does not exist: ${coverDir}`);
-    }
-    
-    // If not found in covers directory, try precanned uploads
+    // Try to read from standard covers directory
     let fileBuffer: Buffer;
     try {
       fileBuffer = await fs.readFile(filePath);
-      console.log(`[Covers API] Successfully read file from: ${filePath}`);
+      // Success - return the file
     } catch (error: any) {
-      // Log the error for debugging
-      console.log(`[Covers API] File not found in ${filePath}, error: ${error.message}`);
-      console.log(`[Covers API] Trying precanned uploads...`);
+      // File not found in standard location
+      
+      // If this looks like an uploaded file (UUID), don't check precanned locations
+      if (!shouldCheckPrecanned) {
+        console.log(`[Covers API] Uploaded cover image not found: ${filename}`);
+        return NextResponse.json({ error: "Cover image not found" }, { status: 404 });
+      }
+      
+      // For precanned files, try fallback locations
+      console.log(`[Covers API] File not found in standard location, checking precanned locations for: ${filename}`);
       
       // Try precanned uploads directory (for precanned cover images)
       const precannedUploadsPath = path.resolve(process.cwd(), 'public', 'uploads', 'precanned', 'uploads', filename);
       const precannedResolvedPath = path.resolve(precannedUploadsPath);
       const precannedBaseDir = path.resolve(process.cwd(), 'public', 'uploads', 'precanned', 'uploads');
-      
-      console.log(`[Covers API] precannedUploadsPath: ${precannedUploadsPath}`);
-      console.log(`[Covers API] precannedBaseDir: ${precannedBaseDir}`);
       
       // Security: Ensure the requested file is within the precanned uploads directory
       if (!precannedResolvedPath.startsWith(precannedBaseDir)) {
@@ -63,16 +61,12 @@ export async function GET(
       
       try {
         fileBuffer = await fs.readFile(precannedUploadsPath);
-        console.log(`[Covers API] Successfully read file from precanned: ${precannedUploadsPath}`);
+        console.log(`[Covers API] ✅ Found in precanned public location: ${precannedUploadsPath}`);
       } catch (precannedError: any) {
         // If not in public/uploads/precanned/uploads, try source precannedcontent/uploads
-        console.log(`[Covers API] File not in public/uploads/precanned/uploads, trying source directory...`);
         const sourcePrecannedPath = path.resolve(process.cwd(), 'precannedcontent', 'uploads', filename);
         const sourcePrecannedResolved = path.resolve(sourcePrecannedPath);
         const sourcePrecannedBaseDir = path.resolve(process.cwd(), 'precannedcontent', 'uploads');
-        
-        console.log(`[Covers API] sourcePrecannedPath: ${sourcePrecannedPath}`);
-        console.log(`[Covers API] sourcePrecannedBaseDir: ${sourcePrecannedBaseDir}`);
         
         // Security: Ensure the requested file is within the source precanned uploads directory
         if (!sourcePrecannedResolved.startsWith(sourcePrecannedBaseDir)) {
@@ -82,10 +76,10 @@ export async function GET(
         
         try {
           fileBuffer = await fs.readFile(sourcePrecannedPath);
-          console.log(`[Covers API] ✅ Successfully read file from source precanned: ${sourcePrecannedPath}`);
+          console.log(`[Covers API] ✅ Found in source precanned location: ${sourcePrecannedPath}`);
         } catch (sourceError: any) {
-          console.error(`[Covers API] Cover image not found in any location. Filename: ${filename}`);
-          console.error(`[Covers API] Source precanned error: ${sourceError.message}`);
+          // File not found in any location
+          console.log(`[Covers API] Cover image not found in any location: ${filename}`);
           return NextResponse.json({ error: "Cover image not found" }, { status: 404 });
         }
       }
