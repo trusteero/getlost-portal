@@ -139,6 +139,10 @@ function AdminDashboardContent() {
   const [editingTitle, setEditingTitle] = useState<string>("");
   const [savingTitle, setSavingTitle] = useState<boolean>(false);
   
+  // Cover image URL editing state
+  const [editingCoverImageUrl, setEditingCoverImageUrl] = useState<string>("");
+  const [savingCoverImageUrl, setSavingCoverImageUrl] = useState<boolean>(false);
+  
   // Disk usage state
   const [diskStatus, setDiskStatus] = useState<{
     usage?: { usagePercent: number; freeFormatted: string; totalFormatted: string };
@@ -398,6 +402,8 @@ function AdminDashboardContent() {
   useEffect(() => {
     if (selectedBook) {
       fetchBookAssets(selectedBook.id);
+      // Reset cover image URL editing state when book changes
+      setEditingCoverImageUrl("");
     }
   }, [selectedBook]);
 
@@ -761,6 +767,38 @@ function AdminDashboardContent() {
     if (bytes < 1024) return bytes + " B";
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
+
+  const handleSaveCoverImageUrl = async (bookId: string, urlToSave?: string) => {
+    if (savingCoverImageUrl) return;
+    
+    setSavingCoverImageUrl(true);
+    try {
+      // Use the provided URL or the current editing value
+      const urlValue = urlToSave !== undefined ? urlToSave : editingCoverImageUrl;
+      
+      const response = await fetch(`/api/admin/books/${bookId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          coverImageUrl: urlValue || null 
+        }),
+      });
+
+      if (response.ok) {
+        await fetchData();
+        setEditingCoverImageUrl("");
+        alert("Cover image URL updated successfully");
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to update cover image URL");
+      }
+    } catch (error) {
+      console.error("[Admin] Failed to update cover image URL:", error);
+      alert("Failed to update cover image URL");
+    } finally {
+      setSavingCoverImageUrl(false);
+    }
   };
 
   const handleSaveTitle = async (bookId: string) => {
@@ -1979,25 +2017,104 @@ function AdminDashboardContent() {
 
             {selectedBook && (
               <div className="space-y-6 mt-6">
-                {/* Main content grid with cover image */}
-                <div className="grid grid-cols-3 gap-6">
-                  {/* Left column - Cover Image */}
-                  <div className="col-span-1">
-                    {selectedBook.coverImageUrl ? (
-                      <img
-                        src={selectedBook.coverImageUrl}
-                        alt={selectedBook.title}
-                        className="w-full rounded-lg shadow-lg object-contain max-h-[400px]"
-                      />
-                    ) : (
-                      <div className="w-full h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
-                        <BookOpen className="w-20 h-20 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
+                {/* Cover Image Editor - Separate from Book Covers Upload */}
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4" />
+                    Cover Image (Display Image)
+                  </h3>
+                  <div className="grid grid-cols-3 gap-6">
+                    {/* Left column - Cover Image Preview */}
+                    <div className="col-span-1">
+                      {selectedBook.coverImageUrl ? (
+                        <img
+                          src={selectedBook.coverImageUrl}
+                          alt={selectedBook.title}
+                          className="w-full rounded-lg shadow-lg object-contain max-h-[400px]"
+                          onError={(e) => {
+                            console.error("[Admin] Failed to load cover image:", selectedBook.coverImageUrl);
+                            e.currentTarget.src = "/placeholder.svg";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
+                          <BookOpen className="w-20 h-20 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
 
-                  {/* Right columns - Book Info */}
-                  <div className="col-span-2 space-y-4">
+                    {/* Right columns - Cover Image URL Editor */}
+                    <div className="col-span-2 space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Cover Image URL
+                        </label>
+                        <p className="text-xs text-gray-500 mb-2">
+                          This is the image displayed in the dashboard. Separate from cover art uploads.
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={editingCoverImageUrl !== "" ? editingCoverImageUrl : (selectedBook.coverImageUrl || "")}
+                            onChange={(e) => setEditingCoverImageUrl(e.target.value)}
+                            onFocus={() => {
+                              if (editingCoverImageUrl === "" && selectedBook.coverImageUrl) {
+                                setEditingCoverImageUrl(selectedBook.coverImageUrl);
+                              }
+                            }}
+                            placeholder="/api/covers/book-id.jpg or https://example.com/image.jpg"
+                            className="flex-1 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => handleSaveCoverImageUrl(selectedBook.id)}
+                            disabled={savingCoverImageUrl}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            {savingCoverImageUrl ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Save className="w-4 h-4" />
+                            )}
+                          </Button>
+                          {editingCoverImageUrl && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setEditingCoverImageUrl("")}
+                              disabled={savingCoverImageUrl}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                        {selectedBook.coverImageUrl && (
+                          <div className="mt-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                if (confirm("Clear the cover image URL?")) {
+                                  handleSaveCoverImageUrl(selectedBook.id, "");
+                                }
+                              }}
+                              disabled={savingCoverImageUrl}
+                              className="text-xs"
+                            >
+                              Clear Image
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main content grid with book info */}
+                <div className="grid grid-cols-2 gap-6">
+
+                  {/* Book Info */}
+                  <div className="space-y-4">
                     <div>
                       <h3 className="font-semibold mb-2">Book Details</h3>
                       <div className="space-y-2 text-sm">
