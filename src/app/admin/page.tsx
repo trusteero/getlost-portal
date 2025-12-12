@@ -142,6 +142,7 @@ function AdminDashboardContent() {
   // Cover image URL editing state
   const [editingCoverImageUrl, setEditingCoverImageUrl] = useState<string>("");
   const [savingCoverImageUrl, setSavingCoverImageUrl] = useState<boolean>(false);
+  const [uploadingCoverImage, setUploadingCoverImage] = useState<boolean>(false);
   
   // Disk usage state
   const [diskStatus, setDiskStatus] = useState<{
@@ -798,6 +799,50 @@ function AdminDashboardContent() {
       alert("Failed to update cover image URL");
     } finally {
       setSavingCoverImageUrl(false);
+    }
+  };
+
+  const handleCoverImageFileUpload = async (bookId: string, file: File) => {
+    setUploadingCoverImage(true);
+    try {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert("Please upload an image file");
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        alert("Image file size must be less than 5MB");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("coverImage", file);
+
+      const response = await fetch(`/api/books/${bookId}`, {
+        method: "PATCH",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const updatedBook = await response.json();
+        await fetchData();
+        // Update the selected book's cover image URL
+        if (selectedBook && selectedBook.id === bookId) {
+          setSelectedBook({ ...selectedBook, coverImageUrl: updatedBook.coverImageUrl });
+        }
+        alert("Cover image uploaded successfully");
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to upload cover image");
+      }
+    } catch (error) {
+      console.error("[Admin] Failed to upload cover image:", error);
+      alert("Failed to upload cover image");
+    } finally {
+      setUploadingCoverImage(false);
     }
   };
 
@@ -2043,51 +2088,79 @@ function AdminDashboardContent() {
                       )}
                     </div>
 
-                    {/* Right columns - Cover Image URL Editor */}
+                    {/* Right columns - Cover Image Editor */}
                     <div className="col-span-2 space-y-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Cover Image URL
+                          Cover Image (Display Image)
                         </label>
-                        <p className="text-xs text-gray-500 mb-2">
+                        <p className="text-xs text-gray-500 mb-3">
                           This is the image displayed in the dashboard. Separate from cover art uploads.
                         </p>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={editingCoverImageUrl !== "" ? editingCoverImageUrl : (selectedBook.coverImageUrl || "")}
-                            onChange={(e) => setEditingCoverImageUrl(e.target.value)}
-                            onFocus={() => {
-                              if (editingCoverImageUrl === "" && selectedBook.coverImageUrl) {
-                                setEditingCoverImageUrl(selectedBook.coverImageUrl);
-                              }
-                            }}
-                            placeholder="/api/covers/book-id.jpg or https://example.com/image.jpg"
-                            className="flex-1 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                          <Button
-                            size="sm"
-                            onClick={() => handleSaveCoverImageUrl(selectedBook.id)}
-                            disabled={savingCoverImageUrl}
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            {savingCoverImageUrl ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Save className="w-4 h-4" />
-                            )}
-                          </Button>
-                          {editingCoverImageUrl && (
+                        
+                        {/* File Upload Button */}
+                        <div className="mb-3">
+                          <label className="inline-flex items-center px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded cursor-pointer transition-opacity">
+                            <FileUp className="w-4 h-4 mr-2" />
+                            {uploadingCoverImage ? "Uploading..." : "Upload Image"}
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*"
+                              disabled={uploadingCoverImage}
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                  handleCoverImageFileUpload(selectedBook.id, e.target.files[0]);
+                                  e.target.value = "";
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+
+                        {/* Or use URL input */}
+                        <div className="mb-2">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Or enter URL:
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={editingCoverImageUrl !== "" ? editingCoverImageUrl : (selectedBook.coverImageUrl || "")}
+                              onChange={(e) => setEditingCoverImageUrl(e.target.value)}
+                              onFocus={() => {
+                                if (editingCoverImageUrl === "" && selectedBook.coverImageUrl) {
+                                  setEditingCoverImageUrl(selectedBook.coverImageUrl);
+                                }
+                              }}
+                              placeholder="/api/covers/book-id.jpg or https://example.com/image.jpg"
+                              className="flex-1 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
                             <Button
                               size="sm"
-                              variant="outline"
-                              onClick={() => setEditingCoverImageUrl("")}
+                              onClick={() => handleSaveCoverImageUrl(selectedBook.id)}
                               disabled={savingCoverImageUrl}
+                              className="bg-blue-600 hover:bg-blue-700"
                             >
-                              <X className="w-4 h-4" />
+                              {savingCoverImageUrl ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Save className="w-4 h-4" />
+                              )}
                             </Button>
-                          )}
+                            {editingCoverImageUrl && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingCoverImageUrl("")}
+                                disabled={savingCoverImageUrl}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
+                        
                         {selectedBook.coverImageUrl && (
                           <div className="mt-2">
                             <Button
@@ -2098,7 +2171,7 @@ function AdminDashboardContent() {
                                   handleSaveCoverImageUrl(selectedBook.id, "");
                                 }
                               }}
-                              disabled={savingCoverImageUrl}
+                              disabled={savingCoverImageUrl || uploadingCoverImage}
                               className="text-xs"
                             >
                               Clear Image
