@@ -14,6 +14,8 @@ import {
   summaries
 } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
+import path from "path";
+import { promises as fs } from "fs";
 
 export const dynamic = 'force-dynamic';
 
@@ -29,13 +31,91 @@ export async function PATCH(
   }
 
   try {
-    const body = await request.json();
-    const { title, description, coverImageUrl } = body;
+    const contentType = request.headers.get("content-type");
+    let title: string | null = null;
+    let description: string | null = null;
+    let coverImageUrl: string | null = null;
 
-    // Sanitize user input to prevent XSS attacks
-    const { sanitizeTitle, sanitizeDescription } = await import("@/server/utils/sanitize-input");
-    const sanitizedTitle = sanitizeTitle(title);
-    const sanitizedDescription = sanitizeDescription(description);
+    // Handle multipart/form-data (for file uploads)
+    if (contentType?.includes("multipart/form-data") || contentType?.includes("boundary=")) {
+      const formData = await request.formData();
+      const rawTitle = formData.get("title") as string | null;
+      const rawDescription = formData.get("description") as string | null;
+      const coverImage = formData.get("coverImage") as File | null;
+
+      // Sanitize user input to prevent XSS attacks
+      const { sanitizeTitle, sanitizeDescription } = await import("@/server/utils/sanitize-input");
+      if (rawTitle) {
+        title = sanitizeTitle(rawTitle);
+      }
+      if (rawDescription) {
+        description = sanitizeDescription(rawDescription);
+      }
+
+      // Handle cover image upload
+      if (coverImage) {
+        // Server-side file size validation
+        const { validateFileSize } = await import("@/server/utils/validate-file-size");
+        const coverSizeValidation = validateFileSize(coverImage);
+        if (!coverSizeValidation.isValid) {
+          return NextResponse.json(
+            { error: `Cover image: ${coverSizeValidation.error}` },
+            { status: 400 }
+          );
+        }
+
+        // Server-side file type validation for cover image
+        const { validateImageFileType } = await import("@/server/utils/validate-file-type");
+        const coverTypeValidation = validateImageFileType(coverImage);
+        if (!coverTypeValidation.isValid) {
+          return NextResponse.json(
+            { error: `Cover image: ${coverTypeValidation.error}` },
+            { status: 400 }
+          );
+        }
+
+        // Save cover image to file system
+        const { promises: fs } = await import("fs");
+        const coverStoragePath = process.env.COVER_STORAGE_PATH || path.join(process.cwd(), 'uploads', 'covers');
+        const coverDir = path.resolve(coverStoragePath);
+        
+        // Create directory if it doesn't exist
+        await fs.mkdir(coverDir, { recursive: true });
+        
+        // Get file extension from MIME type
+        const ext = coverImage.type.split('/')[1] || 'jpg';
+        const coverFileName = `${bookId}.${ext}`;
+        const coverFilePath = path.join(coverDir, coverFileName);
+        
+        // Save cover image to disk
+        const bytes = await coverImage.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        await fs.writeFile(coverFilePath, buffer);
+        
+        console.log(`[Admin API] Saved cover image to: ${coverFilePath}`);
+        
+        // Store the API path for serving
+        coverImageUrl = `/api/covers/${bookId}.${ext}`;
+      }
+    } else {
+      // Handle JSON body
+      const body = await request.json();
+      const { title: rawTitle, description: rawDescription, coverImageUrl: url } = body;
+
+      // Sanitize user input to prevent XSS attacks
+      const { sanitizeTitle, sanitizeDescription } = await import("@/server/utils/sanitize-input");
+      if (rawTitle !== undefined) {
+        title = sanitizeTitle(rawTitle);
+      }
+      if (rawDescription !== undefined) {
+        description = sanitizeDescription(rawDescription);
+      }
+
+      // Allow updating coverImageUrl (for setting a specific cover as the primary display image)
+      if (url !== undefined) {
+        coverImageUrl = url || null;
+      }
+    }
 
     // Verify book exists
     const [book] = await db
@@ -53,17 +133,16 @@ export async function PATCH(
       updatedAt: new Date(),
     };
 
-    if (sanitizedTitle !== null) {
-      updateData.title = sanitizedTitle;
+    if (title !== null) {
+      updateData.title = title;
     }
 
-    if (sanitizedDescription !== null) {
-      updateData.description = sanitizedDescription;
+    if (description !== null) {
+      updateData.description = description;
     }
 
-    // Allow updating coverImageUrl (for setting a specific cover as the primary display image)
-    if (coverImageUrl !== undefined) {
-      updateData.coverImageUrl = coverImageUrl || null;
+    if (coverImageUrl !== null) {
+      updateData.coverImageUrl = coverImageUrl;
     }
 
     await db

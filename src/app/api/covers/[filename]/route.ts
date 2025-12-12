@@ -31,6 +31,25 @@ export async function GET(
       return NextResponse.json({ error: "Invalid file path" }, { status: 403 });
     }
     
+    // Check if directory exists and is accessible
+    let dirExists = false;
+    let dirWritable = false;
+    try {
+      await fs.access(coverDir);
+      dirExists = true;
+      // Try to write a test file to check if directory is writable
+      try {
+        const testFile = path.join(coverDir, '.test-write');
+        await fs.writeFile(testFile, 'test');
+        await fs.unlink(testFile);
+        dirWritable = true;
+      } catch {
+        dirWritable = false;
+      }
+    } catch {
+      dirExists = false;
+    }
+    
     // Try to read from standard covers directory
     let fileBuffer: Buffer;
     try {
@@ -39,8 +58,24 @@ export async function GET(
     } catch (error: any) {
       // File not found in standard location
       
+      // Log diagnostic information
+      console.log(`[Covers API] File not found in standard location: ${filePath}`);
+      console.log(`[Covers API] Directory exists: ${dirExists}, Writable: ${dirWritable}`);
+      console.log(`[Covers API] Cover storage path: ${coverStoragePath}`);
+      console.log(`[Covers API] Resolved cover dir: ${coverDir}`);
+      console.log(`[Covers API] Error: ${error.message}`);
+      
       // If this looks like an uploaded file (UUID), don't check precanned locations
       if (!shouldCheckPrecanned) {
+        // For uploaded files, check if directory exists and list files for debugging
+        if (dirExists) {
+          try {
+            const files = await fs.readdir(coverDir);
+            console.log(`[Covers API] Files in covers directory (${files.length} total): ${files.slice(0, 10).join(', ')}${files.length > 10 ? '...' : ''}`);
+          } catch (listError: any) {
+            console.log(`[Covers API] Could not list directory contents: ${listError.message}`);
+          }
+        }
         console.log(`[Covers API] Uploaded cover image not found: ${filename}`);
         return NextResponse.json({ error: "Cover image not found" }, { status: 404 });
       }

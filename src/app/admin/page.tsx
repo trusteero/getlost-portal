@@ -821,7 +821,7 @@ function AdminDashboardContent() {
       const formData = new FormData();
       formData.append("coverImage", file);
 
-      const response = await fetch(`/api/books/${bookId}`, {
+      const response = await fetch(`/api/admin/books/${bookId}`, {
         method: "PATCH",
         body: formData,
       });
