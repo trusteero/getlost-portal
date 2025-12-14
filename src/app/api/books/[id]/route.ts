@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest, isAdminFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookVersions, reports, bookFeatures } from "@/server/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, inArray } from "drizzle-orm";
 import { extractSummaryFromReportHtml } from "@/server/utils/extract-report-summary";
 import { promises as fs } from "fs";
 import path from "path";
@@ -45,22 +45,43 @@ export async function GET(
       .where(eq(bookVersions.bookId, id))
       .orderBy(desc(bookVersions.uploadedAt));
 
-    // Get reports for each version
-    const versionsWithReports = await Promise.all(
-      versions.map(async (version: any) => {
-        const versionReportsRaw = await db
-          .select({
-            id: reports.id,
-            status: reports.status,
-            requestedAt: reports.requestedAt,
-            completedAt: reports.completedAt,
-            htmlContent: reports.htmlContent,
-            pdfUrl: reports.pdfUrl,
-            adminNotes: reports.adminNotes,
-          })
-          .from(reports)
-          .where(eq(reports.bookVersionId, version.id))
-          .orderBy(desc(reports.requestedAt));
+    if (versions.length === 0) {
+      return NextResponse.json({
+        ...bookData,
+        versions: [],
+        features: [],
+      });
+    }
+
+    // Batch fetch all reports for all versions (fixes N+1 query)
+    const versionIds = versions.map(v => v.id);
+    const allReports = await db
+      .select({
+        id: reports.id,
+        status: reports.status,
+        requestedAt: reports.requestedAt,
+        completedAt: reports.completedAt,
+        htmlContent: reports.htmlContent,
+        pdfUrl: reports.pdfUrl,
+        adminNotes: reports.adminNotes,
+        bookVersionId: reports.bookVersionId,
+      })
+      .from(reports)
+      .where(inArray(reports.bookVersionId, versionIds))
+      .orderBy(desc(reports.requestedAt));
+
+    // Group reports by versionId
+    const reportsByVersionId = new Map<string, typeof allReports>();
+    for (const report of allReports) {
+      if (!reportsByVersionId.has(report.bookVersionId)) {
+        reportsByVersionId.set(report.bookVersionId, []);
+      }
+      reportsByVersionId.get(report.bookVersionId)!.push(report);
+    }
+
+    // Map versions with their reports (no database queries)
+    const versionsWithReports = versions.map((version: any) => {
+        const versionReportsRaw = reportsByVersionId.get(version.id) || [];
 
         const versionReports = versionReportsRaw.map((report: any) => {
           let variant: string | undefined;

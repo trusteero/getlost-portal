@@ -44,10 +44,12 @@ async function bundleReportHtmlFromContent(htmlContent, searchDirs) {
     
     for (const match of matches) {
       // Extract image path from match (could be in different capture groups)
-      const imagePath = match[2] || match[4] || match[5];
+      // match[2] = path from src/href, match[4] = path from background-image
+      // match[3] and match[5] are just file extensions, not paths
+      const imagePath = match[2] || match[4];
       
-      // Skip if already processed or if it's an absolute URL or data URL
-      if (processedImages.has(imagePath) || imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('data:')) {
+      // Skip if undefined, already processed, or if it's an absolute URL or data URL
+      if (!imagePath || processedImages.has(imagePath) || imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('data:')) {
         continue;
       }
       
@@ -147,8 +149,11 @@ async function bundleReportHtmlFromContent(htmlContent, searchDirs) {
 }
 
 const DATABASE_PATH = process.env.DATABASE_URL?.replace(/^file:/, '') || './data.db';
-const BOOK_REPORTS_PATH = process.env.BOOK_REPORTS_PATH || "/Users/eerogetlost/book-reports";
-const REPORT_STORAGE_PATH = process.env.REPORT_STORAGE_PATH || './uploads/reports';
+// Use environment-aware fallback: local path for development, /var/data for production
+const BOOK_REPORTS_PATH = process.env.BOOK_REPORTS_PATH || 
+  (process.env.NODE_ENV === 'production' ? '/var/data/book-reports' : '/Users/eerogetlost/book-reports');
+const REPORT_STORAGE_PATH = process.env.REPORT_STORAGE_PATH || 
+  (process.env.NODE_ENV === 'production' ? '/var/data/reports' : './uploads/reports');
 
 async function bundleReport(reportId, db) {
   console.log(`\n📦 Bundling report: ${reportId}`);

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookVersions, reports, bookFeatures, marketingAssets, bookCovers, landingPages, purchases } from "@/server/db/schema";
-import { eq, desc, and, ne } from "drizzle-orm";
+import { eq, desc, and, ne, inArray, sql } from "drizzle-orm";
 import { extractEpubMetadata } from "@/server/utils/extract-epub-metadata";
 import { promises as fs } from "fs";
 import path from "path";
@@ -56,52 +56,149 @@ export async function GET(request: NextRequest) {
       )
       .orderBy(desc(books.createdAt));
 
-    // Get latest version, report, and digest status for each book
-    const booksWithDetails = await Promise.all(
-      userBooks.map(async (book: any) => {
-        const latestVersion = await db
+    if (userBooks.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    // Batch fetch all related data to avoid N+1 queries
+    const bookIds = userBooks.map(book => book.id);
+
+    // Batch fetch: versions, features, assets, purchases, reports
+    const [
+      allVersions,
+      allFeatures,
+      allMarketingAssets,
+      allCovers,
+      allLandingPages,
+      allPurchases,
+      allReports
+    ] = await Promise.all([
+      // Get all versions for all books, ordered by uploadedAt desc
+      db
+        .select()
+        .from(bookVersions)
+        .where(inArray(bookVersions.bookId, bookIds))
+        .orderBy(desc(bookVersions.uploadedAt)),
+      
+      // Get all features for all books
+      db
+        .select()
+        .from(bookFeatures)
+        .where(inArray(bookFeatures.bookId, bookIds)),
+      
+      // Get all marketing assets for all books
+      db
+        .select()
+        .from(marketingAssets)
+        .where(inArray(marketingAssets.bookId, bookIds)),
+      
+      // Get all covers for all books
+      db
+        .select()
+        .from(bookCovers)
+        .where(inArray(bookCovers.bookId, bookIds)),
+      
+      // Get all landing pages for all books
+      db
+        .select()
+        .from(landingPages)
+        .where(inArray(landingPages.bookId, bookIds)),
+      
+      // Get all purchases for all books (for report status check)
+      db
+        .select()
+        .from(purchases)
+        .where(
+          and(
+            inArray(purchases.bookId, bookIds),
+            eq(purchases.featureType, "manuscript-report")
+          )
+        )
+        .orderBy(desc(purchases.createdAt)),
+      
+      // Reports will be fetched after we have version IDs
+      Promise.resolve([] as typeof reports.$inferSelect[])
+    ]);
+
+    // Get version IDs for reports query (after versions are fetched)
+    const versionIds = allVersions.map(v => v.id);
+    const allReportsWithVersions = versionIds.length > 0
+      ? await db
           .select()
-          .from(bookVersions)
-          .where(eq(bookVersions.bookId, book.id))
-          .orderBy(desc(bookVersions.uploadedAt))
-          .limit(1);
+          .from(reports)
+          .where(inArray(reports.bookVersionId, versionIds))
+          .orderBy(desc(reports.requestedAt))
+      : [];
 
-        // Metadata is now extracted directly from EPUB on upload, no digest jobs needed
+    // Group data by bookId for efficient lookup
+    const versionsByBookId = new Map<string, typeof allVersions>();
+    const featuresByBookId = new Map<string, typeof allFeatures>();
+    const marketingAssetsByBookId = new Map<string, typeof allMarketingAssets>();
+    const coversByBookId = new Map<string, typeof allCovers>();
+    const landingPagesByBookId = new Map<string, typeof allLandingPages>();
+    const purchasesByBookId = new Map<string, typeof allPurchases>();
+    const reportsByVersionId = new Map<string, typeof allReportsWithVersions>();
 
-        // Get latest report for the latest version
-        let latestReport = null;
-        if (latestVersion[0]) {
-          const [report] = await db
-            .select({
-              id: reports.id,
-              bookVersionId: reports.bookVersionId,
-              status: reports.status,
-              requestedAt: reports.requestedAt,
-              completedAt: reports.completedAt,
-            })
-            .from(reports)
-            .where(eq(reports.bookVersionId, latestVersion[0].id))
-            .orderBy(desc(reports.requestedAt))
-            .limit(1);
+    // Group versions by bookId (keep only latest per book)
+    const latestVersionsByBookId = new Map<string, typeof allVersions[0]>();
+    for (const version of allVersions) {
+      if (!latestVersionsByBookId.has(version.bookId)) {
+        latestVersionsByBookId.set(version.bookId, version);
+      }
+    }
 
-          if (report) {
-            // Map database status to UI status for consistency
-            const uiStatus = report.status === "pending" ? "requested" : report.status;
-            latestReport = {
-              ...report,
-              status: uiStatus,
-            };
-          }
+    // Group other data by bookId
+    for (const feature of allFeatures) {
+      if (!featuresByBookId.has(feature.bookId)) {
+        featuresByBookId.set(feature.bookId, []);
+      }
+      featuresByBookId.get(feature.bookId)!.push(feature);
+    }
+
+    for (const asset of allMarketingAssets) {
+      if (!marketingAssetsByBookId.has(asset.bookId)) {
+        marketingAssetsByBookId.set(asset.bookId, []);
+      }
+      marketingAssetsByBookId.get(asset.bookId)!.push(asset);
+    }
+
+    for (const cover of allCovers) {
+      if (!coversByBookId.has(cover.bookId)) {
+        coversByBookId.set(cover.bookId, []);
+      }
+      coversByBookId.get(cover.bookId)!.push(cover);
+    }
+
+    for (const landing of allLandingPages) {
+      if (!landingPagesByBookId.has(landing.bookId)) {
+        landingPagesByBookId.set(landing.bookId, []);
+      }
+      landingPagesByBookId.get(landing.bookId)!.push(landing);
+    }
+
+    for (const purchase of allPurchases) {
+      if (purchase.bookId) {
+        if (!purchasesByBookId.has(purchase.bookId)) {
+          purchasesByBookId.set(purchase.bookId, []);
         }
+        purchasesByBookId.get(purchase.bookId)!.push(purchase);
+      }
+    }
 
-        // Get feature statuses
-        const features = await db
-          .select()
-          .from(bookFeatures)
-          .where(eq(bookFeatures.bookId, book.id));
+    // Group reports by versionId
+    for (const report of allReportsWithVersions) {
+      if (!reportsByVersionId.has(report.bookVersionId)) {
+        reportsByVersionId.set(report.bookVersionId, []);
+      }
+      reportsByVersionId.get(report.bookVersionId)!.push(report);
+    }
 
-        // Helper function to determine asset status for assets linked by bookId
-        const getAssetStatusByBookId = async (featureType: string, assetTable: any) => {
+    // Helper function to determine asset status (uses pre-fetched data, no DB queries)
+    const getAssetStatusByBookId = (
+      bookId: string,
+      featureType: string,
+      assetTable: typeof marketingAssets | typeof bookCovers | typeof landingPages
+    ): string => {
           // FIRST: Check if any asset exists (admin may have uploaded without purchase)
           // This allows admins to upload assets that users can access immediately
           let anyAsset;
