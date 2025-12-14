@@ -113,8 +113,7 @@ export async function GET(
           reports: versionReports,
           summary: extractedSummary || version.summary, // Use extracted summary if available, fallback to version summary
         };
-      })
-    );
+      });
 
     // Get all features for this book
     const features = await db
