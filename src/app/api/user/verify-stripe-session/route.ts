@@ -171,12 +171,13 @@ export async function POST(request: NextRequest) {
           message: `Payment status: ${checkoutSession.payment_status}, session status: ${checkoutSession.status}`,
         });
       }
-    } catch (stripeError: any) {
-      console.error(`[Verify Session] Failed to retrieve Stripe session:`, stripeError);
+    } catch (stripeError: unknown) {
+      const err = stripeError instanceof Error ? stripeError : new Error(String(stripeError));
+      console.error(`[Verify Session] Failed to retrieve Stripe session:`, err);
       return NextResponse.json(
         {
           error: "Failed to verify Stripe session",
-          details: stripeError?.message,
+          details: err.message,
         },
         { status: 500 }
       );

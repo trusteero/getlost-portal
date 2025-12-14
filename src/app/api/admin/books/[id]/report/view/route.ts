@@ -56,7 +56,7 @@ export async function GET(
   }
 
   // Check if user is admin
-  const currentUserRole = (session.user as any)?.role;
+  const currentUserRole = (session.user as { role?: string })?.role;
   if (currentUserRole !== "admin" && currentUserRole !== "super_admin") {
     const errorHtml = `
       <!DOCTYPE html>
@@ -208,7 +208,7 @@ export async function GET(
       .orderBy(desc(reports.completedAt), desc(reports.requestedAt));
 
     // Filter out preview reports (check status and adminNotes for variant)
-    const fullReports = allReports.filter((r: any) => {
+    const fullReports = allReports.filter((r) => {
       if (r.status === "preview") return false;
       // Check adminNotes for variant if it exists
       if (r.adminNotes) {

@@ -32,7 +32,7 @@ export async function DELETE(
   }
 
   // Check if user is admin or super_admin
-  const currentUserRole = (session.user as any)?.role;
+  const currentUserRole = (session.user as { role?: string })?.role;
   if (currentUserRole !== "admin" && currentUserRole !== "super_admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

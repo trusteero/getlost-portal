@@ -56,15 +56,16 @@ export async function GET(
     try {
       fileBuffer = await fs.readFile(filePath);
       // Success - return the file
-    } catch (error: any) {
+    } catch (error: unknown) {
       // File not found in standard location
+      const err = error instanceof Error ? error : new Error(String(error));
       
       // Log diagnostic information
       console.log(`[Covers API] File not found in standard location: ${filePath}`);
       console.log(`[Covers API] Directory exists: ${dirExists}, Writable: ${dirWritable}`);
       console.log(`[Covers API] Cover storage path: ${coverStoragePath}`);
       console.log(`[Covers API] Resolved cover dir: ${coverDir}`);
-      console.log(`[Covers API] Error: ${error.message}`);
+      console.log(`[Covers API] Error: ${err.message}`);
       
       // If this looks like an uploaded file (UUID), don't check precanned locations
       if (!shouldCheckPrecanned) {
@@ -73,8 +74,9 @@ export async function GET(
           try {
             const files = await fs.readdir(coverDir);
             console.log(`[Covers API] Files in covers directory (${files.length} total): ${files.slice(0, 10).join(', ')}${files.length > 10 ? '...' : ''}`);
-          } catch (listError: any) {
-            console.log(`[Covers API] Could not list directory contents: ${listError.message}`);
+          } catch (listError: unknown) {
+            const err = listError instanceof Error ? listError : new Error(String(listError));
+            console.log(`[Covers API] Could not list directory contents: ${err.message}`);
           }
         }
         console.log(`[Covers API] Uploaded cover image not found: ${filename}`);
@@ -98,7 +100,7 @@ export async function GET(
       try {
         fileBuffer = await fs.readFile(precannedUploadsPath);
         console.log(`[Covers API] ✅ Found in precanned public location: ${precannedUploadsPath}`);
-      } catch (precannedError: any) {
+      } catch (precannedError: unknown) {
         // If not in public/uploads/precanned/uploads, try source precannedcontent/uploads
         const sourcePrecannedPath = path.resolve(process.cwd(), 'precannedcontent', 'uploads', filename);
         const sourcePrecannedResolved = path.resolve(sourcePrecannedPath);
@@ -113,7 +115,7 @@ export async function GET(
         try {
           fileBuffer = await fs.readFile(sourcePrecannedPath);
           console.log(`[Covers API] ✅ Found in source precanned location: ${sourcePrecannedPath}`);
-        } catch (sourceError: any) {
+        } catch (sourceError: unknown) {
           // File not found in any location
           console.log(`[Covers API] Cover image not found in any location: ${filename}`);
           return NextResponse.json({ error: "Cover image not found" }, { status: 404 });
@@ -142,7 +144,7 @@ export async function GET(
     }
 
     // Return the image
-    return new NextResponse(fileBuffer as any, {
+    return new NextResponse(fileBuffer, {
       status: 200,
       headers: {
         'Content-Type': mimeType,

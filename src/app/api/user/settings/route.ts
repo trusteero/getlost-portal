@@ -43,7 +43,10 @@ export async function PATCH(request: NextRequest) {
     }
 
     const userData = user[0]!;
-    const updateData: any = {};
+    const updateData: {
+      name?: string;
+      password?: string;
+    } = {};
 
     // Update name if provided (use sanitized value)
     if (name && name !== userData.name) {

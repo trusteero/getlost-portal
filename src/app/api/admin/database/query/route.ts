@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Execute query
-    const rows = sqlite.prepare(query).all() as any[];
+    const rows = sqlite.prepare(query).all() as Record<string, unknown>[];
 
     // Convert result to array format
     const columns = rows.length > 0 ? Object.keys(rows[0]!) : [];

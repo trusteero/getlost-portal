@@ -18,6 +18,7 @@ import path from "path";
 import { promises as fs } from "fs";
 import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 import { env } from "@/env";
+import type { BookInsert } from "@/server/types/database";
 
 export const dynamic = 'force-dynamic';
 

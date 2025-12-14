@@ -292,7 +292,16 @@ export async function POST(request: NextRequest) {
     
     try {
       // Create purchase record with pending status
-      const purchaseValues: any = {
+      const purchaseValues: {
+        id: string;
+        userId: string;
+        featureType: string;
+        amount: number;
+        currency: string;
+        paymentMethod: string;
+        status: string;
+        bookId?: string;
+      } = {
         id: purchaseId,
         userId: session.user.id,
         featureType,
@@ -368,15 +377,16 @@ export async function POST(request: NextRequest) {
         userId: verifyPurchase.userId,
         featureType: verifyPurchase.featureType,
       });
-    } catch (insertError: any) {
-      console.error(`[Checkout] ❌ Failed to create purchase ${purchaseId}:`, insertError);
+    } catch (insertError: unknown) {
+      const error = insertError instanceof Error ? insertError : new Error(String(insertError));
+      console.error(`[Checkout] ❌ Failed to create purchase ${purchaseId}:`, error);
       console.error(`[Checkout] Error details:`, {
-        message: insertError?.message,
-        stack: insertError?.stack,
-        code: insertError?.code,
+        message: error.message,
+        stack: error.stack,
+        code: 'code' in error ? error.code : undefined,
       });
       return NextResponse.json(
-        { error: "Failed to create purchase record", details: insertError?.message },
+        { error: "Failed to create purchase record", details: error.message },
         { status: 500 }
       );
     }
@@ -454,25 +464,26 @@ export async function POST(request: NextRequest) {
       url: checkoutSession.url,
       purchaseId: purchaseId, // Include purchase ID in response for debugging
     });
-  } catch (error: any) {
-    console.error("Failed to create checkout session:", error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error("Failed to create checkout session:", err);
     
     // Provide more detailed error information
-    const errorMessage = error?.message || "Failed to create checkout session";
-    const errorCode = error?.code || "CHECKOUT_ERROR";
+    const errorMessage = err.message || "Failed to create checkout session";
+    const errorCode = ('code' in err && typeof err.code === 'string') ? err.code : "CHECKOUT_ERROR";
     
     // If it's a Stripe-specific error, include more details
-    if (error?.type) {
-      console.error("Stripe error type:", error.type);
-      console.error("Stripe error code:", error.code);
-      console.error("Stripe error message:", error.message);
+    if ('type' in err && typeof err.type === 'string') {
+      console.error("Stripe error type:", err.type);
+      console.error("Stripe error code:", err.code);
+      console.error("Stripe error message:", err.message);
     }
     
     return NextResponse.json(
       { 
         error: errorMessage,
         code: errorCode,
-        details: process.env.NODE_ENV === "development" ? error?.stack : undefined
+        details: process.env.NODE_ENV === "development" ? err.stack : undefined
       },
       { status: 500 }
     );

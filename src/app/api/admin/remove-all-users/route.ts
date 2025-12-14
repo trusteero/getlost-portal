@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
       db.exec("BEGIN TRANSACTION");
 
       // Count users before deletion
-      const userCount = db.prepare("SELECT COUNT(*) as count FROM getlostportal_user").get();
-      const count = userCount ? (userCount as any).count : 0;
+      const userCount = db.prepare("SELECT COUNT(*) as count FROM getlostportal_user").get() as { count: number } | undefined;
+      const count = userCount ? userCount.count : 0;
       console.log(`Found ${count} users to delete`);
 
       if (count === 0) {
@@ -135,13 +135,14 @@ export async function POST(request: NextRequest) {
         deleted: summary,
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       db.exec("ROLLBACK");
-      console.error("❌ Error removing users:", error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error("❌ Error removing users:", err);
       return NextResponse.json(
         { 
           success: false, 
-          error: error?.message || "Failed to remove users" 
+          error: err.message || "Failed to remove users" 
         },
         { status: 500 }
       );
@@ -149,12 +150,13 @@ export async function POST(request: NextRequest) {
       db.close();
     }
 
-  } catch (error: any) {
-    console.error("❌ Database connection error:", error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error("❌ Database connection error:", err);
     return NextResponse.json(
       { 
         success: false, 
-        error: error?.message || "Failed to connect to database" 
+        error: err.message || "Failed to connect to database" 
       },
       { status: 500 }
     );

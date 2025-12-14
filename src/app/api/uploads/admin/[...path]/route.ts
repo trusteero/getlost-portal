@@ -100,7 +100,7 @@ export async function GET(
     }
     
     // Return the file with CORS headers to allow iframe access
-    return new NextResponse(fileBuffer as any, {
+    return new NextResponse(fileBuffer, {
       status: 200,
       headers: {
         "Content-Type": mimeType,
@@ -112,8 +112,9 @@ export async function GET(
         "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length",
       },
     });
-  } catch (error: any) {
-    console.error("[Admin Uploads API] Failed to serve file:", error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error("[Admin Uploads API] Failed to serve file:", err);
     return NextResponse.json({ error: "Failed to serve file" }, { status: 500 });
   }
 }

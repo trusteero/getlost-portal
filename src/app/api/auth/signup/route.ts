@@ -28,8 +28,9 @@ export async function POST(request: Request) {
 		// Ensure database tables exist before signup
 		try {
 			initializeMigrations();
-		} catch (migrationError: any) {
-			console.error("[Signup] Error initializing migrations:", migrationError);
+		} catch (migrationError: unknown) {
+			const err = migrationError instanceof Error ? migrationError : new Error(String(migrationError));
+			console.error("[Signup] Error initializing migrations:", err);
 			// Don't throw - try to continue, tables might already exist
 		}
 		
@@ -84,8 +85,9 @@ export async function POST(request: Request) {
 							sqlite.exec(`ALTER TABLE getlostportal_user ADD COLUMN password TEXT`);
 							console.log("[Signup] ✅ Password column added");
 						}
-					} catch (alterError: any) {
-						console.error("[Signup] Error checking/adding password column:", alterError);
+					} catch (alterError: unknown) {
+						const err = alterError instanceof Error ? alterError : new Error(String(alterError));
+						console.error("[Signup] Error checking/adding password column:", err);
 						// Continue anyway - column might already exist
 					}
 				}
@@ -107,8 +109,9 @@ export async function POST(request: Request) {
 					`);
 					console.log("[Signup] ✅ Verification tokens table created");
 				}
-			} catch (tableError: any) {
-				console.error("[Signup] Error ensuring tables exist:", tableError);
+			} catch (tableError: unknown) {
+				const err = tableError instanceof Error ? tableError : new Error(String(tableError));
+				console.error("[Signup] Error ensuring tables exist:", err);
 				// Continue anyway - tables might already exist
 			}
 		}
@@ -149,9 +152,10 @@ export async function POST(request: Request) {
 				.from(users)
 				.where(eq(users.email, email.toLowerCase()))
 				.limit(1);
-		} catch (dbError: any) {
-			console.error("[Signup] Error checking for existing user:", dbError);
-			throw new Error(`Database error checking user: ${dbError?.message || String(dbError)}`);
+		} catch (dbError: unknown) {
+			const err = dbError instanceof Error ? dbError : new Error(String(dbError));
+			console.error("[Signup] Error checking for existing user:", err);
+			throw new Error(`Database error checking user: ${err.message || String(dbError)}`);
 		}
 
 		if (existingUser.length > 0) {
@@ -182,14 +186,15 @@ export async function POST(request: Request) {
 					name: users.name,
 					role: users.role,
 				});
-		} catch (insertError: any) {
-			console.error("[Signup] Error inserting user:", insertError);
+		} catch (insertError: unknown) {
+			const err = insertError instanceof Error ? insertError : new Error(String(insertError));
+			console.error("[Signup] Error inserting user:", err);
 			console.error("[Signup] Insert error details:", {
-				message: insertError?.message,
-				code: insertError?.code,
-				cause: insertError?.cause,
+				message: err.message,
+				code: 'code' in err ? err.code : undefined,
+				cause: 'cause' in err ? err.cause : undefined,
 			});
-			throw new Error(`Failed to create user: ${insertError?.message || String(insertError)}`);
+			throw new Error(`Failed to create user: ${err.message || String(insertError)}`);
 		}
 
 		// Generate verification token
@@ -260,14 +265,15 @@ export async function POST(request: Request) {
 			},
 			{ status: 201 }
 		);
-	} catch (error: any) {
-		console.error("Signup error:", error);
+	} catch (error: unknown) {
+		const err = error instanceof Error ? error : new Error(String(error));
+		console.error("Signup error:", err);
 		console.error("Signup error details:", {
-			message: error?.message,
-			stack: error?.stack,
-			name: error?.name,
-			code: error?.code,
-			cause: error?.cause,
+			message: err.message,
+			stack: err.stack,
+			name: err.name,
+			code: 'code' in err ? err.code : undefined,
+			cause: 'cause' in err ? err.cause : undefined,
 		});
 		
 		// Always return detailed error in test mode for debugging
@@ -276,18 +282,29 @@ export async function POST(request: Request) {
 		
 		console.error("[Signup] Error caught, isTestMode:", isTestMode);
 		
-		const errorResponse: any = {
+		const errorResponse: {
+			error: string;
+			details?: string;
+			stack?: string;
+			name?: string;
+			code?: unknown;
+			cause?: unknown;
+			envCheck?: {
+				DISABLE_EMAIL_IN_TESTS?: string;
+				NODE_ENV?: string;
+			};
+		} = {
 			error: "Unable to create account. Please try again.",
 		};
 		
 		// Always include details in test mode, or if we can't determine test mode, include them anyway for debugging
 		if (isTestMode || !process.env.DISABLE_EMAIL_IN_TESTS) {
-			errorResponse.details = error?.message || String(error);
-			errorResponse.stack = error?.stack;
-			errorResponse.name = error?.name;
-			errorResponse.code = error?.code;
-			if (error?.cause) {
-				errorResponse.cause = error?.cause?.message || error?.cause;
+			errorResponse.details = err.message || String(error);
+			errorResponse.stack = err.stack;
+			errorResponse.name = err.name;
+			errorResponse.code = 'code' in err ? err.code : undefined;
+			if ('cause' in err && err.cause) {
+				errorResponse.cause = err.cause instanceof Error ? err.cause.message : err.cause;
 			}
 			errorResponse.envCheck = {
 				DISABLE_EMAIL_IN_TESTS: process.env.DISABLE_EMAIL_IN_TESTS,

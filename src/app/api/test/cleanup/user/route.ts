@@ -230,10 +230,11 @@ export async function DELETE(request: NextRequest) {
       success: true,
       message: `User ${email} and all related data deleted successfully`,
     });
-  } catch (error: any) {
-    console.error("[Test Cleanup] Error deleting user:", error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error("[Test Cleanup] Error deleting user:", err);
     return NextResponse.json(
-      { error: "Failed to delete user", details: error.message || String(error) },
+      { error: "Failed to delete user", details: err.message || String(error) },
       { status: 500 }
     );
   }
