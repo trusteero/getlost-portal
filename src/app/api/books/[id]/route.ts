@@ -13,6 +13,7 @@ import type {
   BookWithVersions,
   Report,
 } from "@/server/types/database";
+import { apiErrors } from "@/server/utils/api-response";
 
 export async function GET(
   request: NextRequest,
@@ -53,7 +54,7 @@ export async function GET(
     // Check if user owns the book or is admin
     const isAdmin = await isAdminFromRequest(request);
     if (bookData.userId !== session.user.id && !isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     // Get all versions
@@ -149,7 +150,7 @@ export async function GET(
     });
   } catch (error) {
     console.error("Failed to fetch book:", error);
-    return NextResponse.json({ error: "Failed to fetch book" }, { status: 500 });
+    return apiErrors.internal("Failed to fetch book", error);
   }
 }
 
@@ -162,7 +163,7 @@ export async function PATCH(
   const { id } = await params;
 
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiErrors.unauthorized();
   }
 
   // Rate limiting for book update endpoint
@@ -198,20 +199,14 @@ export async function PATCH(
         const { validateFileSize } = await import("@/server/utils/validate-file-size");
         const coverSizeValidation = validateFileSize(coverImage);
         if (!coverSizeValidation.isValid) {
-          return NextResponse.json(
-            { error: `Cover image: ${coverSizeValidation.error}` },
-            { status: 400 }
-          );
+          return apiErrors.badRequest(`Cover image: ${coverSizeValidation.error}`, "FILE_TOO_LARGE");
         }
 
         // Server-side file type validation for cover image
         const { validateImageFileType } = await import("@/server/utils/validate-file-type");
         const coverTypeValidation = validateImageFileType(coverImage);
         if (!coverTypeValidation.isValid) {
-          return NextResponse.json(
-            { error: `Cover image: ${coverTypeValidation.error}` },
-            { status: 400 }
-          );
+          return apiErrors.badRequest(`Cover image: ${coverTypeValidation.error}`, "INVALID_FILE_TYPE");
         }
 
         // Save cover image to file system (same as POST endpoint)
@@ -257,7 +252,7 @@ export async function PATCH(
       .limit(1);
 
     if (book.length === 0) {
-      return NextResponse.json({ error: "Book not found" }, { status: 404 });
+      return apiErrors.notFound("Book");
     }
 
     const bookRecord = book[0]!;
@@ -341,6 +336,6 @@ export async function PATCH(
     });
   } catch (error) {
     console.error("Failed to update book:", error);
-    return NextResponse.json({ error: "Failed to update book" }, { status: 500 });
+    return apiErrors.internal("Failed to update book", error);
   }
 }

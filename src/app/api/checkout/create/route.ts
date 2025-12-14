@@ -4,6 +4,7 @@ import { db } from "@/server/db";
 import { books, purchases, bookFeatures } from "@/server/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
+import { apiErrors, ERROR_CODES } from "@/server/utils/api-response";
 
 const FEATURE_PRICES: Record<string, number> = {
   "summary": 0,
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
   const session = await getSessionFromRequest(request);
   
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiErrors.unauthorized();
   }
 
   // Rate limiting for checkout/purchase endpoint
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       if (!bookResult || bookResult.userId !== session.user.id) {
-        return NextResponse.json({ error: "Book not found" }, { status: 404 });
+        return apiErrors.notFound("Book");
       }
       book = bookResult;
     }
@@ -95,9 +96,7 @@ export async function POST(request: NextRequest) {
 
     // Free features don't need payment
     if (price === 0) {
-      return NextResponse.json({ 
-        error: "This feature is free. Use the direct unlock endpoint." 
-      }, { status: 400 });
+      return apiErrors.badRequest("This feature is free. Use the direct unlock endpoint.");
     }
 
     // Concurrent purchase prevention: Check for existing pending purchase
@@ -365,10 +364,7 @@ export async function POST(request: NextRequest) {
       
       if (!verifyPurchase) {
         console.error(`[Checkout] ❌ Purchase ${purchaseId} was not created! Insert may have failed.`);
-        return NextResponse.json(
-          { error: "Failed to create purchase record" },
-          { status: 500 }
-        );
+        return apiErrors.database("Failed to create purchase record");
       }
       
       console.log(`[Checkout] ✅ Verified purchase ${purchaseId} exists in database:`, {
@@ -385,10 +381,7 @@ export async function POST(request: NextRequest) {
         stack: error.stack,
         code: 'code' in error ? error.code : undefined,
       });
-      return NextResponse.json(
-        { error: "Failed to create purchase record", details: error.message },
-        { status: 500 }
-      );
+      return apiErrors.database("Failed to create purchase record", error);
     }
 
     // Get base URL for redirects
@@ -451,10 +444,7 @@ export async function POST(request: NextRequest) {
     
     if (!finalPurchase) {
       console.error(`[Checkout] ❌ Purchase ${purchaseId} was deleted or doesn't exist after creating Stripe session!`);
-      return NextResponse.json(
-        { error: "Purchase was not created properly" },
-        { status: 500 }
-      );
+      return apiErrors.database("Purchase was not created properly");
     }
     
     console.log(`[Checkout] ✅ Purchase ${purchaseId} verified and ready, returning checkout URL`);
@@ -481,14 +471,7 @@ export async function POST(request: NextRequest) {
       console.error("Stripe error message:", err.message);
     }
     
-    return NextResponse.json(
-      { 
-        error: errorMessage,
-        code: errorCode,
-        details: process.env.NODE_ENV === "development" ? err.stack : undefined
-      },
-      { status: 500 }
-    );
+    return apiErrors.externalService("Stripe", err);
   }
 }
 

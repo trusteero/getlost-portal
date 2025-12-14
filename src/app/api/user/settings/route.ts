@@ -10,7 +10,7 @@ export async function PATCH(request: NextRequest) {
   const session = await getSessionFromRequest(request);
 
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiErrors.unauthorized();
   }
 
   // Rate limiting for user settings endpoint
@@ -39,7 +39,7 @@ export async function PATCH(request: NextRequest) {
       .limit(1);
 
     if (user.length === 0) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return apiErrors.notFound("User");
     }
 
     const userData = user[0]!;
@@ -57,19 +57,16 @@ export async function PATCH(request: NextRequest) {
     if (newPassword) {
       // Verify current password
       if (!currentPassword) {
-        return NextResponse.json({ error: "Current password is required" }, { status: 400 });
+        return apiErrors.badRequest("Current password is required", "MISSING_REQUIRED_FIELD");
       }
 
       if (!userData.password) {
-        return NextResponse.json(
-          { error: "Cannot change password for OAuth accounts" },
-          { status: 400 }
-        );
+        return apiErrors.badRequest("Cannot change password for OAuth accounts");
       }
 
       const isValidPassword = await bcrypt.compare(currentPassword, userData.password);
       if (!isValidPassword) {
-        return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
+        return apiErrors.badRequest("Current password is incorrect", "VALIDATION_ERROR");
       }
 
       // Hash new password
@@ -87,6 +84,6 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to update settings:", error);
-    return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
+    return apiErrors.internal("Failed to update settings", error);
   }
 }

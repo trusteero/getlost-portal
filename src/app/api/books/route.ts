@@ -26,12 +26,13 @@ import type {
   AssetEntity,
 } from "@/server/types/database";
 import { isMarketingAsset, isBookCover, isLandingPage } from "@/server/types/database";
+import { apiErrors } from "@/server/utils/api-response";
 
 export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request);
 
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiErrors.unauthorized();
   }
 
   try {
@@ -442,7 +443,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(booksWithDetails);
   } catch (error) {
     console.error("Failed to fetch books:", error);
-    return NextResponse.json({ error: "Failed to fetch books" }, { status: 500 });
+    return apiErrors.internal("Failed to fetch books", error);
   }
 }
 
@@ -450,7 +451,7 @@ export async function POST(request: NextRequest) {
   const session = await getSessionFromRequest(request);
 
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiErrors.unauthorized();
   }
 
   // Rate limiting for book upload endpoint
@@ -475,7 +476,7 @@ export async function POST(request: NextRequest) {
     const coverImage = formData.get("coverImage") as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: "File is required" }, { status: 400 });
+      return apiErrors.badRequest("File is required", "MISSING_REQUIRED_FIELD");
     }
 
     // Sanitize all user input to prevent XSS attacks
@@ -489,51 +490,39 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields (after sanitization)
     if (!sanitizedTitle) {
-      return NextResponse.json({ error: "Book title is required" }, { status: 400 });
+      return apiErrors.badRequest("Book title is required", "MISSING_REQUIRED_FIELD");
     }
 
     if (!sanitizedAuthorName) {
-      return NextResponse.json({ error: "Author name is required" }, { status: 400 });
+      return apiErrors.badRequest("Author name is required", "MISSING_REQUIRED_FIELD");
     }
 
     // Server-side file size validation
     const { validateFileSize } = await import("@/server/utils/validate-file-size");
     const fileSizeValidation = validateFileSize(file);
     if (!fileSizeValidation.isValid) {
-      return NextResponse.json(
-        { error: fileSizeValidation.error },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(fileSizeValidation.error, "FILE_TOO_LARGE");
     }
 
     // Server-side file type validation for manuscript
     const { validateManuscriptFileType } = await import("@/server/utils/validate-file-type");
     const fileTypeValidation = validateManuscriptFileType(file);
     if (!fileTypeValidation.isValid) {
-      return NextResponse.json(
-        { error: fileTypeValidation.error },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(fileTypeValidation.error, "INVALID_FILE_TYPE");
     }
 
     // Validate cover image size if provided
     if (coverImage) {
       const coverSizeValidation = validateFileSize(coverImage);
       if (!coverSizeValidation.isValid) {
-        return NextResponse.json(
-          { error: `Cover image: ${coverSizeValidation.error}` },
-          { status: 400 }
-        );
+        return apiErrors.badRequest(`Cover image: ${coverSizeValidation.error}`, "FILE_TOO_LARGE");
       }
 
       // Server-side file type validation for cover image
       const { validateImageFileType } = await import("@/server/utils/validate-file-type");
       const coverTypeValidation = validateImageFileType(coverImage);
       if (!coverTypeValidation.isValid) {
-        return NextResponse.json(
-          { error: `Cover image: ${coverTypeValidation.error}` },
-          { status: 400 }
-        );
+        return apiErrors.badRequest(`Cover image: ${coverTypeValidation.error}`, "INVALID_FILE_TYPE");
       }
     }
 
@@ -840,6 +829,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Failed to create book:", error);
-    return NextResponse.json({ error: "Failed to create book" }, { status: 500 });
+    return apiErrors.internal("Failed to create book", error);
   }
 }

@@ -5,6 +5,7 @@ import { purchases, books } from "@/server/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 import { env } from "@/env";
+import { apiErrors } from "@/server/utils/api-response";
 
 const UPLOAD_PRICE = 9999; // $99.99 in cents
 
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
   const session = await getSessionFromRequest(request);
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiErrors.unauthorized();
   }
 
   // Rate limiting for purchase endpoint
@@ -138,10 +139,7 @@ export async function POST(request: NextRequest) {
     }, { status: 402 });
   } catch (error) {
     console.error("Failed to purchase upload permission:", error);
-    return NextResponse.json(
-      { error: "Failed to purchase upload permission" },
-      { status: 500 }
-    );
+    return apiErrors.internal("Failed to purchase upload permission", error);
   }
 }
 
