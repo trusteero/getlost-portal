@@ -475,7 +475,9 @@ export async function POST(request: NextRequest) {
     // If it's a Stripe-specific error, include more details
     if ('type' in err && typeof err.type === 'string') {
       console.error("Stripe error type:", err.type);
-      console.error("Stripe error code:", err.code);
+      if ('code' in err && typeof err.code === 'string') {
+        console.error("Stripe error code:", err.code);
+      }
       console.error("Stripe error message:", err.message);
     }
     
