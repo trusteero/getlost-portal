@@ -1853,7 +1853,7 @@ function AdminDashboardContent() {
                                   : "-"}
                               </td>
                               <td className="py-2 px-4">
-                                {(session?.user?.role === "super_admin" && user.role !== "super_admin") ? (
+                                {((session?.user as { role?: string })?.role === "super_admin" && user.role !== "super_admin") ? (
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button variant="ghost" size="sm">
@@ -1896,7 +1896,7 @@ function AdminDashboardContent() {
                                           </DropdownMenuItem>
                                         </>
                                       )}
-                                      {(session?.user?.role === "super_admin" && user.id !== session?.user?.id) && (
+                                      {((session?.user as { role?: string })?.role === "super_admin" && user.id !== session?.user?.id) && (
                                         <>
                                           <DropdownMenuItem
                                             onClick={() => handleDeleteUser(user.id, user.email)}
@@ -1935,7 +1935,7 @@ function AdminDashboardContent() {
                                       )}
                                     </DropdownMenuContent>
                                   </DropdownMenu>
-                                ) : (session?.user?.role === "admin" && user.role === "user") ? (
+                                ) : ((session?.user as { role?: string })?.role === "admin" && user.role === "user") ? (
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button variant="ghost" size="sm">
@@ -2317,7 +2317,14 @@ function AdminDashboardContent() {
                 <AssetUploadSection
                   title="Report"
                   assetType="report"
-                  items={reports.map(r => ({ ...r, adminNotes: r.adminNotes }))}
+                  items={reports.map(r => ({
+                    id: r.id,
+                    createdAt: r.requestedAt, // Use requestedAt as createdAt for display
+                    requestedAt: r.requestedAt,
+                    completedAt: r.completedAt || undefined,
+                    viewedAt: r.viewedAt,
+                    adminNotes: r.adminNotes || undefined,
+                  }))}
                   isUploading={uploadingReport}
                   onUpload={(file) => handleReportUpload(selectedBook.id, file)}
                   onSetActive={(itemId) => handleSetReportActive(selectedBook.id, itemId)}
@@ -2331,7 +2338,13 @@ function AdminDashboardContent() {
                 <AssetUploadSection
                   title="Marketing Assets"
                   assetType="marketing-assets"
-                  items={marketingAssets}
+                  items={marketingAssets.map(a => ({
+                    id: a.id,
+                    title: a.title || undefined,
+                    createdAt: a.createdAt,
+                    viewedAt: a.viewedAt,
+                    isActive: a.isActive ?? undefined,
+                  }))}
                   isUploading={uploadingAsset === "marketing"}
                   onUpload={(file) => handleMarketingAssetUpload(selectedBook.id, file)}
                   onSetActive={(itemId) => handleSetActive(selectedBook.id, "marketing-assets", itemId)}
@@ -2345,7 +2358,13 @@ function AdminDashboardContent() {
                 <AssetUploadSection
                   title="Book Covers"
                   assetType="covers"
-                  items={covers}
+                  items={covers.map(c => ({
+                    id: c.id,
+                    title: c.title || undefined,
+                    createdAt: c.createdAt,
+                    viewedAt: c.viewedAt,
+                    isPrimary: c.isPrimary ?? undefined,
+                  }))}
                   isUploading={uploadingAsset === "cover"}
                   onUpload={(file) => handleCoverUpload(selectedBook.id, file)}
                   onSetActive={(itemId) => handleSetPrimary(selectedBook.id, itemId)}
@@ -2359,7 +2378,13 @@ function AdminDashboardContent() {
                 <AssetUploadSection
                   title="Landing Pages"
                   assetType="landing-page"
-                  items={landingPages}
+                  items={landingPages.map(l => ({
+                    id: l.id,
+                    title: l.title || undefined,
+                    createdAt: l.createdAt,
+                    viewedAt: l.viewedAt,
+                    isActive: l.isActive ?? undefined,
+                  }))}
                   isUploading={uploadingAsset === "landing-page"}
                   onUpload={(file) => handleLandingPageUpload(selectedBook.id, file)}
                   onSetActive={(itemId) => handleSetActive(selectedBook.id, "landing-page", itemId)}
