@@ -4,6 +4,7 @@ import { db } from "@/server/db";
 import { purchases, books } from "@/server/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
+import { env } from "@/env";
 
 const UPLOAD_PRICE = 9999; // $99.99 in cents
 
@@ -93,11 +94,11 @@ export async function POST(request: NextRequest) {
     console.log(`[Purchase Upload] ➕ User ${session.user.id} needs new purchase (${totalPermissionsPurchased} purchased, ${booksUploaded} used, ${remainingPermissions} remaining) - proceeding with purchase`);
 
     // Check if we should force simulated purchases (for testing)
-    const useSimulatedPurchases = process.env.USE_SIMULATED_PURCHASES === "true";
+    const useSimulatedPurchases = env.USE_SIMULATED_PURCHASES === "true";
 
     // Check if Stripe is configured
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    const stripeSecretKey = env.STRIPE_SECRET_KEY;
+    const stripePublishableKey = env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
     if (useSimulatedPurchases || !stripeSecretKey || !stripePublishableKey) {
       // Simulated purchase

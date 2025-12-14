@@ -9,6 +9,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import AdmZip from "adm-zip";
 import { getEnvWithFallback } from "@/server/utils/validate-env";
+import { env } from "@/env";
 
 export const dynamic = 'force-dynamic';
 
@@ -155,13 +156,13 @@ export async function POST(
       // In production, require BOOK_REPORTS_PATH to be set (no hardcoded fallback)
       const bookReportsPath = getEnvWithFallback(
         "BOOK_REPORTS_PATH",
-        process.env.NODE_ENV === "production" ? "" : "./book-reports",
+        env.NODE_ENV === "production" ? "" : "./book-reports",
         "Path to book reports directory (required in production)"
       );
       
       if (!bookReportsPath || bookReportsPath.trim() === "") {
         // Skip this directory if not set in production
-        if (process.env.NODE_ENV === "production") {
+        if (env.NODE_ENV === "production") {
           console.warn("[Preview Report] BOOK_REPORTS_PATH not set, skipping book reports directory");
         }
       } else {

@@ -1,3 +1,5 @@
+import { env } from "@/env";
+
 interface EmailOptions {
   to: string;
   subject: string;
@@ -5,13 +7,13 @@ interface EmailOptions {
   text?: string;
 }
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+const RESEND_API_KEY = env.RESEND_API_KEY;
+const RESEND_FROM_EMAIL = env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
 
 // Use the same URL resolution logic as Better Auth to prevent state_mismatch errors
 // Prefer custom domain, then BETTER_AUTH_URL, then NEXT_PUBLIC_APP_URL
 const getAppUrl = (): string => {
-  const customDomain = process.env.CUSTOM_DOMAIN || process.env.NEXT_PUBLIC_CUSTOM_DOMAIN;
+  const customDomain = env.CUSTOM_DOMAIN || env.NEXT_PUBLIC_CUSTOM_DOMAIN;
   if (customDomain) {
     // Ensure it has https:// protocol
     const domainUrl = customDomain.startsWith("http") 
@@ -19,7 +21,7 @@ const getAppUrl = (): string => {
       : `https://${customDomain}`;
     return domainUrl;
   }
-  return process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  return env.BETTER_AUTH_URL || env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 };
 
 const APP_URL = getAppUrl();
@@ -27,15 +29,15 @@ const APP_URL = getAppUrl();
 export async function sendEmail({ to, subject, html, text }: EmailOptions) {
   // Check if email sending is disabled for tests
   // Check multiple conditions to ensure we catch test mode
-  const disableEmailFlag = process.env.DISABLE_EMAIL_IN_TESTS === "true";
-  const isTestNodeEnv = process.env.NODE_ENV === "test";
+  const disableEmailFlag = env.DISABLE_EMAIL_IN_TESTS === "true";
+  const isTestNodeEnv = env.NODE_ENV === "test";
   const isTestMode = disableEmailFlag || isTestNodeEnv;
   
   // Log environment for debugging
   if (!isTestMode) {
     console.log("📧 [Email] Environment check:", {
-      DISABLE_EMAIL_IN_TESTS: process.env.DISABLE_EMAIL_IN_TESTS,
-      NODE_ENV: process.env.NODE_ENV,
+      DISABLE_EMAIL_IN_TESTS: env.DISABLE_EMAIL_IN_TESTS,
+      NODE_ENV: env.NODE_ENV,
       disableEmailFlag,
       isTestNodeEnv,
       isTestMode,
@@ -46,8 +48,8 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions) {
     console.log("📧 [Email] TEST MODE - Email sending disabled:", { 
       to, 
       subject,
-      DISABLE_EMAIL_IN_TESTS: process.env.DISABLE_EMAIL_IN_TESTS,
-      NODE_ENV: process.env.NODE_ENV,
+      DISABLE_EMAIL_IN_TESTS: env.DISABLE_EMAIL_IN_TESTS,
+      NODE_ENV: env.NODE_ENV,
     });
     console.log("📧 [Email] Would be sent:", { to, subject });
     console.log("📧 [Email] HTML preview:", html.substring(0, 200) + "...");
@@ -56,7 +58,7 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions) {
   
   // Double-check test mode before making API call (defensive check)
   // This prevents emails from being sent even if the first check somehow failed
-  const finalTestModeCheck = process.env.DISABLE_EMAIL_IN_TESTS === "true" || process.env.NODE_ENV === "test";
+  const finalTestModeCheck = env.DISABLE_EMAIL_IN_TESTS === "true" || env.NODE_ENV === "test";
   if (finalTestModeCheck) {
     console.warn("📧 [Email] WARNING: Test mode detected in final check - preventing email send");
     console.log("📧 [Email] Would be sent:", { to, subject });
@@ -66,7 +68,7 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions) {
   if (!RESEND_API_KEY) {
     console.error("Resend API key not configured");
     // In development, just log the email
-    if (process.env.NODE_ENV === "development") {
+    if (env.NODE_ENV === "development") {
       console.log("📧 [Email] Would be sent:", { to, subject });
       console.log("📧 [Email] HTML preview:", html.substring(0, 200) + "...");
       return true;

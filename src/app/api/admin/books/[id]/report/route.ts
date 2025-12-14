@@ -12,6 +12,7 @@ import AdmZip from "adm-zip";
 import { randomUUID } from "crypto";
 import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 import { getEnvWithFallback } from "@/server/utils/validate-env";
+import { env } from "@/env";
 
 export const dynamic = 'force-dynamic';
 
@@ -191,7 +192,7 @@ export async function POST(
       // In production, require BOOK_REPORTS_PATH to be set (no hardcoded fallback)
       const bookReportsPath = getEnvWithFallback(
         "BOOK_REPORTS_PATH",
-        process.env.NODE_ENV === "production" ? "" : "./book-reports",
+        env.NODE_ENV === "production" ? "" : "./book-reports",
         "Path to book reports directory (required in production)"
       );
       

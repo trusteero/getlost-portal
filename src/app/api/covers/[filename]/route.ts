@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import { env } from "@/env";
 
 export async function GET(
   request: NextRequest,
@@ -20,7 +21,7 @@ export async function GET(
   try {
     // First, try the standard covers directory
     // Use process.cwd() to ensure we resolve from project root
-    const coverStoragePath = process.env.COVER_STORAGE_PATH || path.join(process.cwd(), 'uploads', 'covers');
+    const coverStoragePath = env.COVER_STORAGE_PATH || path.join(process.cwd(), 'uploads', 'covers');
     const coverDir = path.resolve(coverStoragePath);
     let filePath = path.join(coverDir, filename);
     let resolvedPath = path.resolve(filePath);

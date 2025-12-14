@@ -17,6 +17,7 @@ import { eq } from "drizzle-orm";
 import path from "path";
 import { promises as fs } from "fs";
 import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
+import { env } from "@/env";
 
 export const dynamic = 'force-dynamic';
 
@@ -89,7 +90,7 @@ export async function PATCH(
 
         // Save cover image to file system
         const { promises: fs } = await import("fs");
-        const coverStoragePath = process.env.COVER_STORAGE_PATH || path.join(process.cwd(), 'uploads', 'covers');
+        const coverStoragePath = env.COVER_STORAGE_PATH || path.join(process.cwd(), 'uploads', 'covers');
         const coverDir = path.resolve(coverStoragePath);
         
         // Create directory if it doesn't exist
