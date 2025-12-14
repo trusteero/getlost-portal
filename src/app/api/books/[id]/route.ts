@@ -6,6 +6,7 @@ import { eq, desc, and, inArray } from "drizzle-orm";
 import { extractSummaryFromReportHtml } from "@/server/utils/extract-report-summary";
 import { promises as fs } from "fs";
 import path from "path";
+import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 
 export async function GET(
   request: NextRequest,
@@ -16,6 +17,17 @@ export async function GET(
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limiting for book detail endpoint
+  const rateLimitResponse = rateLimitMiddleware(
+    request,
+    "books:detail",
+    RATE_LIMITS.API,
+    session.user.id
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   try {
@@ -142,6 +154,17 @@ export async function PATCH(
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limiting for book update endpoint
+  const rateLimitResponse = rateLimitMiddleware(
+    request,
+    "books:update",
+    RATE_LIMITS.API,
+    session.user.id
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   try {

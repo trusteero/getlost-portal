@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminFromRequest } from "@/server/auth";
+import { isAdminFromRequest, getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { 
   books, 
@@ -16,6 +16,7 @@ import {
 import { eq } from "drizzle-orm";
 import path from "path";
 import { promises as fs } from "fs";
+import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,18 @@ export async function PATCH(
 
   if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Rate limiting for admin book update endpoint
+  const session = await getSessionFromRequest(request);
+  const rateLimitResponse = rateLimitMiddleware(
+    request,
+    "admin:books:update",
+    RATE_LIMITS.API,
+    session?.user?.id
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   try {

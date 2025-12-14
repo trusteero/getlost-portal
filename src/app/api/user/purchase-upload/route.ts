@@ -3,6 +3,7 @@ import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { purchases, books } from "@/server/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
+import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 
 const UPLOAD_PRICE = 9999; // $99.99 in cents
 
@@ -15,6 +16,17 @@ export async function POST(request: NextRequest) {
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limiting for purchase endpoint
+  const rateLimitResponse = rateLimitMiddleware(
+    request,
+    "user:purchase-upload",
+    RATE_LIMITS.API,
+    session.user.id
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   try {

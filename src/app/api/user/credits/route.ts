@@ -3,6 +3,7 @@ import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { purchases, books } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
+import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 
 /**
  * GET /api/user/credits
@@ -13,6 +14,17 @@ export async function GET(request: NextRequest) {
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limiting for user data endpoint
+  const rateLimitResponse = rateLimitMiddleware(
+    request,
+    "user:credits",
+    RATE_LIMITS.API,
+    session.user.id
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   try {

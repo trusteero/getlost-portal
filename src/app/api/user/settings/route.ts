@@ -4,12 +4,24 @@ import { db } from "@/server/db";
 import { users } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 
 export async function PATCH(request: NextRequest) {
   const session = await getSessionFromRequest(request);
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limiting for user settings endpoint
+  const rateLimitResponse = rateLimitMiddleware(
+    request,
+    "user:settings",
+    RATE_LIMITS.API,
+    session.user.id
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   try {

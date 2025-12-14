@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminFromRequest } from "@/server/auth";
+import { isAdminFromRequest, getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, landingPages } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
@@ -10,6 +10,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import AdmZip from "adm-zip";
 import { getEnvWithFallback } from "@/server/utils/validate-env";
+import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,18 @@ export async function POST(
 
   if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Rate limiting for admin upload endpoint
+  const session = await getSessionFromRequest(request);
+  const rateLimitResponse = rateLimitMiddleware(
+    request,
+    "admin:landing-page:upload",
+    RATE_LIMITS.UPLOAD,
+    session?.user?.id
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   try {
