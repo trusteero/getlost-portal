@@ -88,8 +88,11 @@ export async function GET(
       .where(inArray(reports.bookVersionId, versionIds))
       .orderBy(desc(reports.requestedAt));
 
+    // Type for the selected report fields
+    type SelectedReport = typeof allReports[0];
+
     // Group reports by versionId
-    const reportsByVersionId = new Map<string, typeof allReports>();
+    const reportsByVersionId = new Map<string, SelectedReport[]>();
     for (const report of allReports) {
       if (!reportsByVersionId.has(report.bookVersionId)) {
         reportsByVersionId.set(report.bookVersionId, []);
@@ -101,7 +104,7 @@ export async function GET(
     const versionsWithReports: BookVersionWithReports[] = versions.map((version): BookVersionWithReports => {
         const versionReportsRaw = reportsByVersionId.get(version.id) || [];
 
-        const versionReports = versionReportsRaw.map((report: Report) => {
+        const versionReports = versionReportsRaw.map((report: SelectedReport) => {
           let variant: string | undefined;
           if (report.adminNotes) {
             try {
