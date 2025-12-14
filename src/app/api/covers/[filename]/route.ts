@@ -144,7 +144,7 @@ export async function GET(
     }
 
     // Return the image
-    return new NextResponse(fileBuffer.buffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       status: 200,
       headers: {
         'Content-Type': mimeType,

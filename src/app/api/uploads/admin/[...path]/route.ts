@@ -100,7 +100,7 @@ export async function GET(
     }
     
     // Return the file with CORS headers to allow iframe access
-    return new NextResponse(fileBuffer.buffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       status: 200,
       headers: {
         "Content-Type": mimeType,
