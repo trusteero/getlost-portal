@@ -13,6 +13,19 @@ import {
   findPrecannedCoverImageForFilename,
 } from "@/server/utils/precanned-content";
 import { ensureBooksTableColumns, columnExists } from "@/server/db/migrations";
+import type {
+  Book,
+  BookWithDetails,
+  BookVersion,
+  BookFeature,
+  MarketingAsset,
+  BookCover,
+  LandingPage,
+  Purchase,
+  Report,
+  AssetEntity,
+} from "@/server/types/database";
+import { isMarketingAsset, isBookCover, isLandingPage } from "@/server/types/database";
 
 export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request);
@@ -26,24 +39,17 @@ export async function GET(request: NextRequest) {
     ensureBooksTableColumns();
 
     // Build select fields - only include columns that exist
-    const selectFields: any = {
+    // Using type assertion for dynamic field selection
+    const selectFields = {
       id: books.id,
       title: books.title,
       description: books.description,
       coverImageUrl: books.coverImageUrl,
       createdAt: books.createdAt,
-    };
-
-    // Only add optional columns if they exist
-    if (columnExists("getlostportal_book", "authorName")) {
-      selectFields.authorName = books.authorName;
-    }
-    if (columnExists("getlostportal_book", "authorBio")) {
-      selectFields.authorBio = books.authorBio;
-    }
-    if (columnExists("getlostportal_book", "manuscriptStatus")) {
-      selectFields.manuscriptStatus = books.manuscriptStatus;
-    }
+      ...(columnExists("getlostportal_book", "authorName") ? { authorName: books.authorName } : {}),
+      ...(columnExists("getlostportal_book", "authorBio") ? { authorBio: books.authorBio } : {}),
+      ...(columnExists("getlostportal_book", "manuscriptStatus") ? { manuscriptStatus: books.manuscriptStatus } : {}),
+    } as const;
 
     const userBooks = await db
       .select(selectFields)
@@ -61,7 +67,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Batch fetch all related data to avoid N+1 queries
-    const bookIds = userBooks.map(book => book.id);
+    const bookIds: string[] = userBooks.map(book => book.id as string);
 
     // Batch fetch: versions, features, assets, purchases, reports
     const [
@@ -194,7 +200,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Process each book using pre-fetched data (no database queries in loop)
-    const booksWithDetails = userBooks.map((book: any) => {
+    const booksWithDetails = userBooks.map((book): BookWithDetails => {
       // Get latest version for this book
       const latestVersion = latestVersionsByBookId.get(book.id);
       
@@ -224,13 +230,13 @@ export async function GET(request: NextRequest) {
         assetTable: typeof marketingAssets | typeof bookCovers | typeof landingPages
       ): string => {
         // Get assets for this book from pre-fetched data
-        let bookAssets: typeof allMarketingAssets | typeof allCovers | typeof allLandingPages = [];
+        let bookAssets: AssetEntity[] = [];
         if (assetTable === marketingAssets) {
-          bookAssets = marketingAssetsByBookId.get(book.id) || [];
+          bookAssets = (marketingAssetsByBookId.get(book.id) || []) as AssetEntity[];
         } else if (assetTable === bookCovers) {
-          bookAssets = coversByBookId.get(book.id) || [];
+          bookAssets = (coversByBookId.get(book.id) || []) as AssetEntity[];
         } else if (assetTable === landingPages) {
-          bookAssets = landingPagesByBookId.get(book.id) || [];
+          bookAssets = (landingPagesByBookId.get(book.id) || []) as AssetEntity[];
         }
 
         // Check if any asset exists
@@ -283,12 +289,12 @@ export async function GET(request: NextRequest) {
         }
 
         // Find active/primary asset
-        let activeAsset;
+        let activeAsset: AssetEntity | undefined;
         if (assetTable === marketingAssets) {
-          activeAsset = bookAssets.find((a: any) => 'isActive' in a && a.isActive === true);
+          activeAsset = bookAssets.find((a): a is MarketingAsset => isMarketingAsset(a) && a.isActive === true);
           if (!activeAsset) {
-            activeAsset = bookAssets.find((asset: any) => {
-              if (!asset.metadata) return false;
+            activeAsset = bookAssets.find((asset): asset is MarketingAsset => {
+              if (!isMarketingAsset(asset) || !asset.metadata) return false;
               try {
                 const metadata = JSON.parse(asset.metadata);
                 return metadata.variant === "html";
@@ -298,10 +304,10 @@ export async function GET(request: NextRequest) {
             });
           }
         } else if (assetTable === bookCovers) {
-          activeAsset = bookAssets.find((a: any) => 'isPrimary' in a && a.isPrimary === true);
+          activeAsset = bookAssets.find((a): a is BookCover => isBookCover(a) && a.isPrimary === true);
           if (!activeAsset) {
-            activeAsset = bookAssets.find((cover: any) => {
-              if (!cover.metadata) return false;
+            activeAsset = bookAssets.find((cover): cover is BookCover => {
+              if (!isBookCover(cover) || !cover.metadata) return false;
               try {
                 const metadata = JSON.parse(cover.metadata);
                 return metadata.variant === "html";
@@ -311,7 +317,7 @@ export async function GET(request: NextRequest) {
             });
           }
         } else if (assetTable === landingPages) {
-          activeAsset = bookAssets.find((a: any) => 'isActive' in a && a.isActive === true) || bookAssets[0];
+          activeAsset = bookAssets.find((a): a is LandingPage => isLandingPage(a) && a.isActive === true) || bookAssets[0];
         }
 
         if (!activeAsset) {
@@ -404,10 +410,20 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      const isSample = book.title?.includes("Wool") || book.title?.includes("Beach Read") || false;
+      const bookTitle = (book.title as string) || "";
+      const isSample = bookTitle.includes("Wool") || bookTitle.includes("Beach Read") || false;
 
       return {
-        ...book,
+        id: book.id as string,
+        userId: "" as string, // Not included in select, but required by type
+        title: bookTitle,
+        description: (book.description as string | null) || null,
+        coverImageUrl: (book.coverImageUrl as string | null) || null,
+        authorName: ("authorName" in book ? (book.authorName as string | null) : null) || null,
+        authorBio: ("authorBio" in book ? (book.authorBio as string | null) : null) || null,
+        manuscriptStatus: ("manuscriptStatus" in book ? (book.manuscriptStatus as string | null) : null) || null,
+        createdAt: (book.createdAt as Date) || new Date(),
+        updatedAt: null as Date | null,
         latestVersion: latestVersion || null,
         latestReport,
         isProcessing: false,
@@ -420,7 +436,7 @@ export async function GET(request: NextRequest) {
         },
         hasPrecannedContent,
         isSample,
-      };
+      } as BookWithDetails;
     });
 
     return NextResponse.json(booksWithDetails);
@@ -559,24 +575,16 @@ export async function POST(request: NextRequest) {
 
     // Build insert values - only include columns that exist
     // Use sanitized values to prevent XSS
-    const insertValues: any = {
+    const insertValues = {
       id: bookId,
       userId: session.user.id,
       title: bookTitle,
       description: sanitizedDescription,
       coverImageUrl,
+      ...(columnExists("getlostportal_book", "authorName") ? { authorName: sanitizedAuthorName } : {}),
+      ...(columnExists("getlostportal_book", "authorBio") ? { authorBio: sanitizedAuthorBio } : {}),
+      ...(columnExists("getlostportal_book", "manuscriptStatus") ? { manuscriptStatus: "queued" as const } : {}),
     };
-
-    // Only add optional columns if they exist
-    if (columnExists("getlostportal_book", "authorName")) {
-      insertValues.authorName = sanitizedAuthorName;
-    }
-    if (columnExists("getlostportal_book", "authorBio")) {
-      insertValues.authorBio = sanitizedAuthorBio;
-    }
-    if (columnExists("getlostportal_book", "manuscriptStatus")) {
-      insertValues.manuscriptStatus = "queued"; // Initial status is queued
-    }
 
     const newBook = await db
       .insert(books)

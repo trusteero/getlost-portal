@@ -29,6 +29,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type {
+  Report as DatabaseReport,
+  MarketingAsset,
+  BookCover,
+  LandingPage,
+} from "@/server/types/database";
 
 interface DigestJob {
   id: string;
@@ -128,10 +134,10 @@ function AdminDashboardContent() {
   const [activeView, setActiveView] = useState<"books" | "users">("books");
   
   // Asset management state
-  const [reports, setReports] = useState<any[]>([]);
-  const [marketingAssets, setMarketingAssets] = useState<any[]>([]);
-  const [covers, setCovers] = useState<any[]>([]);
-  const [landingPages, setLandingPages] = useState<any[]>([]);
+  const [reports, setReports] = useState<DatabaseReport[]>([]);
+  const [marketingAssets, setMarketingAssets] = useState<MarketingAsset[]>([]);
+  const [covers, setCovers] = useState<BookCover[]>([]);
+  const [landingPages, setLandingPages] = useState<LandingPage[]>([]);
   const [uploadingAsset, setUploadingAsset] = useState<string | null>(null);
   
   // Book title editing state
@@ -372,9 +378,9 @@ function AdminDashboardContent() {
       ]);
 
       if (reportsRes.ok) {
-        const allReports = await reportsRes.json();
+        const allReports = await reportsRes.json() as DatabaseReport[];
         // Filter out preview reports
-        const fullReports = allReports.filter((r: any) => r.status !== "preview");
+        const fullReports = allReports.filter((r) => r.status !== "preview");
         setReports(fullReports);
       }
 
@@ -892,7 +898,8 @@ function AdminDashboardContent() {
   };
 
   const sortedBooks = [...books].sort((a, b) => {
-    let aValue: any, bValue: any;
+    let aValue: string | number | Date | undefined;
+    let bValue: string | number | Date | undefined;
 
     switch (sortField) {
       case "title":
@@ -1793,7 +1800,7 @@ function AdminDashboardContent() {
                                       </svg>
                                     </div>
                                   )}
-                                  {!user.hasGoogleAuth && (user as any).password && (
+                                  {!user.hasGoogleAuth && user.password && (
                                     <span title="Email/Password">
                                       <Mail className="w-4 h-4 text-gray-500" />
                                     </span>
@@ -1846,7 +1853,7 @@ function AdminDashboardContent() {
                                   : "-"}
                               </td>
                               <td className="py-2 px-4">
-                                {(session?.user as any)?.role === "super_admin" && user.role !== "super_admin" ? (
+                                {(session?.user?.role === "super_admin" && user.role !== "super_admin") ? (
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button variant="ghost" size="sm">
@@ -1889,7 +1896,7 @@ function AdminDashboardContent() {
                                           </DropdownMenuItem>
                                         </>
                                       )}
-                                      {(session?.user as any)?.role === "super_admin" && user.id !== session?.user?.id && (
+                                      {(session?.user?.role === "super_admin" && user.id !== session?.user?.id) && (
                                         <>
                                           <DropdownMenuItem
                                             onClick={() => handleDeleteUser(user.id, user.email)}
@@ -1928,7 +1935,7 @@ function AdminDashboardContent() {
                                       )}
                                     </DropdownMenuContent>
                                   </DropdownMenu>
-                                ) : (session?.user as any)?.role === "admin" && user.role === "user" ? (
+                                ) : (session?.user?.role === "admin" && user.role === "user") ? (
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button variant="ghost" size="sm">

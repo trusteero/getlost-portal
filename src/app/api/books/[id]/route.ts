@@ -7,6 +7,12 @@ import { extractSummaryFromReportHtml } from "@/server/utils/extract-report-summ
 import { promises as fs } from "fs";
 import path from "path";
 import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
+import type {
+  BookVersion,
+  BookVersionWithReports,
+  BookWithVersions,
+  Report,
+} from "@/server/types/database";
 
 export async function GET(
   request: NextRequest,
@@ -92,10 +98,10 @@ export async function GET(
     }
 
     // Map versions with their reports (no database queries)
-    const versionsWithReports = versions.map((version: any) => {
+    const versionsWithReports: BookVersionWithReports[] = versions.map((version): BookVersionWithReports => {
         const versionReportsRaw = reportsByVersionId.get(version.id) || [];
 
-        const versionReports = versionReportsRaw.map((report: any) => {
+        const versionReports = versionReportsRaw.map((report: Report) => {
           let variant: string | undefined;
           if (report.adminNotes) {
             try {
@@ -115,7 +121,7 @@ export async function GET(
 
         // Extract summary from the latest completed report
         let extractedSummary: string | null = null;
-        const latestCompletedReport = versionReports.find((r: any) => r.status === "completed");
+        const latestCompletedReport = versionReports.find((r) => r.status === "completed");
         if (latestCompletedReport?.htmlContent) {
           extractedSummary = extractSummaryFromReportHtml(latestCompletedReport.htmlContent);
         }
@@ -254,7 +260,12 @@ export async function PATCH(
     const bookRecord = book[0]!;
 
     // Update book
-    const updateData: any = {
+    const updateData: {
+      title: string;
+      description: string;
+      updatedAt: Date;
+      coverImageUrl?: string;
+    } = {
       title: title || bookRecord.title,
       description: description,
       updatedAt: new Date(),
@@ -284,8 +295,8 @@ export async function PATCH(
       .orderBy(desc(bookVersions.uploadedAt));
 
     // Get reports for each version
-    const versionsWithReports = await Promise.all(
-      versions.map(async (version: any) => {
+    const versionsWithReports: BookVersionWithReports[] = await Promise.all(
+      versions.map(async (version): Promise<BookVersionWithReports> => {
         const versionReports = await db
           .select({
             id: reports.id,
@@ -301,7 +312,7 @@ export async function PATCH(
 
         // Extract summary from the latest completed report
         let extractedSummary: string | null = null;
-        const latestCompletedReport = versionReports.find((r: any) => r.status === "completed");
+        const latestCompletedReport = versionReports.find((r) => r.status === "completed");
         if (latestCompletedReport?.htmlContent) {
           extractedSummary = extractSummaryFromReportHtml(latestCompletedReport.htmlContent);
         }
