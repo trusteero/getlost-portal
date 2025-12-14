@@ -20,7 +20,7 @@ interface TableInfo {
 
 interface QueryResult {
   columns: string[];
-  rows: any[][];
+  rows: (string | number | null | boolean)[][];
   error?: string;
 }
 
@@ -29,7 +29,7 @@ function DatabaseViewerContent() {
   const router = useRouter();
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
-  const [tableData, setTableData] = useState<any[]>([]);
+  const [tableData, setTableData] = useState<Record<string, string | number | null | boolean>[]>([]);
   const [query, setQuery] = useState<string>("");
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -267,7 +267,7 @@ function DatabaseViewerContent() {
                       <tbody>
                         {queryResult.rows.slice(0, 100).map((row, idx) => (
                           <tr key={idx} className="border-b hover:bg-gray-50">
-                            {row.map((cell: any, cellIdx: number) => (
+                            {row.map((cell: string | number | null | boolean, cellIdx: number) => (
                               <td key={cellIdx} className="py-2 px-3 text-gray-600">
                                 {cell !== null && cell !== undefined
                                   ? String(cell).substring(0, 100)

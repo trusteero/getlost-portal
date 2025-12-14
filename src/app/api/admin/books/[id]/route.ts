@@ -143,7 +143,7 @@ export async function PATCH(
     }
 
     // Update book
-    const updateData: any = {
+    const updateData: Partial<BookInsert> & { updatedAt: Date } = {
       updatedAt: new Date(),
     };
 
