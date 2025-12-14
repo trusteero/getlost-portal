@@ -193,421 +193,235 @@ export async function GET(request: NextRequest) {
       reportsByVersionId.get(report.bookVersionId)!.push(report);
     }
 
-    // Helper function to determine asset status (uses pre-fetched data, no DB queries)
-    const getAssetStatusByBookId = (
-      bookId: string,
-      featureType: string,
-      assetTable: typeof marketingAssets | typeof bookCovers | typeof landingPages
-    ): string => {
-          // FIRST: Check if any asset exists (admin may have uploaded without purchase)
-          // This allows admins to upload assets that users can access immediately
-          let anyAsset;
-          if (assetTable === marketingAssets) {
-            [anyAsset] = await db
-              .select()
-              .from(marketingAssets)
-              .where(eq(marketingAssets.bookId, book.id))
-              .limit(1);
-          } else if (assetTable === bookCovers) {
-            [anyAsset] = await db
-              .select()
-              .from(bookCovers)
-              .where(eq(bookCovers.bookId, book.id))
-              .limit(1);
-          } else if (assetTable === landingPages) {
-            [anyAsset] = await db
-              .select()
-              .from(landingPages)
-              .where(eq(landingPages.bookId, book.id))
-              .limit(1);
-          }
+    // Process each book using pre-fetched data (no database queries in loop)
+    const booksWithDetails = userBooks.map((book: any) => {
+      // Get latest version for this book
+      const latestVersion = latestVersionsByBookId.get(book.id);
+      
+      // Get features for this book
+      const features = featuresByBookId.get(book.id) || [];
+      
+      // Get latest report for the latest version
+      let latestReport = null;
+      if (latestVersion) {
+        const versionReports = reportsByVersionId.get(latestVersion.id) || [];
+        const [report] = versionReports;
+        if (report) {
+          const uiStatus = report.status === "pending" ? "requested" : report.status;
+          latestReport = {
+            id: report.id,
+            bookVersionId: report.bookVersionId,
+            status: uiStatus,
+            requestedAt: report.requestedAt,
+            completedAt: report.completedAt,
+          };
+        }
+      }
 
-          // If assets exist, check if they're accessible
-          if (anyAsset) {
-            // Check if feature is requested/purchased (for precanned asset delay logic)
-            const [feature] = await db
-              .select()
-              .from(bookFeatures)
-              .where(
-                and(
-                  eq(bookFeatures.bookId, book.id),
-                  eq(bookFeatures.featureType, featureType)
-                )
-              )
-              .limit(1);
+      // Helper function to determine asset status (uses pre-fetched data)
+      const getAssetStatusByBookId = (
+        featureType: string,
+        assetTable: typeof marketingAssets | typeof bookCovers | typeof landingPages
+      ): string => {
+        // Get assets for this book from pre-fetched data
+        let bookAssets: typeof allMarketingAssets | typeof allCovers | typeof allLandingPages = [];
+        if (assetTable === marketingAssets) {
+          bookAssets = marketingAssetsByBookId.get(book.id) || [];
+        } else if (assetTable === bookCovers) {
+          bookAssets = coversByBookId.get(book.id) || [];
+        } else if (assetTable === landingPages) {
+          bookAssets = landingPagesByBookId.get(book.id) || [];
+        }
 
-            const isRequested = feature && (feature.status === "purchased" || feature.status === "requested");
+        // Check if any asset exists
+        const anyAsset = bookAssets[0];
+        if (!anyAsset) {
+          // No assets exist - check if feature is purchased
+          const feature = features.find(f => f.featureType === featureType);
+          const isRequested = feature && (feature.status === "purchased" || feature.status === "requested");
+          return isRequested ? "requested" : "not_requested";
+        }
 
-            // Check if the asset is precanned and handle 10-second delay (only if feature was purchased)
-            // Admin-uploaded assets (non-precanned) are always accessible
-            if (anyAsset.metadata && isRequested && feature?.purchasedAt) {
-              try {
-                const metadata = JSON.parse(anyAsset.metadata);
-                const isPrecanned = metadata.precanned === true;
-                
-                if (isPrecanned) {
-                  // Get timestamps
-                  const assetCreatedAt = anyAsset.createdAt instanceof Date 
-                    ? anyAsset.createdAt.getTime() 
-                    : typeof anyAsset.createdAt === 'number' 
-                      ? anyAsset.createdAt * (anyAsset.createdAt < 10000000000 ? 1000 : 1)
-                      : new Date(anyAsset.createdAt).getTime();
-                  
-                  const purchasedAt = feature.purchasedAt instanceof Date
-                    ? feature.purchasedAt.getTime()
-                    : typeof feature.purchasedAt === 'number'
-                      ? feature.purchasedAt * (feature.purchasedAt < 10000000000 ? 1000 : 1)
-                      : new Date(feature.purchasedAt).getTime();
-                  
-                  // If precanned asset was created after purchase, it means it was auto-imported
-                  // Don't count it - wait for admin upload
-                  if (assetCreatedAt > purchasedAt) {
-                    return "requested";
-                  }
-                  
-                  // If precanned asset existed before purchase, apply 10-second delay
-                  // Show "processing" for 10 seconds after purchase, then show as "uploaded"
-                  if (assetCreatedAt <= purchasedAt) {
-                    const timeSincePurchase = Date.now() - purchasedAt;
-                    const delayMs = 10 * 1000; // 10 seconds
-                    
-                    if (timeSincePurchase < delayMs) {
-                      // Still within 10-second delay period
-                      return "requested";
-                    }
-                    // 10 seconds have passed, precanned asset is now available
-                  }
+        // Assets exist - check if feature is requested/purchased
+        const feature = features.find(f => f.featureType === featureType);
+        const isRequested = feature && (feature.status === "purchased" || feature.status === "requested");
+
+        // Check if the asset is precanned and handle 10-second delay
+        if (anyAsset.metadata && isRequested && feature?.purchasedAt) {
+          try {
+            const metadata = JSON.parse(anyAsset.metadata);
+            const isPrecanned = metadata.precanned === true;
+            
+            if (isPrecanned) {
+              const assetCreatedAt = anyAsset.createdAt instanceof Date 
+                ? anyAsset.createdAt.getTime() 
+                : typeof anyAsset.createdAt === 'number' 
+                  ? anyAsset.createdAt * (anyAsset.createdAt < 10000000000 ? 1000 : 1)
+                  : new Date(anyAsset.createdAt).getTime();
+              
+              const purchasedAt = feature.purchasedAt instanceof Date
+                ? feature.purchasedAt.getTime()
+                : typeof feature.purchasedAt === 'number'
+                  ? feature.purchasedAt * (feature.purchasedAt < 10000000000 ? 1000 : 1)
+                  : new Date(feature.purchasedAt).getTime();
+              
+              if (assetCreatedAt > purchasedAt) {
+                return "requested";
+              }
+              
+              if (assetCreatedAt <= purchasedAt) {
+                const timeSincePurchase = Date.now() - purchasedAt;
+                const delayMs = 10 * 1000;
+                if (timeSincePurchase < delayMs) {
+                  return "requested";
                 }
-                // If not precanned (admin-uploaded), skip delay logic and continue to check viewed status
-              } catch (error) {
-                // Invalid metadata, continue with normal check (treat as admin-uploaded)
-                console.warn(`[Books API] Failed to parse metadata for asset ${anyAsset?.id || 'unknown'}:`, error);
               }
             }
-            // If no purchase or not precanned, continue to check viewed status (admin-uploaded assets are accessible)
-
-          // Check active/primary asset for viewed status
-          let activeAsset;
-          if (assetTable === marketingAssets) {
-            // First try to find active asset
-            [activeAsset] = await db
-              .select()
-              .from(marketingAssets)
-              .where(
-                and(
-                  eq(marketingAssets.bookId, book.id),
-                  eq(marketingAssets.isActive, true)
-                )
-              )
-              .limit(1);
-            
-            // If no active asset, find HTML asset (same logic as user-facing route)
-            if (!activeAsset) {
-              const allAssets = await db
-                .select()
-                .from(marketingAssets)
-                .where(eq(marketingAssets.bookId, book.id));
-              
-              activeAsset = allAssets.find(asset => {
-                if (!asset.metadata) return false;
-                try {
-                  const metadata = JSON.parse(asset.metadata);
-                  return metadata.variant === "html";
-                } catch (error) {
-                  console.warn(`[Books API] Failed to parse metadata for marketing asset ${asset.id}:`, error);
-                  return false;
-                }
-              }) || undefined;
-            }
-          } else if (assetTable === bookCovers) {
-            // First try to find primary cover
-            [activeAsset] = await db
-              .select()
-              .from(bookCovers)
-              .where(
-                and(
-                  eq(bookCovers.bookId, book.id),
-                  eq(bookCovers.isPrimary, true)
-                )
-              )
-              .limit(1);
-            
-            // If no primary cover, find HTML cover
-            if (!activeAsset) {
-              const allCovers = await db
-                .select()
-                .from(bookCovers)
-                .where(eq(bookCovers.bookId, book.id));
-              
-              activeAsset = allCovers.find(cover => {
-                if (!cover.metadata) return false;
-                try {
-                  const metadata = JSON.parse(cover.metadata);
-                  return metadata.variant === "html";
-                } catch (error) {
-                  console.warn(`[Books API] Failed to parse metadata for cover ${cover.id}:`, error);
-                  return false;
-                }
-              }) || undefined;
-            }
-          } else if (assetTable === landingPages) {
-            // First try to find active landing page
-            [activeAsset] = await db
-              .select()
-              .from(landingPages)
-              .where(
-                and(
-                  eq(landingPages.bookId, book.id),
-                  eq(landingPages.isActive, true)
-                )
-              )
-              .limit(1);
-            
-            // If no active landing page, get any landing page
-            if (!activeAsset) {
-              [activeAsset] = await db
-                .select()
-                .from(landingPages)
-                .where(eq(landingPages.bookId, book.id))
-                .limit(1);
-            }
-          }
-
-          // If no active asset but anyAsset exists, return uploaded
-          if (!activeAsset) {
-            return "uploaded";
-          }
-
-          // Check if active asset has been viewed
-          if (activeAsset.viewedAt) {
-            return "viewed";
-          }
-
-          return "uploaded";
-          }
-
-          // No assets exist - check if feature is purchased
-          const [feature] = await db
-            .select()
-            .from(bookFeatures)
-            .where(
-              and(
-                eq(bookFeatures.bookId, book.id),
-                eq(bookFeatures.featureType, featureType)
-              )
-            )
-            .limit(1);
-
-          const isRequested = feature && (feature.status === "purchased" || feature.status === "requested");
-
-          if (isRequested) {
-            return "requested";
-          }
-
-          return "not_requested";
-        };
-
-        // Calculate report status (reports are linked by bookVersionId)
-        let reportStatus = "not_requested";
-        if (latestVersion[0]) {
-          // Check if feature is requested/purchased
-          const [reportFeature] = await db
-            .select()
-            .from(bookFeatures)
-            .where(
-              and(
-                eq(bookFeatures.bookId, book.id),
-                eq(bookFeatures.featureType, "manuscript-report")
-              )
-            )
-            .limit(1);
-
-          // Also check if there's a purchase (completed or pending) - webhook might not have processed yet
-          // Pending purchases indicate the user has initiated payment but webhook hasn't completed
-          const allPurchases = await db
-            .select()
-            .from(purchases)
-            .where(
-              and(
-                eq(purchases.bookId, book.id),
-                eq(purchases.featureType, "manuscript-report")
-              )
-            )
-            .orderBy(desc(purchases.createdAt));
-
-          const anyPurchase = allPurchases.length > 0 ? allPurchases[0] : undefined;
-
-          console.log(`[Books API] Book ${book.id} report status check:`, {
-            hasFeature: !!reportFeature,
-            featureStatus: reportFeature?.status,
-            hasPurchase: !!anyPurchase,
-            purchaseStatus: anyPurchase?.status,
-            purchaseId: anyPurchase?.id,
-          });
-
-          // Feature is requested if:
-          // 1. Feature status is purchased/requested, OR
-          // 2. There's a purchase record (pending or completed) - indicates payment was initiated
-          const isRequested = (reportFeature && (reportFeature.status === "purchased" || reportFeature.status === "requested")) || 
-                             (anyPurchase !== undefined);
-
-          // Get all completed reports for this version (same logic as view route)
-          const completedReports = await db
-            .select({
-              id: reports.id,
-              viewedAt: reports.viewedAt,
-              adminNotes: reports.adminNotes,
-            })
-            .from(reports)
-            .where(and(
-              eq(reports.bookVersionId, latestVersion[0].id),
-              eq(reports.status, "completed")
-            ))
-            .orderBy(desc(reports.requestedAt));
-          
-          // Find active report (same logic as view route)
-          let activeReport = completedReports.find(r => {
-            if (!r.adminNotes) return false;
-            try {
-              const notes = JSON.parse(r.adminNotes);
-              return notes.isActive === true;
-            } catch {
-              return false;
-            }
-          });
-          
-          // If no active report, use the latest one
-          if (!activeReport && completedReports.length > 0) {
-            activeReport = completedReports[0] || undefined;
-          }
-
-          // If there's a completed report, user should be able to view it
-          // (admin uploaded it, so it's ready)
-          if (activeReport) {
-            // Check if viewedAt exists and is not null/undefined
-            // Drizzle converts integer timestamps to Date objects when reading
-            const hasViewedAt = activeReport.viewedAt !== null && 
-                                activeReport.viewedAt !== undefined;
-            
-            if (hasViewedAt) {
-              reportStatus = "viewed";
-              console.log(`[Books API] Report ${activeReport.id} has been viewed. viewedAt: ${activeReport.viewedAt}`);
-            } else {
-              reportStatus = "uploaded";
-              console.log(`[Books API] Report ${activeReport.id} exists but not viewed yet. viewedAt: ${activeReport.viewedAt}`);
-            }
-          } else if (isRequested) {
-            // User has requested/purchased but no report uploaded yet
-            reportStatus = "requested";
-            console.log(`[Books API] Report requested for book ${book.id} but not uploaded yet`);
+          } catch (error) {
+            console.warn(`[Books API] Failed to parse metadata for asset ${anyAsset?.id || 'unknown'}:`, error);
           }
         }
 
-        // Calculate other asset statuses
-        const marketingStatus = await getAssetStatusByBookId("marketing-assets", marketingAssets);
-        const coversStatus = await getAssetStatusByBookId("book-covers", bookCovers);
-        const landingPageStatus = await getAssetStatusByBookId("landing-page", landingPages);
-
-
-        // Check if book has any precanned content (subtle indicator for demo content)
-        const hasPrecannedContent = await (async () => {
-          // Check reports
-          if (latestVersion[0]) {
-            const precannedReports = await db
-              .select()
-              .from(reports)
-              .where(eq(reports.bookVersionId, latestVersion[0].id))
-              .limit(5);
-            
-            for (const report of precannedReports) {
-              if (report.adminNotes) {
-                try {
-                  const notes = JSON.parse(report.adminNotes);
-                  if (notes.precanned === true) return true;
-                } catch (error) {
-                  console.warn(`[Books API] Failed to parse adminNotes for report ${report.id}:`, error);
-                }
-              }
-            }
-          }
-          
-          // Check marketing assets
-          const precannedMarketing = await db
-            .select()
-            .from(marketingAssets)
-            .where(eq(marketingAssets.bookId, book.id))
-            .limit(1);
-          
-          for (const asset of precannedMarketing) {
-            if (asset.metadata) {
+        // Find active/primary asset
+        let activeAsset;
+        if (assetTable === marketingAssets) {
+          activeAsset = bookAssets.find((a: any) => 'isActive' in a && a.isActive === true);
+          if (!activeAsset) {
+            activeAsset = bookAssets.find((asset: any) => {
+              if (!asset.metadata) return false;
               try {
                 const metadata = JSON.parse(asset.metadata);
-                if (metadata.precanned === true) return true;
-              } catch (error) {
-                console.warn(`[Books API] Failed to parse metadata for marketing asset ${asset.id}:`, error);
+                return metadata.variant === "html";
+              } catch {
+                return false;
               }
-            }
+            });
           }
-          
-          // Check covers
-          const precannedCovers = await db
-            .select()
-            .from(bookCovers)
-            .where(eq(bookCovers.bookId, book.id))
-            .limit(1);
-          
-          for (const cover of precannedCovers) {
-            if (cover.metadata) {
+        } else if (assetTable === bookCovers) {
+          activeAsset = bookAssets.find((a: any) => 'isPrimary' in a && a.isPrimary === true);
+          if (!activeAsset) {
+            activeAsset = bookAssets.find((cover: any) => {
+              if (!cover.metadata) return false;
               try {
                 const metadata = JSON.parse(cover.metadata);
-                if (metadata.precanned === true) return true;
-              } catch (error) {
-                console.warn(`[Books API] Failed to parse metadata for cover ${cover.id}:`, error);
+                return metadata.variant === "html";
+              } catch {
+                return false;
               }
+            });
+          }
+        } else if (assetTable === landingPages) {
+          activeAsset = bookAssets.find((a: any) => 'isActive' in a && a.isActive === true) || bookAssets[0];
+        }
+
+        if (!activeAsset) {
+          return "uploaded";
+        }
+
+        if (activeAsset.viewedAt) {
+          return "viewed";
+        }
+
+        return "uploaded";
+      };
+
+      // Calculate report status
+      let reportStatus = "not_requested";
+      if (latestVersion) {
+        const reportFeature = features.find(f => f.featureType === "manuscript-report");
+        const bookPurchases = purchasesByBookId.get(book.id) || [];
+        const anyPurchase = bookPurchases[0];
+
+        const isRequested = (reportFeature && (reportFeature.status === "purchased" || reportFeature.status === "requested")) || 
+                           (anyPurchase !== undefined);
+
+        const versionReports = reportsByVersionId.get(latestVersion.id) || [];
+        const completedReports = versionReports.filter(r => r.status === "completed");
+        
+        let activeReport = completedReports.find(r => {
+          if (!r.adminNotes) return false;
+          try {
+            const notes = JSON.parse(r.adminNotes);
+            return notes.isActive === true;
+          } catch {
+            return false;
+          }
+        });
+        
+        if (!activeReport && completedReports.length > 0) {
+          activeReport = completedReports[0];
+        }
+
+        if (activeReport) {
+          const hasViewedAt = activeReport.viewedAt !== null && activeReport.viewedAt !== undefined;
+          reportStatus = hasViewedAt ? "viewed" : "uploaded";
+        } else if (isRequested) {
+          reportStatus = "requested";
+        }
+      }
+
+      // Calculate other asset statuses
+      const marketingStatus = getAssetStatusByBookId("marketing-assets", marketingAssets);
+      const coversStatus = getAssetStatusByBookId("book-covers", bookCovers);
+      const landingPageStatus = getAssetStatusByBookId("landing-page", landingPages);
+
+      // Check if book has any precanned content
+      let hasPrecannedContent = false;
+      if (latestVersion) {
+        const versionReports = reportsByVersionId.get(latestVersion.id) || [];
+        for (const report of versionReports.slice(0, 5)) {
+          if (report.adminNotes) {
+            try {
+              const notes = JSON.parse(report.adminNotes);
+              if (notes.precanned === true) {
+                hasPrecannedContent = true;
+                break;
+              }
+            } catch {
+              // ignore
             }
           }
-          
-          // Check landing pages
-          const precannedLanding = await db
-            .select()
-            .from(landingPages)
-            .where(eq(landingPages.bookId, book.id))
-            .limit(1);
-          
-          for (const landing of precannedLanding) {
-            if (landing.metadata) {
-              try {
-                const metadata = JSON.parse(landing.metadata);
-                if (metadata.precanned === true) return true;
-              } catch (error) {
-                console.warn(`[Books API] Failed to parse metadata for landing page ${landing.id}:`, error);
+        }
+      }
+      
+      if (!hasPrecannedContent) {
+        const marketing = marketingAssetsByBookId.get(book.id) || [];
+        const covers = coversByBookId.get(book.id) || [];
+        const landing = landingPagesByBookId.get(book.id) || [];
+        
+        for (const asset of [...marketing, ...covers, ...landing]) {
+          if (asset.metadata) {
+            try {
+              const metadata = JSON.parse(asset.metadata);
+              if (metadata.precanned === true) {
+                hasPrecannedContent = true;
+                break;
               }
+            } catch {
+              // ignore
             }
           }
-          
-          return false;
-        })();
+        }
+      }
 
-        // Check if this is an example/sample book (Wool or Beach Read)
-        const isSample = book.title?.includes("Wool") || book.title?.includes("Beach Read") || false;
+      const isSample = book.title?.includes("Wool") || book.title?.includes("Beach Read") || false;
 
-        return {
-          ...book,
-          latestVersion: latestVersion[0],
-          latestReport,
-          isProcessing: false, // No longer using digest jobs
-          features: features,
-          assetStatuses: {
-            report: reportStatus,
-            marketing: marketingStatus,
-            covers: coversStatus,
-            landingPage: landingPageStatus,
-          },
-          hasPrecannedContent,
-          isSample,
-        };
-      })
-    );
+      return {
+        ...book,
+        latestVersion: latestVersion || null,
+        latestReport,
+        isProcessing: false,
+        features: features,
+        assetStatuses: {
+          report: reportStatus,
+          marketing: marketingStatus,
+          covers: coversStatus,
+          landingPage: landingPageStatus,
+        },
+        hasPrecannedContent,
+        isSample,
+      };
+    });
 
     return NextResponse.json(booksWithDetails);
   } catch (error) {
