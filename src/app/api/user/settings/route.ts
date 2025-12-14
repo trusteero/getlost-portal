@@ -5,6 +5,7 @@ import { users } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
+import { apiErrors } from "@/server/utils/api-response";
 
 export async function PATCH(request: NextRequest) {
   const session = await getSessionFromRequest(request);
