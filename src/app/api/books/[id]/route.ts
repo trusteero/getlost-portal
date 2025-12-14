@@ -199,14 +199,14 @@ export async function PATCH(
         const { validateFileSize } = await import("@/server/utils/validate-file-size");
         const coverSizeValidation = validateFileSize(coverImage);
         if (!coverSizeValidation.isValid) {
-          return apiErrors.badRequest(`Cover image: ${coverSizeValidation.error}`, "FILE_TOO_LARGE");
+          return apiErrors.badRequest(`Cover image: ${coverSizeValidation.error || "File size exceeds maximum allowed size"}`, "FILE_TOO_LARGE");
         }
 
         // Server-side file type validation for cover image
         const { validateImageFileType } = await import("@/server/utils/validate-file-type");
         const coverTypeValidation = validateImageFileType(coverImage);
         if (!coverTypeValidation.isValid) {
-          return apiErrors.badRequest(`Cover image: ${coverTypeValidation.error}`, "INVALID_FILE_TYPE");
+          return apiErrors.badRequest(`Cover image: ${coverTypeValidation.error || "Invalid file type"}`, "INVALID_FILE_TYPE");
         }
 
         // Save cover image to file system (same as POST endpoint)

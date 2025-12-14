@@ -74,7 +74,7 @@ export async function PATCH(
         const coverSizeValidation = validateFileSize(coverImage);
         if (!coverSizeValidation.isValid) {
           return NextResponse.json(
-            { error: `Cover image: ${coverSizeValidation.error}` },
+            { error: `Cover image: ${coverSizeValidation.error || "File size exceeds maximum allowed size"}` },
             { status: 400 }
           );
         }
@@ -84,7 +84,7 @@ export async function PATCH(
         const coverTypeValidation = validateImageFileType(coverImage);
         if (!coverTypeValidation.isValid) {
           return NextResponse.json(
-            { error: `Cover image: ${coverTypeValidation.error}` },
+            { error: `Cover image: ${coverTypeValidation.error || "Invalid file type"}` },
             { status: 400 }
           );
         }

@@ -501,30 +501,30 @@ export async function POST(request: NextRequest) {
     const { validateFileSize } = await import("@/server/utils/validate-file-size");
     const fileSizeValidation = validateFileSize(file);
     if (!fileSizeValidation.isValid) {
-      return apiErrors.badRequest(fileSizeValidation.error, "FILE_TOO_LARGE");
+      return apiErrors.badRequest(fileSizeValidation.error || "File size exceeds maximum allowed size", "FILE_TOO_LARGE");
     }
 
     // Server-side file type validation for manuscript
     const { validateManuscriptFileType } = await import("@/server/utils/validate-file-type");
     const fileTypeValidation = validateManuscriptFileType(file);
     if (!fileTypeValidation.isValid) {
-      return apiErrors.badRequest(fileTypeValidation.error, "INVALID_FILE_TYPE");
+      return apiErrors.badRequest(fileTypeValidation.error || "Invalid file type", "INVALID_FILE_TYPE");
     }
 
-    // Validate cover image size if provided
-    if (coverImage) {
-      const coverSizeValidation = validateFileSize(coverImage);
-      if (!coverSizeValidation.isValid) {
-        return apiErrors.badRequest(`Cover image: ${coverSizeValidation.error}`, "FILE_TOO_LARGE");
-      }
+      // Validate cover image size if provided
+      if (coverImage) {
+        const coverSizeValidation = validateFileSize(coverImage);
+        if (!coverSizeValidation.isValid) {
+          return apiErrors.badRequest(`Cover image: ${coverSizeValidation.error || "File size exceeds maximum allowed size"}`, "FILE_TOO_LARGE");
+        }
 
-      // Server-side file type validation for cover image
-      const { validateImageFileType } = await import("@/server/utils/validate-file-type");
-      const coverTypeValidation = validateImageFileType(coverImage);
-      if (!coverTypeValidation.isValid) {
-        return apiErrors.badRequest(`Cover image: ${coverTypeValidation.error}`, "INVALID_FILE_TYPE");
+        // Server-side file type validation for cover image
+        const { validateImageFileType } = await import("@/server/utils/validate-file-type");
+        const coverTypeValidation = validateImageFileType(coverImage);
+        if (!coverTypeValidation.isValid) {
+          return apiErrors.badRequest(`Cover image: ${coverTypeValidation.error || "Invalid file type"}`, "INVALID_FILE_TYPE");
+        }
       }
-    }
 
     // Use sanitized values
     const bookTitle = sanitizedTitle;
