@@ -60,7 +60,7 @@ export interface BookWithDetails extends Book {
   isSample?: boolean;
 }
 
-export interface BookVersionWithReports extends BookVersion {
+export interface BookVersionWithReports extends Omit<BookVersion, 'summary'> {
   reports: Array<{
     id: string;
     status: string;
@@ -70,7 +70,7 @@ export interface BookVersionWithReports extends BookVersion {
     pdfUrl: string | null;
     variant?: string;
   }>;
-  summary?: string | null;
+  summary: string | null; // Override to allow null, matching BookVersion
 }
 
 export interface BookWithVersions extends Book {
