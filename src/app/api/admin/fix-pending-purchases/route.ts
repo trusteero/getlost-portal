@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { purchases } from "@/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 
 /**
  * POST /api/admin/fix-pending-purchases
@@ -24,51 +24,60 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Get all pending book-upload purchases older than 5 minutes
-    // (these should have been processed by webhook by now)
-    const fiveMinutesAgo = Math.floor(Date.now() / 1000) - 5 * 60; // Unix timestamp in seconds
-    
+    // Get all pending purchases older than 30 minutes.
+    // We intentionally do NOT auto-complete anything here; we mark as failed to avoid granting entitlements incorrectly.
+    const cutoffSeconds = Math.floor(Date.now() / 1000) - 30 * 60; // Unix timestamp in seconds
+
+    const PENDING_CLEANUP_FEATURE_TYPES = [
+      "book-upload",
+      "dna-report",
+      "market-validation-report",
+      "market-ready-pack",
+      "growth-partnership",
+    ] as const;
+
     const pendingPurchases = await db
       .select()
       .from(purchases)
       .where(
         and(
-          eq(purchases.featureType, "book-upload"),
+          inArray(purchases.featureType, PENDING_CLEANUP_FEATURE_TYPES as unknown as string[]),
           eq(purchases.status, "pending")
         )
       );
 
-    console.log(`[Fix Pending] Found ${pendingPurchases.length} pending book-upload purchases`);
+    console.log(`[Fix Pending] Found ${pendingPurchases.length} pending purchase(s) in scope`);
 
-    const purchasesToFix = pendingPurchases.filter(p => {
-      // Check if purchase is older than 5 minutes
-      const createdAt = typeof p.createdAt === 'number' ? p.createdAt : (p.createdAt ? new Date(p.createdAt).getTime() / 1000 : 0);
-      return createdAt > 0 && createdAt < fiveMinutesAgo;
+    const purchasesToMarkFailed = pendingPurchases.filter((p) => {
+      const createdAtSeconds =
+        typeof p.createdAt === "number"
+          ? p.createdAt
+          : p.createdAt
+            ? new Date(p.createdAt).getTime() / 1000
+            : 0;
+      return createdAtSeconds > 0 && createdAtSeconds < cutoffSeconds;
     });
 
-    console.log(`[Fix Pending] Found ${purchasesToFix.length} purchases to fix (older than 5 minutes)`);
+    console.log(`[Fix Pending] Found ${purchasesToMarkFailed.length} pending purchase(s) to mark failed (older than 30 minutes)`);
 
-    let fixedCount = 0;
-    for (const purchase of purchasesToFix) {
-      // Only fix purchases with paymentMethod (meaning they went through checkout)
-      if (purchase.paymentMethod) {
-        await db
-          .update(purchases)
-          .set({
-            status: "completed",
-            completedAt: new Date(),
-          })
-          .where(eq(purchases.id, purchase.id));
-        
-        fixedCount++;
-        console.log(`[Fix Pending] Fixed purchase ${purchase.id} for user ${purchase.userId}`);
-      }
+    let failedCount = 0;
+    for (const purchase of purchasesToMarkFailed) {
+      await db
+        .update(purchases)
+        .set({
+          status: "failed",
+          updatedAt: new Date(),
+        })
+        .where(eq(purchases.id, purchase.id));
+
+      failedCount++;
+      console.log(`[Fix Pending] Marked purchase ${purchase.id} as failed (featureType=${purchase.featureType}, user=${purchase.userId})`);
     }
 
     return NextResponse.json({
-      message: `Fixed ${fixedCount} pending purchases`,
-      totalPending: pendingPurchases.length,
-      fixed: fixedCount,
+      message: `Marked ${failedCount} stale pending purchases as failed`,
+      totalPendingInScope: pendingPurchases.length,
+      markedFailed: failedCount,
     });
   } catch (error) {
     console.error("Failed to fix pending purchases:", error);
