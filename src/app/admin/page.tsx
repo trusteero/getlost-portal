@@ -226,7 +226,7 @@ function AdminDashboardContent() {
       // Fetch books, users and analytics in parallel
       const [booksRes, usersRes, analyticsRes] = await Promise.all([
         fetch("/api/admin/books"),
-        fetch("/api/admin/users"),
+        fetch("/api/admin/users?limit=1000"),
         fetch("/api/admin/analytics")
       ]);
 
@@ -238,7 +238,16 @@ function AdminDashboardContent() {
       if (usersRes.ok) {
         const usersData = await usersRes.json();
         console.log("Users data fetched:", usersData);
-        setUsers(usersData);
+        // Handle paginated response format
+        if (usersData.users && Array.isArray(usersData.users)) {
+          setUsers(usersData.users);
+        } else if (Array.isArray(usersData)) {
+          // Backward compatibility: if it's still an array, use it directly
+          setUsers(usersData);
+        } else {
+          console.error("Unexpected users data format:", usersData);
+          setUsers([]);
+        }
       } else {
         console.error("Failed to fetch users:", usersRes.status, await usersRes.text());
       }

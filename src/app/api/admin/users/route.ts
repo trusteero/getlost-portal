@@ -15,9 +15,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Memory safety: Add pagination support
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get("page") || "1", 10);
+    const limit = Math.min(parseInt(url.searchParams.get("limit") || "1000", 10), 1000); // Max 1000 per page
+    const offset = (page - 1) * limit;
+
     // Get all users (Better Auth uses 'user' table, but we query 'users' from schema which maps to getlostportal_user)
     // Both should work as they reference the same table
-    console.log("[Admin Users] Fetching all users...");
+    console.log(`[Admin Users] Fetching users (page ${page}, limit ${limit})...`);
     
     // Check if password column exists (for compatibility with both old and new schemas)
     const { columnExists } = await import("@/server/db/migrations");
@@ -25,10 +31,14 @@ export async function GET(request: NextRequest) {
     
     let allUsers;
     if (hasPasswordColumn) {
-      // Select all columns including password
-      allUsers = await db.select().from(users);
+      // Select all columns including password, with pagination
+      allUsers = await db
+        .select()
+        .from(users)
+        .limit(limit)
+        .offset(offset);
     } else {
-      // Select only columns that exist (without password)
+      // Select only columns that exist (without password), with pagination
       allUsers = await db
         .select({
           id: users.id,
@@ -40,7 +50,9 @@ export async function GET(request: NextRequest) {
           createdAt: users.createdAt,
           updatedAt: users.updatedAt,
         })
-        .from(users);
+        .from(users)
+        .limit(limit)
+        .offset(offset);
     }
     
     console.log(`[Admin Users] Found ${allUsers.length} users`);
@@ -113,8 +125,22 @@ export async function GET(request: NextRequest) {
       lastActivity: lastActivityMap[user.id] || null,
     }));
 
-    console.log(`[Admin Users] Returning ${usersWithFullData.length} users with full data`);
-    return NextResponse.json(usersWithFullData);
+    // Get total count for pagination info
+    const totalCountResult = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(users);
+    const totalCount = totalCountResult[0]?.count || 0;
+
+    console.log(`[Admin Users] Returning ${usersWithFullData.length} users (${totalCount} total)`);
+    return NextResponse.json({
+      users: usersWithFullData,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error) {
     console.error("[Admin Users] Failed to fetch users:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
