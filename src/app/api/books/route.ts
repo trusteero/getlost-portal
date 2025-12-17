@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookVersions, reports, bookFeatures, marketingAssets, bookCovers, landingPages, purchases } from "@/server/db/schema";
-import { eq, desc, and, ne, inArray, sql } from "drizzle-orm";
+import { eq, desc, and, ne, inArray, sql, isNull } from "drizzle-orm";
 import { extractEpubMetadata } from "@/server/utils/extract-epub-metadata";
 import { promises as fs } from "fs";
 import path from "path";
@@ -586,6 +586,72 @@ export async function POST(request: NextRequest) {
       .returning();
 
     const createdBook = newBook[0]!;
+
+    // If user purchased a report product before uploading (user-level purchase without bookId),
+    // attach the most recent completed report purchase to this new book and grant report entitlement.
+    try {
+      const REPORT_PURCHASE_TYPES = [
+        "dna-report",
+        "market-validation-report",
+        "market-ready-pack",
+      ] as const;
+
+      const [prePurchase] = await db
+        .select()
+        .from(purchases)
+        .where(
+          and(
+            eq(purchases.userId, session.user.id),
+            eq(purchases.status, "completed"),
+            isNull(purchases.bookId),
+            inArray(purchases.featureType, REPORT_PURCHASE_TYPES as unknown as string[])
+          )
+        )
+        .orderBy(desc(purchases.completedAt))
+        .limit(1);
+
+      if (prePurchase) {
+        await db
+          .update(purchases)
+          .set({ bookId: createdBook.id, updatedAt: new Date() })
+          .where(eq(purchases.id, prePurchase.id));
+
+        const [existingFeature] = await db
+          .select()
+          .from(bookFeatures)
+          .where(
+            and(
+              eq(bookFeatures.bookId, createdBook.id),
+              eq(bookFeatures.featureType, "manuscript-report")
+            )
+          )
+          .limit(1);
+
+        if (existingFeature) {
+          await db
+            .update(bookFeatures)
+            .set({
+              status: "purchased",
+              purchasedAt: new Date(),
+              unlockedAt: new Date(),
+              price: prePurchase.amount,
+              updatedAt: new Date(),
+            })
+            .where(eq(bookFeatures.id, existingFeature.id));
+        } else {
+          await db.insert(bookFeatures).values({
+            bookId: createdBook.id,
+            featureType: "manuscript-report",
+            status: "purchased",
+            purchasedAt: new Date(),
+            unlockedAt: new Date(),
+            price: prePurchase.amount,
+          });
+        }
+      }
+    } catch (attachError) {
+      console.warn("[Books API] Failed to attach pre-purchased report to new book:", attachError);
+    }
 
     // Save the book file to disk
     const bookStoragePath = process.env.BOOK_STORAGE_PATH || './uploads/books';

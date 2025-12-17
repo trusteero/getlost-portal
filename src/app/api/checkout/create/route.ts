@@ -96,7 +96,9 @@ export async function POST(request: NextRequest) {
     }
 
     // For user-level purchases (book-upload), bookId is not required.
-    // All report products are book-specific (require bookId).
+    // Report products can be purchased either:
+    // - book-level (when purchasing for an existing book), OR
+    // - user-level (from "Analyze another manuscript" flow before a book exists).
     // Growth partnership is user-level (no bookId required).
     let book = null;
     if (featureType !== "book-upload" && bookId) {
@@ -112,9 +114,7 @@ export async function POST(request: NextRequest) {
       }
       book = bookResult;
     }
-    if (REPORT_PRODUCT_TYPES.has(featureType) && !bookId) {
-      return apiErrors.badRequest("bookId is required for report purchases");
-    }
+    // Allow report purchases without bookId (user-level). We'll attach the purchase to the next uploaded book.
     if (SUBSCRIPTION_FEATURE_TYPES.has(featureType) && bookId) {
       // Avoid creating subscriptions tied to a book until we define contents.
       return apiErrors.badRequest("bookId is not supported for growth partnership purchases");
@@ -372,7 +372,12 @@ export async function POST(request: NextRequest) {
       };
       
       // Only include bookId if it's not a user-level purchase
-      if (featureType !== "book-upload" && featureType !== "growth-partnership" && bookId) {
+      // (report products may be purchased user-level before book exists)
+      if (
+        featureType !== "book-upload" &&
+        featureType !== "growth-partnership" &&
+        bookId
+      ) {
         purchaseValues.bookId = bookId;
       }
       // For book-upload, we don't include bookId at all (it will be null/undefined)
@@ -380,8 +385,9 @@ export async function POST(request: NextRequest) {
       await db.insert(purchases).values(purchaseValues);
       console.log(`[Checkout] ✅ Inserted purchase ${purchaseId} into database`);
 
-      // For book-specific features, create or update feature record
-      // User-level features (book-upload) don't need bookFeatures records
+      // For book-specific features, create or update feature record.
+      // User-level features (book-upload/growth-partnership) don't need bookFeatures records.
+      // Report purchases without bookId will be attached to the next uploaded book.
       const entitlementFeatureType = getEntitlementFeatureType(featureType);
 
       if (entitlementFeatureType !== "book-upload" && entitlementFeatureType !== "growth-partnership" && bookId) {
