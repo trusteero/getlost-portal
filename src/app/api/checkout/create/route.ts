@@ -501,19 +501,46 @@ export async function POST(request: NextRequest) {
       | undefined = undefined;
     if (useStripe && typeof promotionCode === "string" && promotionCode.trim()) {
       try {
-        const promoResult = await stripe.promotionCodes.list({
-          code: promotionCode.trim(),
-          active: true,
-          limit: 1,
-        });
-        const promo = promoResult.data[0];
+        const rawCode = promotionCode.trim();
+
+        // Stripe Dashboard/UI often treats codes case-insensitively; API filtering can be picky.
+        // Try a few variants, then fall back to a small active list and match case-insensitively.
+        const tryCodes = Array.from(new Set([rawCode, rawCode.toUpperCase(), rawCode.toLowerCase()]));
+
+        let promo: { id: string; code: string | null } | undefined;
+        for (const c of tryCodes) {
+          const promoResult = await stripe.promotionCodes.list({
+            code: c,
+            active: true,
+            limit: 1,
+          });
+          if (promoResult.data[0]) {
+            promo = { id: promoResult.data[0].id, code: promoResult.data[0].code };
+            break;
+          }
+        }
+
         if (!promo) {
-          console.error(`[Checkout] ❌ Promotion code not found/active: code=${promotionCode}`);
+          // Fallback: scan a small set of active codes and match case-insensitively
+          const promoResult = await stripe.promotionCodes.list({
+            active: true,
+            limit: 100,
+          });
+          const normalized = rawCode.toLowerCase();
+          const match = promoResult.data.find((p) => (p.code || "").toLowerCase() === normalized);
+          if (match) {
+            promo = { id: match.id, code: match.code };
+          }
+        }
+
+        if (!promo) {
+          console.error(`[Checkout] ❌ Promotion code not found/active: code=${rawCode}`);
           return apiErrors.badRequest(
             "Promotion code is invalid or inactive",
             ERROR_CODES.VALIDATION_ERROR
           );
         }
+        console.log(`[Checkout] ✅ Applying promotion code`, { input: rawCode, matchedCode: promo.code, promotionCodeId: promo.id });
         discounts = [{ promotion_code: promo.id }];
       } catch (promoErr) {
         console.error("[Checkout] ❌ Failed to look up promotion code:", promoErr);
