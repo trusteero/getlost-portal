@@ -84,11 +84,22 @@ export const ManuscriptCard = ({
   const [updatedSteps, setUpdatedSteps] = useState<ProgressStep[]>(steps);
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
   const [pendingFeature, setPendingFeature] = useState<ProgressStep | null>(null);
+  const [selectedPurchaseOption, setSelectedPurchaseOption] = useState<
+    "dna-report" | "market-validation-report" | "market-ready-pack" | "growth-partnership"
+  >("market-ready-pack");
 
   // Sync updatedSteps with steps prop when it changes (from parent refresh)
   useEffect(() => {
     setUpdatedSteps(steps);
   }, [steps]);
+
+  // Default the selector when opening the dialog for report purchase
+  useEffect(() => {
+    if (!showPurchaseDialog) return;
+    if (pendingFeature?.id === "manuscript-report") {
+      setSelectedPurchaseOption("market-ready-pack");
+    }
+  }, [showPurchaseDialog, pendingFeature?.id]);
 
   const handleUnlockClick = (step: ProgressStep) => {
     // If it's free (summary), unlock immediately without confirmation
@@ -105,7 +116,8 @@ export const ManuscriptCard = ({
   const handleConfirmPurchase = async () => {
     if (!pendingFeature) return;
     
-    const featureId = pendingFeature.id;
+    const isReportDialog = pendingFeature.id === "manuscript-report";
+    const featureId = isReportDialog ? selectedPurchaseOption : pendingFeature.id;
     
     // Check if this is a paid feature (not free)
     if (pendingFeature.price !== 'Free' && pendingFeature.price !== 'Unlocked') {
@@ -115,7 +127,7 @@ export const ManuscriptCard = ({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            bookId: id,
+            ...(featureId === "growth-partnership" ? {} : { bookId: id }),
             featureType: featureId,
           }),
         });
@@ -656,14 +668,91 @@ export const ManuscriptCard = ({
           {pendingFeature && (
             <div className="py-4">
               <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-900 mb-1">Feature</p>
-                  <p className="text-base text-gray-700">{pendingFeature.title}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900 mb-1">Price</p>
-                  <p className="text-2xl font-bold text-emerald-600">{pendingFeature.price}</p>
-                </div>
+                {pendingFeature.id === "manuscript-report" ? (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 mb-1">Choose your report</p>
+                      <p className="text-xs text-gray-500">
+                        All options unlock report access for this manuscript for now. Pricing is taken from Stripe at checkout.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="flex items-start gap-2 cursor-pointer rounded border p-3 hover:bg-gray-50">
+                        <input
+                          type="radio"
+                          name="purchaseOption"
+                          value="dna-report"
+                          checked={selectedPurchaseOption === "dna-report"}
+                          onChange={() => setSelectedPurchaseOption("dna-report")}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-900">myStory DNA Report</div>
+                          <div className="text-xs text-gray-600">One-time purchase</div>
+                        </div>
+                      </label>
+
+                      <label className="flex items-start gap-2 cursor-pointer rounded border p-3 hover:bg-gray-50">
+                        <input
+                          type="radio"
+                          name="purchaseOption"
+                          value="market-validation-report"
+                          checked={selectedPurchaseOption === "market-validation-report"}
+                          onChange={() => setSelectedPurchaseOption("market-validation-report")}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-900">
+                            myStory Market &amp; Audience Validation Report
+                          </div>
+                          <div className="text-xs text-gray-600">One-time purchase</div>
+                        </div>
+                      </label>
+
+                      <label className="flex items-start gap-2 cursor-pointer rounded border p-3 hover:bg-gray-50">
+                        <input
+                          type="radio"
+                          name="purchaseOption"
+                          value="market-ready-pack"
+                          checked={selectedPurchaseOption === "market-ready-pack"}
+                          onChange={() => setSelectedPurchaseOption("market-ready-pack")}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-900">myStory Market-Ready Pack</div>
+                          <div className="text-xs text-gray-600">One-time purchase</div>
+                        </div>
+                      </label>
+
+                      <label className="flex items-start gap-2 cursor-pointer rounded border p-3 hover:bg-gray-50">
+                        <input
+                          type="radio"
+                          name="purchaseOption"
+                          value="growth-partnership"
+                          checked={selectedPurchaseOption === "growth-partnership"}
+                          onChange={() => setSelectedPurchaseOption("growth-partnership")}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-900">myStory Growth Partnership</div>
+                          <div className="text-xs text-gray-600">Subscription (billed monthly)</div>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 mb-1">Feature</p>
+                      <p className="text-base text-gray-700">{pendingFeature.title}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 mb-1">Price</p>
+                      <p className="text-2xl font-bold text-emerald-600">{pendingFeature.price}</p>
+                    </div>
+                  </>
+                )}
                 <div>
                   <p className="text-sm font-medium text-gray-900 mb-1">Description</p>
                   <p className="text-sm text-gray-600">{pendingFeature.action}</p>
