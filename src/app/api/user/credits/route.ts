@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { purchases, books } from "@/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 
 /**
@@ -28,6 +28,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Check if user has purchases that grant upload permission.
+    // In the "Analyze another manuscript" flow we don't have a bookId yet,
+    // so report products are treated as user-level purchases that grant one upload.
+    const UPLOAD_GRANTING_FEATURE_TYPES = [
+      "book-upload",
+      "dna-report",
+      "market-validation-report",
+      "market-ready-pack",
+      "growth-partnership",
+    ] as const;
+
     // Get all upload purchases for this user (any status)
     const allUploadPurchases = await db
       .select()
@@ -35,7 +46,7 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           eq(purchases.userId, session.user.id),
-          eq(purchases.featureType, "book-upload")
+          inArray(purchases.featureType, UPLOAD_GRANTING_FEATURE_TYPES as unknown as string[])
         )
       );
 
