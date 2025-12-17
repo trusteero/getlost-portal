@@ -77,6 +77,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const { bookId, featureType, promotionCode } = await request.json();
+    console.log(`[Checkout] Promo code input`, {
+      featureType,
+      hasPromotionCode: typeof promotionCode === "string" && promotionCode.trim().length > 0,
+      promotionCode: typeof promotionCode === "string" ? promotionCode : null,
+    });
     const REPORT_PRODUCT_TYPES = new Set([
       "manuscript-report",
       "dna-report",
