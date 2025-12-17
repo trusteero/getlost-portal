@@ -515,7 +515,9 @@ export async function POST(request: NextRequest) {
       mode: featureType === "growth-partnership" ? "subscription" : "payment",
       success_url: `${baseURL}/dashboard?session_id={CHECKOUT_SESSION_ID}&purchase_id=${purchaseId}&feature_type=${featureType}`,
       cancel_url:
-        featureType === "book-upload" || featureType === "growth-partnership"
+        featureType === "book-upload" ||
+        featureType === "growth-partnership" ||
+        !bookId
           ? `${baseURL}/dashboard`
           : `${baseURL}/dashboard/book/${bookId}`,
       client_reference_id: purchaseId,
