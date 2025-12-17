@@ -164,7 +164,7 @@ function DashboardContent() {
         // Payment was successful
         console.log(`[Dashboard] Payment successful! sessionId: ${sessionId}, purchaseId: ${purchaseId}, featureType: ${featureType}`);
         
-        if (featureType === 'book-upload') {
+        if (featureType === 'book-upload' || featureType === 'dna-report' || featureType === 'market-validation-report' || featureType === 'market-ready-pack' || featureType === 'growth-partnership') {
           // Close payment modal if open
           setShowPaymentModal(false);
           
@@ -185,42 +185,23 @@ function DashboardContent() {
               if (verifyResponse.ok) {
                 const verifyData = await verifyResponse.json();
                 console.log(`[Dashboard] Verify response data:`, JSON.stringify(verifyData, null, 2));
-                if (verifyData.hasPermission) {
-                  console.log(`[Dashboard] ✅ Purchase ${purchaseId} verified and completed`);
-                  setShowUploadModal(true);
-                  setShowPaymentModal(false);
-                  return true;
+                if (verifyData.success) {
+                  console.log(`[Dashboard] ✅ Purchase ${purchaseId} verified/updated`);
                 } else {
-                  console.log(`[Dashboard] ⚠️  Purchase ${purchaseId} verified but hasPermission is false:`, verifyData.message || verifyData.error);
-                  console.log(`[Dashboard] Verify data details:`, {
-                    success: verifyData.success,
-                    hasPermission: verifyData.hasPermission,
-                    purchaseStatus: verifyData.purchase?.status,
-                    message: verifyData.message,
-                  });
+                  console.log(`[Dashboard] ⚠️  Purchase ${purchaseId} verify returned success=false:`, verifyData.message || verifyData.error);
                 }
               } else {
                 const errorData = await verifyResponse.json().catch(() => ({}));
                 console.error(`[Dashboard] Verify response not OK:`, verifyResponse.status, JSON.stringify(errorData, null, 2));
               }
-              
-              // If verification didn't work, check purchase status directly
-              console.log(`[Dashboard] Checking purchase status directly: purchaseId=${purchaseId}`);
-              const checkResponse = await fetch(`/api/user/check-purchase?purchaseId=${purchaseId}`);
-              if (checkResponse.ok) {
-                const checkData = await checkResponse.json();
-                console.log(`[Dashboard] Check purchase response:`, JSON.stringify(checkData, null, 2));
-                if (checkData.hasPermission) {
-                  console.log(`[Dashboard] Purchase ${purchaseId} found, hasPermission: true`);
-                  setShowUploadModal(true);
-                  setShowPaymentModal(false);
-                  return true;
-                } else {
-                  console.log(`[Dashboard] Purchase ${purchaseId} found but hasPermission is false:`, checkData);
-                }
-              } else {
-                const errorData = await checkResponse.json().catch(() => ({}));
-                console.error(`[Dashboard] Check purchase response not OK:`, checkResponse.status, JSON.stringify(errorData, null, 2));
+
+              // After verification, refresh permission and open upload modal if granted.
+              const hasPermission = await checkUploadPermission();
+              console.log(`[Dashboard] Permission check after payment: ${hasPermission}`);
+              if (hasPermission) {
+                setShowUploadModal(true);
+                setShowPaymentModal(false);
+                return true;
               }
             } catch (error) {
               console.error("[Dashboard] Failed to verify/check purchase:", error);

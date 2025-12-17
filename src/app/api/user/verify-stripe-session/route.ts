@@ -115,7 +115,8 @@ export async function POST(request: NextRequest) {
           .update(purchases)
           .set({
             status: "completed",
-            paymentIntentId: checkoutSession.payment_intent as string,
+            // For subscriptions, payment_intent may be null; store subscription id or session id.
+            paymentIntentId: (checkoutSession.payment_intent as string) || (checkoutSession.subscription as string) || checkoutSession.id,
             completedAt: new Date(),
             updatedAt: new Date(),
           })
