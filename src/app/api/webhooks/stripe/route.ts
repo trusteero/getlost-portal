@@ -52,6 +52,18 @@ export async function POST(request: NextRequest) {
 
   try {
     console.log(`[Webhook] 📥 Received Stripe webhook event: ${event.type} (id: ${event.id})`);
+    const REPORT_PRODUCT_TYPES = new Set([
+      "manuscript-report",
+      "dna-report",
+      "market-validation-report",
+      "market-ready-pack",
+      "growth-partnership",
+    ]);
+    const getEntitlementFeatureType = (purchaseFeatureType: string): string => {
+      // For now, all report products unlock the same portal entitlement: manuscript-report
+      if (REPORT_PRODUCT_TYPES.has(purchaseFeatureType)) return "manuscript-report";
+      return purchaseFeatureType;
+    };
     
     switch (event.type) {
       case "checkout.session.completed": {
@@ -106,7 +118,8 @@ export async function POST(request: NextRequest) {
               .update(purchases)
               .set({
                 status: "completed",
-                paymentIntentId: session.payment_intent as string,
+                // For subscriptions, payment_intent can be null; store subscription id instead.
+                paymentIntentId: (session.payment_intent as string) || (session.subscription as string) || session.id,
                 completedAt: new Date(),
                 updatedAt: new Date(),
               })
@@ -135,6 +148,8 @@ export async function POST(request: NextRequest) {
                 return;
               }
 
+              const entitlementFeatureType = getEntitlementFeatureType(purchase.featureType);
+
               // Idempotency: Check if feature already exists and is purchased
               const existingFeature = await tx
                 .select()
@@ -142,7 +157,7 @@ export async function POST(request: NextRequest) {
                 .where(
                   and(
                     eq(bookFeatures.bookId, purchase.bookId),
-                    eq(bookFeatures.featureType, purchase.featureType)
+                    eq(bookFeatures.featureType, entitlementFeatureType)
                   )
                 )
                 .limit(1);
@@ -150,7 +165,7 @@ export async function POST(request: NextRequest) {
               if (existingFeature.length > 0) {
                 // Idempotency: Only update if not already purchased
                 if (existingFeature[0]!.status === "purchased") {
-                  console.log(`[Webhook] Feature ${purchase.featureType} for book ${purchase.bookId} already purchased, skipping duplicate processing`);
+                  console.log(`[Webhook] Feature ${entitlementFeatureType} for book ${purchase.bookId} already purchased, skipping duplicate processing`);
                 } else {
                   await tx
                     .update(bookFeatures)
@@ -162,18 +177,18 @@ export async function POST(request: NextRequest) {
                       updatedAt: new Date(),
                     })
                     .where(eq(bookFeatures.id, existingFeature[0]!.id));
-                  console.log(`[Webhook] ✅ Updated feature ${purchase.featureType} for book ${purchase.bookId} to purchased`);
+                  console.log(`[Webhook] ✅ Updated feature ${entitlementFeatureType} for book ${purchase.bookId} to purchased`);
                 }
               } else {
                 await tx.insert(bookFeatures).values({
                   bookId: purchase.bookId,
-                  featureType: purchase.featureType,
+                  featureType: entitlementFeatureType,
                   status: "purchased",
                   unlockedAt: new Date(),
                   purchasedAt: new Date(),
                   price: purchase.amount,
                 });
-                console.log(`[Webhook] ✅ Created feature ${purchase.featureType} for book ${purchase.bookId}`);
+                console.log(`[Webhook] ✅ Created feature ${entitlementFeatureType} for book ${purchase.bookId}`);
               }
             }
           });

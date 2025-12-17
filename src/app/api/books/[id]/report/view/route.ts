@@ -188,8 +188,14 @@ export async function GET(
     // If a completed report exists with HTML content, allow viewing (admin has uploaded it)
     const hasCompletedReport = completedReports.length > 0 && completedReports.some(r => r.htmlContent);
 
-    // Check if manuscript-report feature is unlocked (only if no completed report exists)
+    // Check if report feature is unlocked (only if no completed report exists)
     let isUnlocked = hasCompletedReport; // If admin uploaded report, it's unlocked
+    const REPORT_PURCHASE_TYPES = [
+      "manuscript-report",
+      "dna-report",
+      "market-validation-report",
+      "market-ready-pack",
+    ] as const;
 
     if (!isUnlocked) {
       // Only check purchase/feature if no completed report exists
@@ -211,7 +217,7 @@ export async function GET(
         .where(
           and(
             eq(purchases.bookId, bookId),
-            eq(purchases.featureType, "manuscript-report")
+            inArray(purchases.featureType, REPORT_PURCHASE_TYPES as unknown as string[])
           )
         )
         .orderBy(desc(purchases.createdAt))
@@ -264,7 +270,7 @@ export async function GET(
           <body>
             <div class="error-container">
               <h1>Report Not Available</h1>
-              <p>Please purchase the manuscript report first.</p>
+              <p>Please purchase a report first.</p>
             </div>
           </body>
         </html>

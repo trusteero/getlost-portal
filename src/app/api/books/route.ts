@@ -118,7 +118,12 @@ export async function GET(request: NextRequest) {
         .where(
           and(
             inArray(purchases.bookId, bookIds),
-            eq(purchases.featureType, "manuscript-report")
+            inArray(purchases.featureType, [
+              "manuscript-report",
+              "dna-report",
+              "market-validation-report",
+              "market-ready-pack",
+            ])
           )
         )
         .orderBy(desc(purchases.createdAt)),

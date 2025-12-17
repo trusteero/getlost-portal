@@ -31,6 +31,12 @@ export const env = createEnv({
 		STRIPE_SECRET_KEY: z.string().optional(),
 		STRIPE_WEBHOOK_SECRET: z.string().optional(),
 		USE_SIMULATED_PURCHASES: z.string().optional(),
+		// Stripe price IDs (optional - used when Stripe is source of truth)
+		STRIPE_PRICE_MANUSCRIPT_REPORT: z.string().optional(),
+		STRIPE_PRICE_DNA_REPORT: z.string().optional(),
+		STRIPE_PRICE_MARKET_VALIDATION_REPORT: z.string().optional(),
+		STRIPE_PRICE_MARKET_READY_PACK: z.string().optional(),
+		STRIPE_PRICE_GROWTH_PARTNERSHIP: z.string().optional(),
 		
 		// Email service (optional - can use test mode)
 		RESEND_API_KEY: z.string().optional(),
@@ -78,6 +84,11 @@ export const env = createEnv({
 		STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
 		STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
 		USE_SIMULATED_PURCHASES: process.env.USE_SIMULATED_PURCHASES,
+		STRIPE_PRICE_MANUSCRIPT_REPORT: process.env.STRIPE_PRICE_MANUSCRIPT_REPORT,
+		STRIPE_PRICE_DNA_REPORT: process.env.STRIPE_PRICE_DNA_REPORT,
+		STRIPE_PRICE_MARKET_VALIDATION_REPORT: process.env.STRIPE_PRICE_MARKET_VALIDATION_REPORT,
+		STRIPE_PRICE_MARKET_READY_PACK: process.env.STRIPE_PRICE_MARKET_READY_PACK,
+		STRIPE_PRICE_GROWTH_PARTNERSHIP: process.env.STRIPE_PRICE_GROWTH_PARTNERSHIP,
 		RESEND_API_KEY: process.env.RESEND_API_KEY,
 		RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
 		BOOKDIGEST_URL: process.env.BOOKDIGEST_URL,

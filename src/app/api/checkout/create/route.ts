@@ -5,10 +5,18 @@ import { books, purchases, bookFeatures } from "@/server/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 import { apiErrors, ERROR_CODES } from "@/server/utils/api-response";
+import { env } from "@/env";
+import { getStripePriceIdForFeature, type FeatureType } from "@/server/utils/stripe-price-ids";
 
 const FEATURE_PRICES: Record<string, number> = {
   "summary": 0,
-  "manuscript-report": 14999, // $149.99
+  "manuscript-report": 14999, // €149.99
+  // New report packages (for now, all unlock the report)
+  "dna-report": 3999, // €39.99
+  "market-validation-report": 7999, // €79.99
+  "market-ready-pack": 14999, // €149.99
+  // Subscription (fallback only; Stripe Price ID should be configured)
+  "growth-partnership": 99900, // €999.00 / month
   "marketing-assets": 14999,
   "book-covers": 14999,
   "landing-page": 14999,
@@ -19,6 +27,10 @@ function getFeatureName(featureType: string): string {
   const names: Record<string, string> = {
     "summary": "Summary",
     "manuscript-report": "Manuscript Report",
+    "dna-report": "myStory DNA Report",
+    "market-validation-report": "myStory Market & Audience Validation Report",
+    "market-ready-pack": "myStory Market-Ready Pack",
+    "growth-partnership": "myStory Growth Partnership",
     "marketing-assets": "Marketing Assets",
     "book-covers": "Book Covers",
     "landing-page": "Landing Page",
@@ -65,6 +77,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const { bookId, featureType } = await request.json();
+    const REPORT_PRODUCT_TYPES = new Set([
+      "manuscript-report",
+      "dna-report",
+      "market-validation-report",
+      "market-ready-pack",
+    ]);
+    const SUBSCRIPTION_FEATURE_TYPES = new Set(["growth-partnership"]);
 
     // Ensure database migrations are up to date (especially for nullable bookId)
     if (featureType === "book-upload") {
@@ -76,7 +95,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // For user-level purchases (book-upload), bookId is not required
+    // For user-level purchases (book-upload), bookId is not required.
+    // All report products are book-specific (require bookId).
+    // Growth partnership is user-level (no bookId required).
     let book = null;
     if (featureType !== "book-upload" && bookId) {
       // Verify book ownership for book-specific features
@@ -91,8 +112,47 @@ export async function POST(request: NextRequest) {
       }
       book = bookResult;
     }
+    if (REPORT_PRODUCT_TYPES.has(featureType) && !bookId) {
+      return apiErrors.badRequest("bookId is required for report purchases");
+    }
+    if (SUBSCRIPTION_FEATURE_TYPES.has(featureType) && bookId) {
+      // Avoid creating subscriptions tied to a book until we define contents.
+      return apiErrors.badRequest("bookId is not supported for growth partnership purchases");
+    }
 
-    const price = FEATURE_PRICES[featureType] ?? 0;
+    // Decide whether we're using Stripe as source of truth
+    const useSimulatedPurchases = env.USE_SIMULATED_PURCHASES === "true";
+    const stripeSecretKey = env.STRIPE_SECRET_KEY;
+    const stripePublishableKey = env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    const useStripe = !!(stripeSecretKey && stripePublishableKey) && !useSimulatedPurchases;
+
+    let price = FEATURE_PRICES[featureType] ?? 0;
+    let currency = "eur";
+    let stripePriceId: string | undefined;
+
+    if (useStripe) {
+      stripePriceId = getStripePriceIdForFeature(featureType as FeatureType);
+      if (!stripePriceId) {
+        return apiErrors.badRequest(
+          `Stripe Price ID not configured for featureType "${featureType}". Set ${`STRIPE_PRICE_${String(featureType).toUpperCase().replace(/-/g, "_")}`} in your environment.`,
+          ERROR_CODES.VALIDATION_ERROR
+        );
+      }
+
+      // Fetch price from Stripe so Stripe is the source of truth for amount/currency
+      const StripeLib = (await import("stripe")).default;
+      const stripe = new StripeLib(stripeSecretKey, {
+        apiVersion: "2025-11-17.clover",
+      });
+      const stripePrice = await stripe.prices.retrieve(stripePriceId);
+      if (stripePrice.unit_amount == null || !stripePrice.currency) {
+        return apiErrors.externalService("Stripe", {
+          message: `Stripe price ${stripePriceId} missing unit_amount or currency`,
+        });
+      }
+      price = stripePrice.unit_amount;
+      currency = stripePrice.currency;
+    }
 
     // Free features don't need payment
     if (price === 0) {
@@ -261,24 +321,17 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Checkout] Creating new checkout session for user ${session.user.id}, feature ${featureType}, bookId ${bookId || "null"}`);
 
-    // Check if we should force simulated purchases (for testing)
-    const useSimulatedPurchases = process.env.USE_SIMULATED_PURCHASES === "true";
-
-    // Check if Stripe is configured
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-
-    if (useSimulatedPurchases || !stripeSecretKey || !stripePublishableKey) {
+    if (!useStripe || !stripeSecretKey || !stripePublishableKey) {
       // Simulated purchases forced or Stripe not configured, return error to use simulated purchase
-      return NextResponse.json({ 
-        error: useSimulatedPurchases 
-          ? "Simulated purchases enabled. Use simulated purchase." 
+      return NextResponse.json({
+        error: useSimulatedPurchases
+          ? "Simulated purchases enabled. Use simulated purchase."
           : "Stripe not configured. Use simulated purchase.",
-        useSimulated: true
+        useSimulated: true,
       }, { status: 503 }); // Service Unavailable
     }
 
-    // Initialize Stripe
+    // Initialize Stripe (single instance for this request)
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2025-11-17.clover", // Use API version expected by Stripe package types
@@ -291,6 +344,14 @@ export async function POST(request: NextRequest) {
     
     try {
       // Create purchase record with pending status
+      const getEntitlementFeatureType = (t: string): string => {
+        // Stripe products: dna-report/market-*/manuscript-report all unlock the same entitlement for now
+        if (t === "dna-report" || t === "market-validation-report" || t === "market-ready-pack" || t === "growth-partnership") {
+          return "manuscript-report";
+        }
+        return t;
+      };
+
       const purchaseValues: {
         id: string;
         userId: string;
@@ -305,13 +366,13 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         featureType,
         amount: price,
-        currency: "USD",
+        currency: String(currency).toUpperCase(),
         paymentMethod: "stripe",
         status: "pending",
       };
       
       // Only include bookId if it's not a user-level purchase
-      if (featureType !== "book-upload" && bookId) {
+      if (featureType !== "book-upload" && featureType !== "growth-partnership" && bookId) {
         purchaseValues.bookId = bookId;
       }
       // For book-upload, we don't include bookId at all (it will be null/undefined)
@@ -321,14 +382,16 @@ export async function POST(request: NextRequest) {
 
       // For book-specific features, create or update feature record
       // User-level features (book-upload) don't need bookFeatures records
-      if (featureType !== "book-upload" && bookId) {
+      const entitlementFeatureType = getEntitlementFeatureType(featureType);
+
+      if (entitlementFeatureType !== "book-upload" && entitlementFeatureType !== "growth-partnership" && bookId) {
         const existingFeature = await db
           .select()
           .from(bookFeatures)
           .where(
             and(
               eq(bookFeatures.bookId, bookId),
-              eq(bookFeatures.featureType, featureType)
+              eq(bookFeatures.featureType, entitlementFeatureType)
             )
           )
           .limit(1);
@@ -347,7 +410,7 @@ export async function POST(request: NextRequest) {
           await db.insert(bookFeatures).values({
             id: crypto.randomUUID(),
             bookId,
-            featureType,
+            featureType: entitlementFeatureType,
             status: "purchased",
             purchasedAt: new Date(),
             price,
@@ -389,30 +452,36 @@ export async function POST(request: NextRequest) {
     
     // Create Stripe Checkout Session
     const productName = getFeatureName(featureType);
-    const productDescription = featureType === "book-upload"
-      ? `Purchase ${productName} to upload and analyze manuscripts`
-      : `Purchase ${productName} for "${book?.title || "your book"}"`;
+    const productDescription =
+      featureType === "book-upload"
+        ? `Purchase ${productName} to upload and analyze manuscripts`
+        : featureType === "growth-partnership"
+          ? `Subscribe to ${productName}`
+          : `Purchase ${productName} for "${book?.title || "your book"}"`;
 
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: productName,
-              description: productDescription,
+      line_items: stripePriceId
+        ? [{ price: stripePriceId, quantity: 1 }]
+        : [
+            {
+              price_data: {
+                currency,
+                product_data: {
+                  name: productName,
+                  description: productDescription,
+                },
+                unit_amount: price,
+              },
+              quantity: 1,
             },
-            unit_amount: price,
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
+          ],
+      mode: featureType === "growth-partnership" ? "subscription" : "payment",
       success_url: `${baseURL}/dashboard?session_id={CHECKOUT_SESSION_ID}&purchase_id=${purchaseId}&feature_type=${featureType}`,
-      cancel_url: featureType === "book-upload" 
-        ? `${baseURL}/dashboard` 
-        : `${baseURL}/dashboard/book/${bookId}`,
+      cancel_url:
+        featureType === "book-upload" || featureType === "growth-partnership"
+          ? `${baseURL}/dashboard`
+          : `${baseURL}/dashboard/book/${bookId}`,
       client_reference_id: purchaseId,
       metadata: {
         userId: session.user.id,
