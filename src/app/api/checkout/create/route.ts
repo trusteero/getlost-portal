@@ -145,6 +145,29 @@ export async function POST(request: NextRequest) {
         apiVersion: "2025-11-17.clover",
       });
       const stripePrice = await stripe.prices.retrieve(stripePriceId);
+      if (stripePrice.active === false) {
+        return apiErrors.badRequest(
+          `Stripe price ${stripePriceId} is inactive. Activate it in Stripe or update the env var to an active price.`,
+          ERROR_CODES.VALIDATION_ERROR
+        );
+      }
+
+      // Validate price type vs checkout mode.
+      // - growth-partnership must be recurring (subscription)
+      // - other products must be one-time
+      const isRecurring = !!stripePrice.recurring;
+      if (featureType === "growth-partnership" && !isRecurring) {
+        return apiErrors.badRequest(
+          `Stripe price ${stripePriceId} is not recurring, but growth-partnership requires a recurring monthly price.`,
+          ERROR_CODES.VALIDATION_ERROR
+        );
+      }
+      if (featureType !== "growth-partnership" && isRecurring) {
+        return apiErrors.badRequest(
+          `Stripe price ${stripePriceId} is recurring, but featureType "${featureType}" requires a one-time price. Create a one-time price in Stripe and set the corresponding STRIPE_PRICE_* env var.`,
+          ERROR_CODES.VALIDATION_ERROR
+        );
+      }
       if (stripePrice.unit_amount == null || !stripePrice.currency) {
         return apiErrors.externalService("Stripe", {
           message: `Stripe price ${stripePriceId} missing unit_amount or currency`,
