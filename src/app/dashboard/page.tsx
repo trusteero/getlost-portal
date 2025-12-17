@@ -80,7 +80,6 @@ function DashboardContent() {
   const [selectedReportProduct, setSelectedReportProduct] = useState<
     "dna-report" | "market-validation-report" | "market-ready-pack" | "growth-partnership"
   >("market-ready-pack");
-  const [promoCode, setPromoCode] = useState<string>("");
   const [hasCheckedForExampleBooks, setHasCheckedForExampleBooks] = useState(false);
   const [waitingForExampleBooks, setWaitingForExampleBooks] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState<boolean>(true); // Track first login for welcome message
@@ -882,7 +881,6 @@ function DashboardContent() {
         body: JSON.stringify({
           featureType: selectedReportProduct,
           // growth-partnership is subscription + user-level; other report products are treated as user-level here
-          ...(promoCode.trim() ? { promotionCode: promoCode.trim() } : {}),
         }),
       });
 
@@ -1708,21 +1706,6 @@ function DashboardContent() {
                         <div className="text-xs text-gray-600">Subscription (billed monthly, priced in Stripe)</div>
                       </div>
                     </label>
-                  </div>
-
-                  <div className="pt-2">
-                    <label className="block text-sm font-medium text-gray-900 mb-1">Promo code (optional)</label>
-                    <input
-                      type="text"
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value)}
-                      placeholder="Enter code"
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      disabled={processingPayment}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      If the code is invalid or not applicable, you’ll see a clear error before redirecting to Stripe.
-                    </p>
                   </div>
 
                   {uploadError && (
