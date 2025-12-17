@@ -117,6 +117,7 @@ export async function POST(request: NextRequest) {
     // Allow report purchases without bookId (user-level). We'll attach the purchase to the next uploaded book.
     if (SUBSCRIPTION_FEATURE_TYPES.has(featureType) && bookId) {
       // Avoid creating subscriptions tied to a book until we define contents.
+      console.error(`[Checkout] ❌ Validation error: bookId provided for subscription featureType=${featureType}, bookId=${bookId}`);
       return apiErrors.badRequest("bookId is not supported for growth partnership purchases");
     }
 
@@ -133,6 +134,7 @@ export async function POST(request: NextRequest) {
     if (useStripe) {
       stripePriceId = getStripePriceIdForFeature(featureType as FeatureType);
       if (!stripePriceId) {
+        console.error(`[Checkout] ❌ Missing Stripe price mapping for featureType=${featureType}`);
         return apiErrors.badRequest(
           `Stripe Price ID not configured for featureType "${featureType}". Set ${`STRIPE_PRICE_${String(featureType).toUpperCase().replace(/-/g, "_")}`} in your environment.`,
           ERROR_CODES.VALIDATION_ERROR
@@ -146,6 +148,7 @@ export async function POST(request: NextRequest) {
       });
       const stripePrice = await stripe.prices.retrieve(stripePriceId);
       if (stripePrice.active === false) {
+        console.error(`[Checkout] ❌ Stripe price inactive: featureType=${featureType}, priceId=${stripePriceId}`);
         return apiErrors.badRequest(
           `Stripe price ${stripePriceId} is inactive. Activate it in Stripe or update the env var to an active price.`,
           ERROR_CODES.VALIDATION_ERROR
@@ -157,18 +160,21 @@ export async function POST(request: NextRequest) {
       // - other products must be one-time
       const isRecurring = !!stripePrice.recurring;
       if (featureType === "growth-partnership" && !isRecurring) {
+        console.error(`[Checkout] ❌ Stripe price type mismatch: growth-partnership requires recurring. priceId=${stripePriceId}`);
         return apiErrors.badRequest(
           `Stripe price ${stripePriceId} is not recurring, but growth-partnership requires a recurring monthly price.`,
           ERROR_CODES.VALIDATION_ERROR
         );
       }
       if (featureType !== "growth-partnership" && isRecurring) {
+        console.error(`[Checkout] ❌ Stripe price type mismatch: featureType=${featureType} requires one-time. priceId=${stripePriceId}`);
         return apiErrors.badRequest(
           `Stripe price ${stripePriceId} is recurring, but featureType "${featureType}" requires a one-time price. Create a one-time price in Stripe and set the corresponding STRIPE_PRICE_* env var.`,
           ERROR_CODES.VALIDATION_ERROR
         );
       }
       if (stripePrice.unit_amount == null || !stripePrice.currency) {
+        console.error(`[Checkout] ❌ Stripe price missing unit_amount/currency: featureType=${featureType}, priceId=${stripePriceId}`);
         return apiErrors.externalService("Stripe", {
           message: `Stripe price ${stripePriceId} missing unit_amount or currency`,
         });
