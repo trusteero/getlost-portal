@@ -527,6 +527,16 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log(`[Checkout] ✅ Created Stripe Checkout Session`, {
+      purchaseId,
+      featureType,
+      mode: featureType === "growth-partnership" ? "subscription" : "payment",
+      stripePriceId: stripePriceId || null,
+      sessionId: checkoutSession.id,
+      sessionStatus: checkoutSession.status,
+      url: checkoutSession.url,
+    });
+
     // Store the Stripe session ID in the purchase record for future retrieval
     // We'll use paymentIntentId field temporarily to store the session ID
     // (it will be overwritten with the actual payment intent when payment completes)
