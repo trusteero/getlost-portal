@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { bookId, featureType } = await request.json();
+    const { bookId, featureType, promotionCode } = await request.json();
     const REPORT_PRODUCT_TYPES = new Set([
       "manuscript-report",
       "dna-report",
@@ -494,9 +494,37 @@ export async function POST(request: NextRequest) {
           ? `Subscribe to ${productName}`
           : `Purchase ${productName} for "${book?.title || "your book"}"`;
 
+    // Optionally apply a promotion code server-side so we can surface clear errors.
+    // If not provided, Stripe Checkout UI can still accept codes via allow_promotion_codes.
+    let discounts:
+      | Array<{ promotion_code: string }>
+      | undefined = undefined;
+    if (useStripe && typeof promotionCode === "string" && promotionCode.trim()) {
+      try {
+        const promoResult = await stripe.promotionCodes.list({
+          code: promotionCode.trim(),
+          active: true,
+          limit: 1,
+        });
+        const promo = promoResult.data[0];
+        if (!promo) {
+          console.error(`[Checkout] ❌ Promotion code not found/active: code=${promotionCode}`);
+          return apiErrors.badRequest(
+            "Promotion code is invalid or inactive",
+            ERROR_CODES.VALIDATION_ERROR
+          );
+        }
+        discounts = [{ promotion_code: promo.id }];
+      } catch (promoErr) {
+        console.error("[Checkout] ❌ Failed to look up promotion code:", promoErr);
+        return apiErrors.externalService("Stripe", promoErr);
+      }
+    }
+
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       allow_promotion_codes: true,
+      ...(discounts ? { discounts } : {}),
       line_items: stripePriceId
         ? [{ price: stripePriceId, quantity: 1 }]
         : [
