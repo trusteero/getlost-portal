@@ -77,6 +77,9 @@ function DashboardContent() {
   const [checkingPermission, setCheckingPermission] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [selectedReportProduct, setSelectedReportProduct] = useState<
+    "dna-report" | "market-validation-report" | "market-ready-pack" | "growth-partnership"
+  >("market-ready-pack");
   const [hasCheckedForExampleBooks, setHasCheckedForExampleBooks] = useState(false);
   const [waitingForExampleBooks, setWaitingForExampleBooks] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState<boolean>(true); // Track first login for welcome message
@@ -870,75 +873,47 @@ function DashboardContent() {
   const handlePurchaseUpload = async () => {
     setProcessingPayment(true);
     try {
-      // Try simulated purchase first
-      const purchaseResponse = await fetch("/api/user/purchase-upload", {
+      // Create Stripe checkout session for selected product.
+      // Note: For manuscript upload flow there is no bookId yet, so this is a user-level purchase.
+      const checkoutResponse = await fetch("/api/checkout/create", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          featureType: selectedReportProduct,
+          // growth-partnership is subscription + user-level; other report products are treated as user-level here
+        }),
       });
 
-      if (purchaseResponse.ok) {
-        const data = await purchaseResponse.json();
-        console.log("[Dashboard] Purchase response:", data);
-        // Check if purchase was successful or if user already has REMAINING permission
-        if (data.purchase?.status === "completed" || (data.message?.includes("already purchased") && data.remainingPermissions > 0)) {
-          // Purchase successful or already has remaining permissions - refresh permission and open upload modal
-          console.log("[Dashboard] Purchase successful or has remaining permissions, checking permission...");
-          // Wait a moment for database to be updated
+      const checkoutData = await checkoutResponse.json().catch(() => ({}));
+
+      if (checkoutResponse.ok) {
+        if (checkoutData.url) {
+          console.log("[Dashboard] Redirecting to Stripe checkout:", checkoutData.url);
+          window.location.href = checkoutData.url;
+          return;
+        }
+        setUploadError("Failed to get checkout URL. Please try again.");
+        return;
+      }
+
+      // Handle 503 simulated mode fallback
+      if (checkoutResponse.status === 503 && checkoutData.useSimulated) {
+        console.log("[Dashboard] Stripe not configured/simulated mode enabled, using simulated upload purchase fallback");
+        const purchaseResponse = await fetch("/api/user/purchase-upload", { method: "POST" });
+        const data = await purchaseResponse.json().catch(() => ({}));
+        if (purchaseResponse.ok) {
           await new Promise(resolve => setTimeout(resolve, 200));
           const hasPermission = await checkUploadPermission();
-          console.log("[Dashboard] Permission check result:", hasPermission);
           setShowPaymentModal(false);
-          if (hasPermission) {
-            console.log("[Dashboard] Opening upload modal");
-            setShowUploadModal(true);
-          } else {
-            console.warn("[Dashboard] Permission check returned false after purchase");
-          }
-          return;
-        } else if (data.message?.includes("already purchased") && data.remainingPermissions === 0) {
-          // User has purchases but has used all permissions - this shouldn't happen, but handle gracefully
-          console.warn("[Dashboard] User has purchases but no remaining permissions - this should have been caught earlier");
-          setShowPaymentModal(false);
-          // Don't open upload modal - they need to purchase again
+          if (hasPermission) setShowUploadModal(true);
           return;
         }
+        setUploadError(data.error || "Failed to process payment. Please try again.");
+        return;
       }
 
-      // If simulated purchase didn't work, try Stripe checkout
-      if (purchaseResponse.status === 402) {
-        const data = await purchaseResponse.json();
-        if (data.redirectToCheckout) {
-          // Create Stripe checkout session
-          const checkoutResponse = await fetch("/api/checkout/create", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              featureType: "book-upload",
-              bookId: null, // User-level purchase
-            }),
-          });
-
-          const checkoutData = await checkoutResponse.json();
-          
-          if (checkoutResponse.ok) {
-            if (checkoutData.url) {
-              // Redirect to Stripe checkout
-              console.log("[Dashboard] Redirecting to Stripe checkout:", checkoutData.url);
-              window.location.href = checkoutData.url;
-              return;
-            } else {
-              console.error("[Dashboard] Checkout response OK but no URL:", checkoutData);
-              setUploadError("Failed to get checkout URL. Please try again.");
-            }
-          } else {
-            // Handle error response
-            console.error("[Dashboard] Checkout failed:", checkoutResponse.status, checkoutData);
-            const errorMessage = checkoutData.error || checkoutData.message || "Failed to create checkout session";
-            setUploadError(errorMessage);
-          }
-        }
-      }
-
-      setUploadError("Failed to process payment. Please try again.");
+      const errorMessage = checkoutData.error || checkoutData.message || "Failed to create checkout session";
+      setUploadError(errorMessage);
     } catch (error) {
       console.error("[Dashboard] Failed to purchase upload permission:", error);
       console.error("[Dashboard] Purchase error details:", {
@@ -1652,7 +1627,7 @@ function DashboardContent() {
             <Card className="w-full max-w-md">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">Purchase Upload Permission</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">Purchase Report</h2>
                   <button
                     onClick={() => setShowPaymentModal(false)}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1664,17 +1639,73 @@ function DashboardContent() {
 
                 <div className="space-y-4">
                   <p className="text-gray-600">
-                    To upload and analyze manuscripts, you need to purchase upload permission.
+                    Choose a product to purchase. After payment, you can upload a manuscript.
                   </p>
                   
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold text-gray-900">Upload Permission</span>
-                      <span className="text-2xl font-bold text-emerald-600">$99.99</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-2">
-                      One-time payment to upload and analyze unlimited manuscripts
-                    </p>
+                  <div className="space-y-2">
+                    <label className="flex items-start gap-2 cursor-pointer rounded border p-3 hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        name="purchaseOption"
+                        value="dna-report"
+                        checked={selectedReportProduct === "dna-report"}
+                        onChange={() => setSelectedReportProduct("dna-report")}
+                        className="mt-1"
+                        disabled={processingPayment}
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">myStory DNA Report</div>
+                        <div className="text-xs text-gray-600">One-time purchase (priced in Stripe)</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-start gap-2 cursor-pointer rounded border p-3 hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        name="purchaseOption"
+                        value="market-validation-report"
+                        checked={selectedReportProduct === "market-validation-report"}
+                        onChange={() => setSelectedReportProduct("market-validation-report")}
+                        className="mt-1"
+                        disabled={processingPayment}
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">myStory Market &amp; Audience Validation Report</div>
+                        <div className="text-xs text-gray-600">One-time purchase (priced in Stripe)</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-start gap-2 cursor-pointer rounded border p-3 hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        name="purchaseOption"
+                        value="market-ready-pack"
+                        checked={selectedReportProduct === "market-ready-pack"}
+                        onChange={() => setSelectedReportProduct("market-ready-pack")}
+                        className="mt-1"
+                        disabled={processingPayment}
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">myStory Market-Ready Pack</div>
+                        <div className="text-xs text-gray-600">One-time purchase (priced in Stripe)</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-start gap-2 cursor-pointer rounded border p-3 hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        name="purchaseOption"
+                        value="growth-partnership"
+                        checked={selectedReportProduct === "growth-partnership"}
+                        onChange={() => setSelectedReportProduct("growth-partnership")}
+                        className="mt-1"
+                        disabled={processingPayment}
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">myStory Growth Partnership</div>
+                        <div className="text-xs text-gray-600">Subscription (billed monthly, priced in Stripe)</div>
+                      </div>
+                    </label>
                   </div>
 
                   {uploadError && (
@@ -1706,7 +1737,7 @@ function DashboardContent() {
                       ) : (
                         <>
                           <CreditCard className="w-4 h-4 mr-2" />
-                          Purchase ($99.99)
+                          Continue to Checkout
                         </>
                       )}
                     </Button>
