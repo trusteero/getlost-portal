@@ -78,6 +78,12 @@ export async function GET(request: NextRequest) {
     // Batch fetch all related data to avoid N+1 queries
     const bookIds: string[] = booksToReturn.map(book => book.id as string);
 
+    // Memory safety: Limit related data to prevent memory exhaustion
+    // Even with 100 books, if each has many versions/reports, this can be huge
+    const MAX_VERSIONS_PER_BOOK = 10; // Only get latest 10 versions per book
+    const MAX_REPORTS_PER_VERSION = 5; // Only get latest 5 reports per version
+    const MAX_ASSETS_PER_BOOK = 20; // Limit assets per book
+    
     // Batch fetch: versions, features, assets, purchases, reports
     const [
       allVersions,
@@ -89,37 +95,42 @@ export async function GET(request: NextRequest) {
       allReports
     ] = await Promise.all([
       // Get all versions for all books, ordered by uploadedAt desc
+      // We'll filter to latest per book in memory
       db
         .select()
         .from(bookVersions)
         .where(inArray(bookVersions.bookId, bookIds))
         .orderBy(desc(bookVersions.uploadedAt)),
       
-      // Get all features for all books
+      // Get all features for all books (should be small)
       db
         .select()
         .from(bookFeatures)
         .where(inArray(bookFeatures.bookId, bookIds)),
       
-      // Get all marketing assets for all books
+      // Get marketing assets (limit per book in memory)
       db
         .select()
         .from(marketingAssets)
-        .where(inArray(marketingAssets.bookId, bookIds)),
+        .where(inArray(marketingAssets.bookId, bookIds))
+        .orderBy(desc(marketingAssets.createdAt)),
       
-      // Get all covers for all books
+      // Get covers (limit per book in memory)
       db
         .select()
         .from(bookCovers)
-        .where(inArray(bookCovers.bookId, bookIds)),
+        .where(inArray(bookCovers.bookId, bookIds))
+        .orderBy(desc(bookCovers.createdAt)),
       
-      // Get all landing pages for all books
+      // Get landing pages (limit per book in memory)
       db
         .select()
         .from(landingPages)
-        .where(inArray(landingPages.bookId, bookIds)),
+        .where(inArray(landingPages.bookId, bookIds))
+        .orderBy(desc(landingPages.createdAt)),
       
       // Get all purchases for all books (for report status check)
+      // Limit to most recent per book
       db
         .select()
         .from(purchases)
@@ -140,8 +151,19 @@ export async function GET(request: NextRequest) {
       Promise.resolve([] as typeof reports.$inferSelect[])
     ]);
 
-    // Get version IDs for reports query (after versions are fetched)
-    const versionIds = allVersions.map(v => v.id);
+    // Filter versions to latest N per book to prevent memory issues
+    const versionsByBookIdTemp = new Map<string, typeof allVersions>();
+    for (const version of allVersions) {
+      const bookVersions = versionsByBookIdTemp.get(version.bookId) || [];
+      if (bookVersions.length < MAX_VERSIONS_PER_BOOK) {
+        bookVersions.push(version);
+        versionsByBookIdTemp.set(version.bookId, bookVersions);
+      }
+    }
+    const filteredVersions = Array.from(versionsByBookIdTemp.values()).flat();
+
+    // Get version IDs for reports query (after versions are filtered)
+    const versionIds = filteredVersions.map(v => v.id);
     const allReportsWithVersions = versionIds.length > 0
       ? await db
           .select()
@@ -150,24 +172,51 @@ export async function GET(request: NextRequest) {
           .orderBy(desc(reports.requestedAt))
       : [];
 
-    // Group data by bookId for efficient lookup
-    const versionsByBookId = new Map<string, typeof allVersions>();
-    const featuresByBookId = new Map<string, typeof allFeatures>();
-    const marketingAssetsByBookId = new Map<string, typeof allMarketingAssets>();
-    const coversByBookId = new Map<string, typeof allCovers>();
-    const landingPagesByBookId = new Map<string, typeof allLandingPages>();
-    const purchasesByBookId = new Map<string, typeof allPurchases>();
-    const reportsByVersionId = new Map<string, typeof allReportsWithVersions>();
+    // Filter reports to latest N per version
+    const reportsByVersionIdTemp = new Map<string, typeof allReportsWithVersions>();
+    for (const report of allReportsWithVersions) {
+      const versionReports = reportsByVersionIdTemp.get(report.bookVersionId) || [];
+      if (versionReports.length < MAX_REPORTS_PER_VERSION) {
+        versionReports.push(report);
+        reportsByVersionIdTemp.set(report.bookVersionId, versionReports);
+      }
+    }
+    const filteredReports = Array.from(reportsByVersionIdTemp.values()).flat();
 
-    // Group versions by bookId (keep only latest per book)
-    const latestVersionsByBookId = new Map<string, typeof allVersions[0]>();
-    for (const version of allVersions) {
+    // Filter assets to latest N per book
+    const filterAssetsByBook = <T extends { bookId: string; createdAt: Date }>(assets: T[]): T[] => {
+      const assetsByBookId = new Map<string, T[]>();
+      for (const asset of assets) {
+        const bookAssets = assetsByBookId.get(asset.bookId) || [];
+        if (bookAssets.length < MAX_ASSETS_PER_BOOK) {
+          bookAssets.push(asset);
+          assetsByBookId.set(asset.bookId, bookAssets);
+        }
+      }
+      return Array.from(assetsByBookId.values()).flat();
+    };
+
+    const filteredMarketingAssets = filterAssetsByBook(allMarketingAssets);
+    const filteredCovers = filterAssetsByBook(allCovers);
+    const filteredLandingPages = filterAssetsByBook(allLandingPages);
+
+    // Group data by bookId for efficient lookup (using filtered data)
+    const featuresByBookId = new Map<string, typeof allFeatures>();
+    const marketingAssetsByBookId = new Map<string, typeof filteredMarketingAssets>();
+    const coversByBookId = new Map<string, typeof filteredCovers>();
+    const landingPagesByBookId = new Map<string, typeof filteredLandingPages>();
+    const purchasesByBookId = new Map<string, typeof allPurchases>();
+    const reportsByVersionId = new Map<string, typeof filteredReports>();
+
+    // Group versions by bookId (keep only latest per book from filtered versions)
+    const latestVersionsByBookId = new Map<string, typeof filteredVersions[0]>();
+    for (const version of filteredVersions) {
       if (!latestVersionsByBookId.has(version.bookId)) {
         latestVersionsByBookId.set(version.bookId, version);
       }
     }
 
-    // Group other data by bookId
+    // Group other data by bookId (using filtered data)
     for (const feature of allFeatures) {
       if (!featuresByBookId.has(feature.bookId)) {
         featuresByBookId.set(feature.bookId, []);
@@ -175,21 +224,21 @@ export async function GET(request: NextRequest) {
       featuresByBookId.get(feature.bookId)!.push(feature);
     }
 
-    for (const asset of allMarketingAssets) {
+    for (const asset of filteredMarketingAssets) {
       if (!marketingAssetsByBookId.has(asset.bookId)) {
         marketingAssetsByBookId.set(asset.bookId, []);
       }
       marketingAssetsByBookId.get(asset.bookId)!.push(asset);
     }
 
-    for (const cover of allCovers) {
+    for (const cover of filteredCovers) {
       if (!coversByBookId.has(cover.bookId)) {
         coversByBookId.set(cover.bookId, []);
       }
       coversByBookId.get(cover.bookId)!.push(cover);
     }
 
-    for (const landing of allLandingPages) {
+    for (const landing of filteredLandingPages) {
       if (!landingPagesByBookId.has(landing.bookId)) {
         landingPagesByBookId.set(landing.bookId, []);
       }
@@ -205,8 +254,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Group reports by versionId
-    for (const report of allReportsWithVersions) {
+    // Group reports by versionId (using filtered reports)
+    for (const report of filteredReports) {
       if (!reportsByVersionId.has(report.bookVersionId)) {
         reportsByVersionId.set(report.bookVersionId, []);
       }
