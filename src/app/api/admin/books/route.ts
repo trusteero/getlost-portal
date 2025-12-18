@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAdminFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookVersions, users, digestJobs, reports, bookFeatures, marketingAssets, bookCovers, landingPages } from "@/server/db/schema";
-import { desc, eq, and, sql } from "drizzle-orm";
+import { desc, eq, and, sql, inArray } from "drizzle-orm";
 import { ensureBooksTableColumns, columnExists } from "@/server/db/migrations";
 
 export const dynamic = 'force-dynamic';
@@ -53,62 +53,211 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .offset(offset);
 
-    // Get digest status for each book
-    const booksWithDigest = await Promise.all(
-      allBooks.map(async (book: any) => {
-        // Get latest digest job
-        const [latestDigest] = await db
-          .select({
-            id: digestJobs.id,
-            status: digestJobs.status,
-            createdAt: digestJobs.createdAt,
-            startedAt: digestJobs.startedAt,
-            completedAt: digestJobs.completedAt,
-            attempts: digestJobs.attempts,
-            error: digestJobs.error,
-            brief: digestJobs.brief,
-            summary: digestJobs.summary,
-            title: digestJobs.title,
-            author: digestJobs.author,
-            pages: digestJobs.pages,
-            words: digestJobs.words,
-            language: digestJobs.language,
-          })
-          .from(digestJobs)
-          .where(eq(digestJobs.bookId, book.id))
-          .orderBy(desc(digestJobs.createdAt))
-          .limit(1);
+    if (allBooks.length === 0) {
+      return NextResponse.json({
+        books: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+        },
+      });
+    }
 
-        // Get latest version info
-        const [latestVersion] = await db
-          .select({
-            id: bookVersions.id,
-            fileName: bookVersions.fileName,
-            fileSize: bookVersions.fileSize,
-            uploadedAt: bookVersions.uploadedAt,
-          })
-          .from(bookVersions)
-          .where(eq(bookVersions.bookId, book.id))
-          .orderBy(desc(bookVersions.uploadedAt))
-          .limit(1);
+    // Memory safety: Batch all queries to avoid N+1 problem
+    const bookIds = allBooks.map(book => book.id as string);
 
-        // Get latest report for the latest version
+    // Batch fetch all related data upfront
+    const [
+      allDigestJobs,
+      allVersions,
+      allReports,
+      allFeatures,
+      allMarketingAssets,
+      allCovers,
+      allLandingPages,
+    ] = await Promise.all([
+      // Get all digest jobs for all books
+      db
+        .select()
+        .from(digestJobs)
+        .where(inArray(digestJobs.bookId, bookIds))
+        .orderBy(desc(digestJobs.createdAt)),
+      
+      // Get all versions for all books (exclude fileData to save memory)
+      db
+        .select({
+          id: bookVersions.id,
+          bookId: bookVersions.bookId,
+          versionNumber: bookVersions.versionNumber,
+          fileName: bookVersions.fileName,
+          fileUrl: bookVersions.fileUrl,
+          fileSize: bookVersions.fileSize,
+          uploadedAt: bookVersions.uploadedAt,
+          // Explicitly exclude fileData to save memory
+        })
+        .from(bookVersions)
+        .where(inArray(bookVersions.bookId, bookIds))
+        .orderBy(desc(bookVersions.uploadedAt)),
+      
+      // Reports will be fetched after we have version IDs
+      Promise.resolve([] as Array<{
+        id: string;
+        bookVersionId: string;
+        status: string;
+        requestedAt: Date | null;
+        completedAt: Date | null;
+        viewedAt: Date | null;
+        adminNotes: string | null;
+      }>),
+      
+      // Get all features for all books
+      db
+        .select()
+        .from(bookFeatures)
+        .where(inArray(bookFeatures.bookId, bookIds)),
+      
+      // Get all marketing assets (limit per book in memory)
+      db
+        .select({
+          id: marketingAssets.id,
+          bookId: marketingAssets.bookId,
+          isActive: marketingAssets.isActive,
+          viewedAt: marketingAssets.viewedAt,
+          metadata: marketingAssets.metadata,
+          // Exclude large fields
+        })
+        .from(marketingAssets)
+        .where(inArray(marketingAssets.bookId, bookIds))
+        .orderBy(desc(marketingAssets.createdAt)),
+      
+      // Get all covers (limit per book in memory)
+      db
+        .select({
+          id: bookCovers.id,
+          bookId: bookCovers.bookId,
+          isPrimary: bookCovers.isPrimary,
+          viewedAt: bookCovers.viewedAt,
+          metadata: bookCovers.metadata,
+          // Exclude large fields
+        })
+        .from(bookCovers)
+        .where(inArray(bookCovers.bookId, bookIds))
+        .orderBy(desc(bookCovers.createdAt)),
+      
+      // Get all landing pages (limit per book in memory)
+      db
+        .select({
+          id: landingPages.id,
+          bookId: landingPages.bookId,
+          isActive: landingPages.isActive,
+          viewedAt: landingPages.viewedAt,
+          // Exclude large fields
+        })
+        .from(landingPages)
+        .where(inArray(landingPages.bookId, bookIds))
+        .orderBy(desc(landingPages.createdAt)),
+    ]);
+
+    // Get version IDs and fetch reports
+    const versionIds = allVersions.map(v => v.id);
+    const allReportsWithVersions = versionIds.length > 0
+      ? await db
+          .select({
+            id: reports.id,
+            bookVersionId: reports.bookVersionId,
+            status: reports.status,
+            requestedAt: reports.requestedAt,
+            completedAt: reports.completedAt,
+            viewedAt: reports.viewedAt,
+            adminNotes: reports.adminNotes,
+          })
+          .from(reports)
+          .where(inArray(reports.bookVersionId, versionIds))
+          .orderBy(desc(reports.requestedAt))
+      : [];
+
+    // Group data by bookId for efficient lookup
+    const digestJobsByBookId = new Map<string, typeof allDigestJobs>();
+    const versionsByBookId = new Map<string, typeof allVersions>();
+    const reportsByVersionId = new Map<string, typeof allReportsWithVersions>();
+    const featuresByBookId = new Map<string, typeof allFeatures>();
+    const marketingAssetsByBookId = new Map<string, typeof allMarketingAssets>();
+    const coversByBookId = new Map<string, typeof allCovers>();
+    const landingPagesByBookId = new Map<string, typeof allLandingPages>();
+
+    // Group digest jobs by bookId (keep only latest)
+    for (const job of allDigestJobs) {
+      if (!digestJobsByBookId.has(job.bookId)) {
+        digestJobsByBookId.set(job.bookId, job);
+      }
+    }
+
+    // Group versions by bookId (keep only latest)
+    const latestVersionsByBookId = new Map<string, typeof allVersions[0]>();
+    for (const version of allVersions) {
+      if (!latestVersionsByBookId.has(version.bookId)) {
+        latestVersionsByBookId.set(version.bookId, version);
+      }
+    }
+
+    // Group reports by versionId
+    for (const report of allReportsWithVersions) {
+      if (!reportsByVersionId.has(report.bookVersionId)) {
+        reportsByVersionId.set(report.bookVersionId, []);
+      }
+      reportsByVersionId.get(report.bookVersionId)!.push(report);
+    }
+
+    // Group features by bookId
+    for (const feature of allFeatures) {
+      if (!featuresByBookId.has(feature.bookId)) {
+        featuresByBookId.set(feature.bookId, []);
+      }
+      featuresByBookId.get(feature.bookId)!.push(feature);
+    }
+
+    // Group assets by bookId (limit to 20 per book to save memory)
+    const MAX_ASSETS_PER_BOOK = 20;
+    for (const asset of allMarketingAssets) {
+      const bookAssets = marketingAssetsByBookId.get(asset.bookId) || [];
+      if (bookAssets.length < MAX_ASSETS_PER_BOOK) {
+        bookAssets.push(asset);
+        marketingAssetsByBookId.set(asset.bookId, bookAssets);
+      }
+    }
+
+    for (const cover of allCovers) {
+      const bookCoversList = coversByBookId.get(cover.bookId) || [];
+      if (bookCoversList.length < MAX_ASSETS_PER_BOOK) {
+        bookCoversList.push(cover);
+        coversByBookId.set(cover.bookId, bookCoversList);
+      }
+    }
+
+    for (const landing of allLandingPages) {
+      const bookLandings = landingPagesByBookId.get(landing.bookId) || [];
+      if (bookLandings.length < MAX_ASSETS_PER_BOOK) {
+        bookLandings.push(landing);
+        landingPagesByBookId.set(landing.bookId, bookLandings);
+      }
+    }
+
+    // Process books using pre-fetched data (no more database queries!)
+    const booksWithDigest = allBooks.map((book: any) => {
+        // Get latest digest job from pre-fetched data
+        const latestDigest = digestJobsByBookId.get(book.id) || null;
+
+        // Get latest version from pre-fetched data
+        const latestVersion = latestVersionsByBookId.get(book.id) || null;
+
+        // Get latest report for the latest version from pre-fetched data
         let latestReport = null;
         if (latestVersion) {
-          const [report] = await db
-            .select({
-              id: reports.id,
-              bookVersionId: reports.bookVersionId,
-              status: reports.status,
-              requestedAt: reports.requestedAt,
-              completedAt: reports.completedAt,
-              viewedAt: reports.viewedAt,
-            })
-            .from(reports)
-            .where(eq(reports.bookVersionId, latestVersion.id))
-            .orderBy(desc(reports.requestedAt))
-            .limit(1);
-
+          const versionReports = reportsByVersionId.get(latestVersion.id) || [];
+          const report = versionReports[0] || null;
+          
           if (report) {
             // Map database status to UI status
             const uiStatus = report.status === "pending" ? "requested" : report.status;
@@ -120,19 +269,11 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        // Helper function to determine asset status for assets linked by bookId
-        const getAssetStatusByBookId = async (featureType: string, assetTable: any) => {
-          // Check if feature is requested/purchased
-          const [feature] = await db
-            .select()
-            .from(bookFeatures)
-            .where(
-              and(
-                eq(bookFeatures.bookId, book.id),
-                eq(bookFeatures.featureType, featureType)
-              )
-            )
-            .limit(1);
+        // Helper function to determine asset status using pre-fetched data
+        const getAssetStatusByBookId = (featureType: string, assetTable: typeof marketingAssets | typeof bookCovers | typeof landingPages) => {
+          // Check if feature is requested/purchased from pre-fetched data
+          const bookFeatures = featuresByBookId.get(book.id) || [];
+          const feature = bookFeatures.find(f => f.featureType === featureType);
 
           const isRequested = feature && (feature.status === "purchased" || feature.status === "requested");
 
@@ -140,55 +281,29 @@ export async function GET(request: NextRequest) {
             return "not_requested";
           }
 
-          // Check if any asset exists
-          let anyAsset;
+          // Get assets from pre-fetched data
+          let bookAssets: typeof allMarketingAssets | typeof allCovers | typeof allLandingPages = [];
           if (assetTable === marketingAssets) {
-            [anyAsset] = await db
-              .select()
-              .from(marketingAssets)
-              .where(eq(marketingAssets.bookId, book.id))
-              .limit(1);
+            bookAssets = marketingAssetsByBookId.get(book.id) || [];
           } else if (assetTable === bookCovers) {
-            [anyAsset] = await db
-              .select()
-              .from(bookCovers)
-              .where(eq(bookCovers.bookId, book.id))
-              .limit(1);
+            bookAssets = coversByBookId.get(book.id) || [];
           } else if (assetTable === landingPages) {
-            [anyAsset] = await db
-              .select()
-              .from(landingPages)
-              .where(eq(landingPages.bookId, book.id))
-              .limit(1);
+            bookAssets = landingPagesByBookId.get(book.id) || [];
           }
 
-          if (!anyAsset) {
+          if (bookAssets.length === 0) {
             return "requested";
           }
 
           // Check active/primary asset for viewed status
-          let activeAsset;
+          let activeAsset: typeof bookAssets[0] | undefined;
           if (assetTable === marketingAssets) {
             // First try to find active asset
-            [activeAsset] = await db
-              .select()
-              .from(marketingAssets)
-              .where(
-                and(
-                  eq(marketingAssets.bookId, book.id),
-                  eq(marketingAssets.isActive, true)
-                )
-              )
-              .limit(1);
+            activeAsset = bookAssets.find((asset: typeof allMarketingAssets[0]) => asset.isActive === true);
             
-            // If no active asset, find HTML asset (same logic as user-facing route)
+            // If no active asset, find HTML asset
             if (!activeAsset) {
-              const allAssets = await db
-                .select()
-                .from(marketingAssets)
-                .where(eq(marketingAssets.bookId, book.id));
-              
-              activeAsset = allAssets.find(asset => {
+              activeAsset = bookAssets.find((asset: typeof allMarketingAssets[0]) => {
                 if (!asset.metadata) return false;
                 try {
                   const metadata = JSON.parse(asset.metadata);
@@ -196,29 +311,15 @@ export async function GET(request: NextRequest) {
                 } catch {
                   return false;
                 }
-              }) || undefined;
+              });
             }
           } else if (assetTable === bookCovers) {
             // First try to find primary cover
-            [activeAsset] = await db
-              .select()
-              .from(bookCovers)
-              .where(
-                and(
-                  eq(bookCovers.bookId, book.id),
-                  eq(bookCovers.isPrimary, true)
-                )
-              )
-              .limit(1);
+            activeAsset = bookAssets.find((cover: typeof allCovers[0]) => cover.isPrimary === true);
             
             // If no primary cover, find HTML cover
             if (!activeAsset) {
-              const allCovers = await db
-                .select()
-                .from(bookCovers)
-                .where(eq(bookCovers.bookId, book.id));
-              
-              activeAsset = allCovers.find(cover => {
+              activeAsset = bookAssets.find((cover: typeof allCovers[0]) => {
                 if (!cover.metadata) return false;
                 try {
                   const metadata = JSON.parse(cover.metadata);
@@ -226,28 +327,15 @@ export async function GET(request: NextRequest) {
                 } catch {
                   return false;
                 }
-              }) || undefined;
+              });
             }
           } else if (assetTable === landingPages) {
             // First try to find active landing page
-            [activeAsset] = await db
-              .select()
-              .from(landingPages)
-              .where(
-                and(
-                  eq(landingPages.bookId, book.id),
-                  eq(landingPages.isActive, true)
-                )
-              )
-              .limit(1);
+            activeAsset = bookAssets.find((landing: typeof allLandingPages[0]) => landing.isActive === true);
             
             // If no active landing page, get any landing page
-            if (!activeAsset) {
-              [activeAsset] = await db
-                .select()
-                .from(landingPages)
-                .where(eq(landingPages.bookId, book.id))
-                .limit(1);
+            if (!activeAsset && bookAssets.length > 0) {
+              activeAsset = bookAssets[0];
             }
           }
 
@@ -264,37 +352,19 @@ export async function GET(request: NextRequest) {
           return "uploaded";
         };
 
-        // Calculate report status (reports are linked by bookVersionId)
+        // Calculate report status using pre-fetched data
         let reportStatus = "not_requested";
         if (latestVersion) {
-          // Check if feature is requested/purchased
-          const [reportFeature] = await db
-            .select()
-            .from(bookFeatures)
-            .where(
-              and(
-                eq(bookFeatures.bookId, book.id),
-                eq(bookFeatures.featureType, "manuscript-report")
-              )
-            )
-            .limit(1);
+          // Check if feature is requested/purchased from pre-fetched data
+          const bookFeatures = featuresByBookId.get(book.id) || [];
+          const reportFeature = bookFeatures.find(f => f.featureType === "manuscript-report");
 
           const isRequested = reportFeature && (reportFeature.status === "purchased" || reportFeature.status === "requested");
 
           if (isRequested) {
-            // Get all completed reports for this version (same logic as view route)
-            const completedReports = await db
-              .select({
-                id: reports.id,
-                viewedAt: reports.viewedAt,
-                adminNotes: reports.adminNotes,
-              })
-              .from(reports)
-              .where(and(
-                eq(reports.bookVersionId, latestVersion.id),
-                eq(reports.status, "completed")
-              ))
-              .orderBy(desc(reports.requestedAt));
+            // Get all completed reports for this version from pre-fetched data
+            const versionReports = reportsByVersionId.get(latestVersion.id) || [];
+            const completedReports = versionReports.filter(r => r.status === "completed");
             
             // Find active report (same logic as view route)
             let activeReport = completedReports.find(r => {
@@ -324,10 +394,10 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        // Calculate other asset statuses
-        const marketingStatus = await getAssetStatusByBookId("marketing-assets", marketingAssets);
-        const coversStatus = await getAssetStatusByBookId("book-covers", bookCovers);
-        const landingPageStatus = await getAssetStatusByBookId("landing-page", landingPages);
+        // Calculate other asset statuses using pre-fetched data (synchronous now!)
+        const marketingStatus = getAssetStatusByBookId("marketing-assets", marketingAssets);
+        const coversStatus = getAssetStatusByBookId("book-covers", bookCovers);
+        const landingPageStatus = getAssetStatusByBookId("landing-page", landingPages);
 
         return {
           ...book,
