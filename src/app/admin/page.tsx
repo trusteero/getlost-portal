@@ -150,6 +150,9 @@ function AdminDashboardContent() {
   const [savingCoverImageUrl, setSavingCoverImageUrl] = useState<boolean>(false);
   const [uploadingCoverImage, setUploadingCoverImage] = useState<boolean>(false);
   
+  // Fix pending purchases state
+  const [fixingPendingPurchases, setFixingPendingPurchases] = useState(false);
+  
   // Disk usage state
   const [diskStatus, setDiskStatus] = useState<{
     usage?: { usagePercent: number; freeFormatted: string; totalFormatted: string };
@@ -1282,6 +1285,40 @@ function AdminDashboardContent() {
           >
             <Download className="w-4 h-4 mr-2" />
             Backup DB
+          </Button>
+          <Button 
+            variant="outline" 
+            disabled={fixingPendingPurchases}
+            onClick={async () => {
+              if (!confirm("This will mark all pending purchases older than 30 minutes as 'failed'. Continue?")) {
+                return;
+              }
+              setFixingPendingPurchases(true);
+              try {
+                const response = await fetch("/api/admin/fix-pending-purchases", {
+                  method: "POST",
+                });
+                const data = await response.json();
+                if (response.ok) {
+                  alert(`✅ ${data.message}\n\nTotal pending: ${data.totalPendingInScope}\nMarked as failed: ${data.markedFailed}`);
+                } else {
+                  alert("Failed to fix pending purchases: " + (data.error || "Unknown error"));
+                }
+              } catch (error) {
+                console.error("[Admin] Failed to fix pending purchases:", error);
+                alert("Failed to fix pending purchases: " + (error instanceof Error ? error.message : String(error)));
+              } finally {
+                setFixingPendingPurchases(false);
+              }
+            }}
+            title="Mark stale pending purchases (older than 30 minutes) as failed"
+          >
+            {fixingPendingPurchases ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <XCircle className="w-4 h-4 mr-2" />
+            )}
+            Fix Pending Purchases
           </Button>
         </div>
 
