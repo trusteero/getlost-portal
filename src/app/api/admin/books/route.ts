@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Memory safety: Batch all queries to avoid N+1 problem
-    const bookIds = allBooks.map(book => book.id as string);
+    const bookIds = allBooks.map((book: any) => book.id as string);
 
     // Batch fetch all related data upfront
     const [
@@ -179,8 +179,7 @@ export async function GET(request: NextRequest) {
       : [];
 
     // Group data by bookId for efficient lookup
-    const digestJobsByBookId = new Map<string, typeof allDigestJobs>();
-    const versionsByBookId = new Map<string, typeof allVersions>();
+    const digestJobsByBookId = new Map<string, typeof allDigestJobs[0]>();
     const reportsByVersionId = new Map<string, typeof allReportsWithVersions>();
     const featuresByBookId = new Map<string, typeof allFeatures>();
     const marketingAssetsByBookId = new Map<string, typeof allMarketingAssets>();
@@ -281,29 +280,20 @@ export async function GET(request: NextRequest) {
             return "not_requested";
           }
 
-          // Get assets from pre-fetched data
-          let bookAssets: typeof allMarketingAssets | typeof allCovers | typeof allLandingPages = [];
+          // Get assets from pre-fetched data (handle each type separately to avoid union type issues)
+          let activeAsset: any = undefined;
+          
           if (assetTable === marketingAssets) {
-            bookAssets = marketingAssetsByBookId.get(book.id) || [];
-          } else if (assetTable === bookCovers) {
-            bookAssets = coversByBookId.get(book.id) || [];
-          } else if (assetTable === landingPages) {
-            bookAssets = landingPagesByBookId.get(book.id) || [];
-          }
-
-          if (bookAssets.length === 0) {
-            return "requested";
-          }
-
-          // Check active/primary asset for viewed status
-          let activeAsset: typeof bookAssets[0] | undefined;
-          if (assetTable === marketingAssets) {
+            const bookAssets = marketingAssetsByBookId.get(book.id) || [];
+            if (bookAssets.length === 0) {
+              return "requested";
+            }
             // First try to find active asset
-            activeAsset = bookAssets.find((asset: typeof allMarketingAssets[0]) => asset.isActive === true);
+            activeAsset = bookAssets.find((asset) => asset.isActive === true);
             
             // If no active asset, find HTML asset
             if (!activeAsset) {
-              activeAsset = bookAssets.find((asset: typeof allMarketingAssets[0]) => {
+              activeAsset = bookAssets.find((asset) => {
                 if (!asset.metadata) return false;
                 try {
                   const metadata = JSON.parse(asset.metadata);
@@ -314,12 +304,16 @@ export async function GET(request: NextRequest) {
               });
             }
           } else if (assetTable === bookCovers) {
+            const bookAssets = coversByBookId.get(book.id) || [];
+            if (bookAssets.length === 0) {
+              return "requested";
+            }
             // First try to find primary cover
-            activeAsset = bookAssets.find((cover: typeof allCovers[0]) => cover.isPrimary === true);
+            activeAsset = bookAssets.find((cover) => cover.isPrimary === true);
             
             // If no primary cover, find HTML cover
             if (!activeAsset) {
-              activeAsset = bookAssets.find((cover: typeof allCovers[0]) => {
+              activeAsset = bookAssets.find((cover) => {
                 if (!cover.metadata) return false;
                 try {
                   const metadata = JSON.parse(cover.metadata);
@@ -330,8 +324,12 @@ export async function GET(request: NextRequest) {
               });
             }
           } else if (assetTable === landingPages) {
+            const bookAssets = landingPagesByBookId.get(book.id) || [];
+            if (bookAssets.length === 0) {
+              return "requested";
+            }
             // First try to find active landing page
-            activeAsset = bookAssets.find((landing: typeof allLandingPages[0]) => landing.isActive === true);
+            activeAsset = bookAssets.find((landing) => landing.isActive === true);
             
             // If no active landing page, get any landing page
             if (!activeAsset && bookAssets.length > 0) {
@@ -410,8 +408,7 @@ export async function GET(request: NextRequest) {
           landingPageStatus,
           manuscriptStatus: (book as any).manuscriptStatus || "queued",
         };
-      })
-    );
+      });
 
     // Get total count for pagination info
     const totalCountResult = await db
