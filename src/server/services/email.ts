@@ -764,3 +764,315 @@ export async function sendReportReadyEmail(email: string, bookTitle: string, boo
     html,
   });
 }
+
+/**
+ * Send notification to superadmin when a new book is uploaded
+ */
+export async function sendSuperAdminNewBookNotification(
+  superAdminEmail: string,
+  bookTitle: string,
+  bookId: string,
+  userName: string,
+  userEmail: string
+) {
+  const adminUrl = `${APP_URL}/admin`;
+  const bookUrl = `${APP_URL}/admin?bookId=${bookId}`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>New Book Uploaded</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 20px;
+          }
+          .container {
+            background: white;
+            border-radius: 12px;
+            padding: 48px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto;
+          }
+          .content {
+            text-align: left;
+          }
+          h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 16px;
+          }
+          p {
+            color: #6b7280;
+            margin: 0 0 16px;
+            font-size: 16px;
+          }
+          .info-box {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 24px 0;
+          }
+          .info-row {
+            margin: 12px 0;
+            font-size: 14px;
+          }
+          .info-label {
+            font-weight: 600;
+            color: #111827;
+            display: inline-block;
+            width: 120px;
+          }
+          .info-value {
+            color: #4b5563;
+          }
+          .button {
+            display: inline-block;
+            padding: 12px 32px;
+            background-color: #ea580c;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 24px 0;
+            transition: background-color 0.2s;
+          }
+          .button:hover {
+            background-color: #dc2626;
+          }
+          .footer {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 13px;
+            color: #9ca3af;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="content">
+            <h2>📚 New Book Uploaded</h2>
+            <p>A new manuscript has been uploaded to the portal.</p>
+            
+            <div class="info-box">
+              <div class="info-row">
+                <span class="info-label">Book Title:</span>
+                <span class="info-value">${bookTitle}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Book ID:</span>
+                <span class="info-value">${bookId}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">User:</span>
+                <span class="info-value">${userName} (${userEmail})</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Uploaded:</span>
+                <span class="info-value">${new Date().toLocaleString()}</span>
+              </div>
+            </div>
+
+            <a href="${bookUrl}" class="button" style="color: white !important;">View Book in Admin Panel</a>
+            <br />
+            <a href="${adminUrl}" style="color: #6b7280; text-decoration: none; font-size: 14px;">Go to Admin Dashboard</a>
+          </div>
+
+          <div class="footer">
+            <p style="margin: 8px 0 0;">&copy; ${new Date().getFullYear()} Get Lost. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: superAdminEmail,
+    subject: `📚 New Book Uploaded: "${bookTitle}"`,
+    html,
+  });
+}
+
+/**
+ * Send notification to superadmin when a payment is completed
+ */
+export async function sendSuperAdminPaymentNotification(
+  superAdminEmail: string,
+  purchaseId: string,
+  featureType: string,
+  amount: number,
+  currency: string,
+  userName: string,
+  userEmail: string,
+  bookTitle?: string | null,
+  bookId?: string | null
+) {
+  const adminUrl = `${APP_URL}/admin`;
+  const purchaseUrl = bookId ? `${APP_URL}/admin?bookId=${bookId}` : adminUrl;
+
+  const featureNames: Record<string, string> = {
+    "book-upload": "Book Upload Permission",
+    "dna-report": "myStory DNA Report",
+    "market-validation-report": "myStory Market & Audience Validation Report",
+    "market-ready-pack": "myStory Market-Ready Pack",
+    "growth-partnership": "myStory Growth Partnership",
+    "manuscript-report": "Manuscript Report",
+  };
+
+  const featureName = featureNames[featureType] || featureType;
+  const formattedAmount = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+  }).format(amount / 100);
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Payment Completed</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 20px;
+          }
+          .container {
+            background: white;
+            border-radius: 12px;
+            padding: 48px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto;
+          }
+          .content {
+            text-align: left;
+          }
+          h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 16px;
+          }
+          p {
+            color: #6b7280;
+            margin: 0 0 16px;
+            font-size: 16px;
+          }
+          .info-box {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 24px 0;
+          }
+          .info-row {
+            margin: 12px 0;
+            font-size: 14px;
+          }
+          .info-label {
+            font-weight: 600;
+            color: #111827;
+            display: inline-block;
+            width: 140px;
+          }
+          .info-value {
+            color: #4b5563;
+          }
+          .amount {
+            font-size: 20px;
+            font-weight: 700;
+            color: #059669;
+          }
+          .button {
+            display: inline-block;
+            padding: 12px 32px;
+            background-color: #ea580c;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 24px 0;
+            transition: background-color 0.2s;
+          }
+          .button:hover {
+            background-color: #dc2626;
+          }
+          .footer {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 13px;
+            color: #9ca3af;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="content">
+            <h2>💳 Payment Completed</h2>
+            <p>A payment has been successfully processed.</p>
+            
+            <div class="info-box">
+              <div class="info-row">
+                <span class="info-label">Product:</span>
+                <span class="info-value">${featureName}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Amount:</span>
+                <span class="info-value amount">${formattedAmount}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Purchase ID:</span>
+                <span class="info-value">${purchaseId}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">User:</span>
+                <span class="info-value">${userName} (${userEmail})</span>
+              </div>
+              ${bookTitle ? `
+              <div class="info-row">
+                <span class="info-label">Book:</span>
+                <span class="info-value">${bookTitle}</span>
+              </div>
+              ` : ''}
+              <div class="info-row">
+                <span class="info-label">Completed:</span>
+                <span class="info-value">${new Date().toLocaleString()}</span>
+              </div>
+            </div>
+
+            <a href="${purchaseUrl}" class="button" style="color: white !important;">View in Admin Panel</a>
+            <br />
+            <a href="${adminUrl}" style="color: #6b7280; text-decoration: none; font-size: 14px;">Go to Admin Dashboard</a>
+          </div>
+
+          <div class="footer">
+            <p style="margin: 8px 0 0;">&copy; ${new Date().getFullYear()} Get Lost. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: superAdminEmail,
+    subject: `💳 Payment Completed: ${featureName} - ${formattedAmount}`,
+    html,
+  });
+}

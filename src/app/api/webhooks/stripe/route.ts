@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
-import { purchases, bookFeatures } from "@/server/db/schema";
+import { purchases, bookFeatures, users, books } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import type Stripe from "stripe";
 import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
@@ -192,6 +192,68 @@ export async function POST(request: NextRequest) {
               }
             }
           });
+
+          // Send notification to superadmin about completed payment (fire and forget)
+          try {
+            const { getSuperAdminEmails } = await import("@/server/utils/get-superadmin-emails");
+            const { sendSuperAdminPaymentNotification } = await import("@/server/services/email");
+            const superAdminEmails = await getSuperAdminEmails();
+            
+            // Get purchase details for notification (after transaction)
+            const [purchaseForNotification] = await db
+              .select()
+              .from(purchases)
+              .where(eq(purchases.id, purchaseId))
+              .limit(1);
+
+            if (purchaseForNotification && superAdminEmails.length > 0) {
+              // Get user details
+              const [user] = await db
+                .select({
+                  name: users.name,
+                  email: users.email,
+                })
+                .from(users)
+                .where(eq(users.id, purchaseForNotification.userId))
+                .limit(1);
+
+              const userName = user?.name || "Unknown";
+              const userEmail = user?.email || "unknown@example.com";
+
+              // Get book details if bookId exists
+              let bookTitle: string | null = null;
+              if (purchaseForNotification.bookId) {
+                const [book] = await db
+                  .select({
+                    title: books.title,
+                  })
+                  .from(books)
+                  .where(eq(books.id, purchaseForNotification.bookId))
+                  .limit(1);
+                bookTitle = book?.title || null;
+              }
+
+              // Send to all superadmins
+              for (const superAdminEmail of superAdminEmails) {
+                sendSuperAdminPaymentNotification(
+                  superAdminEmail,
+                  purchaseForNotification.id,
+                  purchaseForNotification.featureType,
+                  purchaseForNotification.amount,
+                  purchaseForNotification.currency,
+                  userName,
+                  userEmail,
+                  bookTitle,
+                  purchaseForNotification.bookId
+                ).catch((error) => {
+                  console.error(`[Webhook] Failed to send payment notification to ${superAdminEmail}:`, error);
+                });
+              }
+            }
+          } catch (error) {
+            console.error("[Webhook] Failed to send superadmin notification:", error);
+            // Don't fail the webhook if notification fails
+          }
 
           console.log(`[Webhook] ✅ Successfully processed checkout.session.completed for purchase ${purchaseId}`);
           return NextResponse.json({ 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
-import { books, bookVersions, reports, bookFeatures, marketingAssets, bookCovers, landingPages, purchases } from "@/server/db/schema";
+import { books, bookVersions, reports, bookFeatures, marketingAssets, bookCovers, landingPages, purchases, users } from "@/server/db/schema";
 import { eq, desc, and, ne, inArray, sql, isNull } from "drizzle-orm";
 import { extractEpubMetadata } from "@/server/utils/extract-epub-metadata";
 import { promises as fs } from "fs";
@@ -668,6 +668,42 @@ export async function POST(request: NextRequest) {
       .returning();
 
     const createdBook = newBook[0]!;
+
+    // Send notification to superadmin about new book (fire and forget)
+    try {
+      const { getSuperAdminEmails } = await import("@/server/utils/get-superadmin-emails");
+      const { sendSuperAdminNewBookNotification } = await import("@/server/services/email");
+      const superAdminEmails = await getSuperAdminEmails();
+      
+      // Get user details for notification
+      const [user] = await db
+        .select({
+          name: users.name,
+          email: users.email,
+        })
+        .from(users)
+        .where(eq(users.id, session.user.id))
+        .limit(1);
+
+      const userName = user?.name || "Unknown";
+      const userEmail = user?.email || session.user.email || "unknown@example.com";
+
+      // Send to all superadmins
+      for (const superAdminEmail of superAdminEmails) {
+        sendSuperAdminNewBookNotification(
+          superAdminEmail,
+          bookTitle,
+          createdBook.id,
+          userName,
+          userEmail
+        ).catch((error) => {
+          console.error(`[Books API] Failed to send new book notification to ${superAdminEmail}:`, error);
+        });
+      }
+    } catch (error) {
+      console.error("[Books API] Failed to send superadmin notification:", error);
+      // Don't fail the request if notification fails
+    }
 
     // If user purchased a report product before uploading (user-level purchase without bookId),
     // attach the most recent completed report purchase to this new book and grant report entitlement.

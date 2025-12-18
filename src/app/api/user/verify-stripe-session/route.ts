@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
-import { purchases } from "@/server/db/schema";
+import { purchases, users, books } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 
 /**
@@ -160,6 +160,61 @@ export async function POST(request: NextRequest) {
           completedAt: updatedPurchase.completedAt,
           paymentIntentId: updatedPurchase.paymentIntentId,
         });
+
+        // Send notification to superadmin about completed payment (fire and forget)
+        try {
+          const { getSuperAdminEmails } = await import("@/server/utils/get-superadmin-emails");
+          const { sendSuperAdminPaymentNotification } = await import("@/server/services/email");
+          const superAdminEmails = await getSuperAdminEmails();
+          
+          if (superAdminEmails.length > 0) {
+            // Get user details
+            const [user] = await db
+              .select({
+                name: users.name,
+                email: users.email,
+              })
+              .from(users)
+              .where(eq(users.id, updatedPurchase.userId))
+              .limit(1);
+
+            const userName = user?.name || "Unknown";
+            const userEmail = user?.email || "unknown@example.com";
+
+            // Get book details if bookId exists
+            let bookTitle: string | null = null;
+            if (updatedPurchase.bookId) {
+              const [book] = await db
+                .select({
+                  title: books.title,
+                })
+                .from(books)
+                .where(eq(books.id, updatedPurchase.bookId))
+                .limit(1);
+              bookTitle = book?.title || null;
+            }
+
+            // Send to all superadmins
+            for (const superAdminEmail of superAdminEmails) {
+              sendSuperAdminPaymentNotification(
+                superAdminEmail,
+                updatedPurchase.id,
+                updatedPurchase.featureType,
+                updatedPurchase.amount,
+                updatedPurchase.currency,
+                userName,
+                userEmail,
+                bookTitle,
+                updatedPurchase.bookId
+              ).catch((error) => {
+                console.error(`[Verify Session] Failed to send payment notification to ${superAdminEmail}:`, error);
+              });
+            }
+          }
+        } catch (error) {
+          console.error("[Verify Session] Failed to send superadmin notification:", error);
+          // Don't fail the request if notification fails
+        }
 
         return NextResponse.json({
           success: true,
