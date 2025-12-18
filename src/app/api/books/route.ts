@@ -53,7 +53,8 @@ export async function GET(request: NextRequest) {
     } as const;
 
     // Memory safety: Limit number of books loaded at once
-    const MAX_BOOKS = 100; // Maximum books to prevent memory exhaustion
+    // Reduced from 100 to 50 to prevent memory exhaustion
+    const MAX_BOOKS = 50; // Maximum books to prevent memory exhaustion
     
     const userBooks = await db
       .select(selectFields)
@@ -95,9 +96,22 @@ export async function GET(request: NextRequest) {
       allReports
     ] = await Promise.all([
       // Get all versions for all books, ordered by uploadedAt desc
-      // We'll filter to latest per book in memory
+      // CRITICAL: Do NOT select fileData - it can be huge (entire book files!)
+      // We only need metadata for the dashboard
       db
-        .select()
+        .select({
+          id: bookVersions.id,
+          bookId: bookVersions.bookId,
+          versionNumber: bookVersions.versionNumber,
+          fileName: bookVersions.fileName,
+          fileUrl: bookVersions.fileUrl,
+          fileSize: bookVersions.fileSize,
+          fileType: bookVersions.fileType,
+          mimeType: bookVersions.mimeType,
+          summary: bookVersions.summary,
+          uploadedAt: bookVersions.uploadedAt,
+          // Explicitly exclude fileData to save memory
+        })
         .from(bookVersions)
         .where(inArray(bookVersions.bookId, bookIds))
         .orderBy(desc(bookVersions.uploadedAt)),
@@ -164,9 +178,20 @@ export async function GET(request: NextRequest) {
 
     // Get version IDs for reports query (after versions are filtered)
     const versionIds = filteredVersions.map(v => v.id);
+    // CRITICAL: Do NOT select htmlContent - it can be several MB per report!
+    // We only need status/metadata for the dashboard, not the full HTML
     const allReportsWithVersions = versionIds.length > 0
       ? await db
-          .select()
+          .select({
+            id: reports.id,
+            bookVersionId: reports.bookVersionId,
+            status: reports.status,
+            requestedAt: reports.requestedAt,
+            completedAt: reports.completedAt,
+            viewedAt: reports.viewedAt,
+            adminNotes: reports.adminNotes,
+            // Explicitly exclude htmlContent and pdfUrl to save memory
+          })
           .from(reports)
           .where(inArray(reports.bookVersionId, versionIds))
           .orderBy(desc(reports.requestedAt))
