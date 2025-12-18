@@ -92,14 +92,15 @@ export async function POST(request: NextRequest) {
 
       // If payment is completed, update the purchase
       // Stripe checkout session is complete when:
-      // - status is "complete" (session completed)
       // - payment_status is "paid" (payment succeeded)
       // - status is NOT "expired" or "open" (not still in progress)
-      // For subscriptions, also check if subscription status is active
+      // Note: TypeScript types define status as "open" | "expired" | null, but Stripe API also returns "complete"
+      // We use payment_status as the primary indicator since it's more reliable
+      const status = checkoutSession.status as string | null;
       const isPaymentComplete = 
-        checkoutSession.status === "complete" || 
-        (checkoutSession.payment_status === "paid" && checkoutSession.status !== "expired" && checkoutSession.status !== "open") ||
-        (checkoutSession.mode === "subscription" && checkoutSession.status === "complete");
+        checkoutSession.payment_status === "paid" && 
+        status !== "expired" && 
+        status !== "open";
       
       console.log(`[Verify Session] Payment check: payment_status=${checkoutSession.payment_status}, status=${checkoutSession.status}, mode=${checkoutSession.mode}, isPaymentComplete=${isPaymentComplete}`);
       console.log(`[Verify Session] Full session data:`, {
