@@ -16,11 +16,9 @@ export async function GET(request: NextRequest) {
 
   try {
     // Memory safety: Add pagination support
-    // Reduced for 512MB server: 50 books max per page
-    // Each book with metadata = ~100-200KB, so 50 books = ~5-10MB
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get("page") || "1", 10);
-    const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 50); // Max 50 per page for 512MB server
+    const limit = Math.min(parseInt(url.searchParams.get("limit") || "100", 10), 200); // Max 200 per page
     const offset = (page - 1) * limit;
 
     // Ensure required columns exist before querying
@@ -219,8 +217,8 @@ export async function GET(request: NextRequest) {
       featuresByBookId.get(feature.bookId)!.push(feature);
     }
 
-    // Group assets by bookId (limit to 10 per book to save memory on 512MB server)
-    const MAX_ASSETS_PER_BOOK = 10;
+    // Group assets by bookId (limit to 20 per book to save memory)
+    const MAX_ASSETS_PER_BOOK = 20;
     for (const asset of allMarketingAssets) {
       const bookAssets = marketingAssetsByBookId.get(asset.bookId) || [];
       if (bookAssets.length < MAX_ASSETS_PER_BOOK) {

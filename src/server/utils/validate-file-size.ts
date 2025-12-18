@@ -3,14 +3,8 @@
  * Enforces server-side file size limits to prevent bypassing frontend checks
  */
 
-// Maximum file size: 20MB (reduced for 512MB server memory constraint)
-// With 512MB total memory, we need to be conservative:
-// - Node.js base: ~50-100MB
-// - Database: ~50-100MB
-// - Application code: ~50-100MB
-// - Leaves ~200-300MB for operations
-// - 20MB per file allows ~10-15 concurrent uploads safely
-export const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB in bytes
+// Maximum file size: 50MB (same as frontend limit)
+export const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
 
 /**
  * Validate file size

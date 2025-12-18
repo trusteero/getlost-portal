@@ -191,16 +191,7 @@ export async function bundleReportHtmlFromContent(
     let bundledHtml = htmlContent;
     const processedImages = new Set<string>();
     
-    // Memory safety: Limit number of images to bundle for 512MB server
-    const MAX_IMAGES_TO_BUNDLE = 10;
-    
     for (const match of matches) {
-      // Stop if we've reached the image limit
-      if (processedImages.size >= MAX_IMAGES_TO_BUNDLE) {
-        console.warn(`[Bundle Report] Reached image limit (${MAX_IMAGES_TO_BUNDLE}), skipping remaining images`);
-        break;
-      }
-      
       // Extract image path from match (could be in different capture groups)
       const imagePath = match[2] || match[4] || match[5];
       

@@ -53,9 +53,8 @@ export async function GET(request: NextRequest) {
     } as const;
 
     // Memory safety: Limit number of books loaded at once
-    // Reduced for 512MB server: 20 books max
-    // Each book with metadata = ~100-200KB, so 20 books = ~2-4MB
-    const MAX_BOOKS = 20; // Maximum books to prevent memory exhaustion on 512MB server
+    // Reduced from 100 to 50 to prevent memory exhaustion
+    const MAX_BOOKS = 50; // Maximum books to prevent memory exhaustion
     
     const userBooks = await db
       .select(selectFields)
@@ -80,11 +79,11 @@ export async function GET(request: NextRequest) {
     // Batch fetch all related data to avoid N+1 queries
     const bookIds: string[] = booksToReturn.map(book => book.id as string);
 
-    // Memory safety: Limit related data to prevent memory exhaustion on 512MB server
-    // Aggressive limits to stay within memory constraints
-    const MAX_VERSIONS_PER_BOOK = 5; // Only get latest 5 versions per book (reduced from 10)
-    const MAX_REPORTS_PER_VERSION = 3; // Only get latest 3 reports per version (reduced from 5)
-    const MAX_ASSETS_PER_BOOK = 10; // Limit assets per book (reduced from 20)
+    // Memory safety: Limit related data to prevent memory exhaustion
+    // Even with 100 books, if each has many versions/reports, this can be huge
+    const MAX_VERSIONS_PER_BOOK = 10; // Only get latest 10 versions per book
+    const MAX_REPORTS_PER_VERSION = 5; // Only get latest 5 reports per version
+    const MAX_ASSETS_PER_BOOK = 20; // Limit assets per book
     
     // Batch fetch: versions, features, assets, purchases, reports
     const [

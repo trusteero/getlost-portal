@@ -939,9 +939,9 @@ function DashboardContent() {
       return;
     }
 
-    const maxSize = 20 * 1024 * 1024; // 20MB (reduced for 512MB server)
+    const maxSize = 50 * 1024 * 1024; // 50MB
     if (file.size > maxSize) {
-      setUploadError("File size must be less than 20MB");
+      setUploadError("File size must be less than 50MB");
       return;
     }
 
@@ -1556,7 +1556,7 @@ function DashboardContent() {
                             <span className="font-medium text-emerald-600">Click to upload</span> or drag and drop
                           </p>
                           <p className="mt-1 text-xs text-gray-500">
-                            {formatList.join(", ").toUpperCase()} (max 20MB)
+                            {formatList.join(", ").toUpperCase()} (max 50MB)
                           </p>
                         </label>
                       )}
