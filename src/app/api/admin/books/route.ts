@@ -3,7 +3,7 @@ import { isAdminFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookVersions, users, digestJobs, reports, bookFeatures, marketingAssets, bookCovers, landingPages } from "@/server/db/schema";
 import { desc, eq, and, sql, inArray } from "drizzle-orm";
-import { ensureBooksTableColumns, columnExists } from "@/server/db/migrations";
+// Migration checks removed for performance - they run on startup and are cached
 
 export const dynamic = 'force-dynamic';
 
@@ -18,31 +18,29 @@ export async function GET(request: NextRequest) {
     // Memory safety: Add pagination support
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get("page") || "1", 10);
-    const limit = Math.min(parseInt(url.searchParams.get("limit") || "100", 10), 200); // Max 200 per page
+    const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 200); // Default 50, max 200 per page
     const offset = (page - 1) * limit;
 
-    // Ensure required columns exist before querying
-    ensureBooksTableColumns();
+    // Skip migration checks on every request - they're cached and run on startup
+    // Only run if absolutely necessary (e.g., first request after deployment)
+    // ensureBooksTableColumns(); // Commented out for performance - runs on startup
 
-    // Build select fields - only include columns that exist
-    const selectFields: any = {
+    // Build select fields - include all columns (migrations ensure they exist on startup)
+    const selectFields = {
       id: books.id,
       title: books.title,
       description: books.description,
       coverImageUrl: books.coverImageUrl,
       createdAt: books.createdAt,
       updatedAt: books.updatedAt,
+      manuscriptStatus: books.manuscriptStatus, // Assume column exists (migrations run on startup)
+      userId: books.userId, // Include for join
       user: {
         id: users.id,
         name: users.name,
         email: users.email,
       },
     };
-
-    // Only add optional columns if they exist
-    if (columnExists("getlostportal_book", "manuscriptStatus")) {
-      selectFields.manuscriptStatus = books.manuscriptStatus;
-    }
 
     // Get books with user info and digest status (with pagination)
     const allBooks = await db

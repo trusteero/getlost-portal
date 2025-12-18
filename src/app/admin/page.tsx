@@ -227,8 +227,9 @@ function AdminDashboardContent() {
   const fetchData = async () => {
     try {
       // Fetch books, users and analytics in parallel
+      // Use smaller default limit for faster initial load
       const [booksRes, usersRes, analyticsRes] = await Promise.all([
-        fetch("/api/admin/books"),
+        fetch("/api/admin/books?limit=25"),
         fetch("/api/admin/users?limit=1000"),
         fetch("/api/admin/analytics")
       ]);
