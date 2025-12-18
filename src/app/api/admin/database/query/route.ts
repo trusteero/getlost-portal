@@ -60,9 +60,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Memory safety: Enforce maximum result size
+    const MAX_ROWS = 10000; // Maximum rows to prevent memory exhaustion
+    
     // Check if query already has LIMIT clause
     const hasLimit = /LIMIT\s+\d+/i.test(query);
-    const MAX_ROWS = 10000; // Maximum rows to prevent memory exhaustion
     
     let finalQuery = query;
     if (!hasLimit) {
@@ -79,8 +80,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Execute query
-    const rows = sqlite.prepare(finalQuery).all() as Record<string, unknown>[];
+    // Execute query with error handling
+    let rows: Record<string, unknown>[];
+    try {
+      const stmt = sqlite.prepare(finalQuery);
+      rows = stmt.all() as Record<string, unknown>[];
+    } catch (sqlError) {
+      console.error("[Admin Database] SQL execution error:", sqlError);
+      return NextResponse.json(
+        {
+          error: sqlError instanceof Error ? sqlError.message : "SQL query execution failed",
+          columns: [],
+          rows: [],
+        },
+        { status: 400 }
+      );
+    }
 
     // Additional safety: Check result size
     if (rows.length > MAX_ROWS) {
@@ -95,11 +110,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Convert result to array format
-    const columns = rows.length > 0 ? Object.keys(rows[0]!) : [];
+    const columns = rows.length > 0 && rows[0] ? Object.keys(rows[0]) : [];
 
     return NextResponse.json({
       columns,
-      rows: rows.map((row) => columns.map((col) => row[col])),
+      rows: rows.map((row) => columns.map((col) => (row && typeof row === 'object' && col in row ? row[col] : null))),
       truncated: rows.length === MAX_ROWS && !hasLimit,
     });
   } catch (error) {
