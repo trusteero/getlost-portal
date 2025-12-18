@@ -59,8 +59,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Memory safety: Enforce maximum result size
-    const MAX_ROWS = 10000; // Maximum rows to prevent memory exhaustion
+    // Memory safety: Enforce maximum result size for 512MB server
+    // Reduced from 10,000 to 5,000 rows to prevent memory exhaustion
+    const MAX_ROWS = 5000; // Maximum rows to prevent memory exhaustion
     
     // Check if query already has LIMIT clause
     const hasLimit = /LIMIT\s+\d+/i.test(query);

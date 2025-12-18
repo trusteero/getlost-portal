@@ -15,10 +15,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Memory safety: Add pagination support
+    // Memory safety: Add pagination support for 512MB server
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get("page") || "1", 10);
-    const limit = Math.min(parseInt(url.searchParams.get("limit") || "1000", 10), 1000); // Max 1000 per page
+    const limit = Math.min(parseInt(url.searchParams.get("limit") || "500", 10), 500); // Max 500 per page (reduced from 1000)
     const offset = (page - 1) * limit;
 
     // Get all users (Better Auth uses 'user' table, but we query 'users' from schema which maps to getlostportal_user)
