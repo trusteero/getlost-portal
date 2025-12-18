@@ -338,6 +338,106 @@ export function ensureOtherTableColumns(): void {
 }
 
 /**
+ * Ensure performance indexes exist for better query performance
+ * These composite indexes significantly speed up common query patterns
+ */
+export function ensurePerformanceIndexes(): void {
+  if (!sqlite) {
+    console.warn("[Migrations] Database not available, skipping index checks");
+    return;
+  }
+
+  try {
+    // Check if indexes already exist before creating
+    const indexExists = (indexName: string): boolean => {
+      try {
+        const result = sqlite!
+          .prepare("SELECT name FROM sqlite_master WHERE type='index' AND name=?")
+          .get(indexName);
+        return !!result;
+      } catch {
+        return false;
+      }
+    };
+
+    // Purchases: Composite index for user + featureType + status queries
+    // Used in: /api/user/upload-permission, /api/user/credits
+    if (!indexExists("purchase_user_feature_status_idx")) {
+      sqlite!.exec(`
+        CREATE INDEX purchase_user_feature_status_idx 
+        ON getlostportal_purchase(userId, featureType, status)
+      `);
+      console.log("[Migrations] ✅ Created index: purchase_user_feature_status_idx");
+    }
+
+    // Purchases: Composite index for user + status queries
+    // Used in: /api/user/credits, filtering completed purchases
+    if (!indexExists("purchase_user_status_idx")) {
+      sqlite!.exec(`
+        CREATE INDEX purchase_user_status_idx 
+        ON getlostportal_purchase(userId, status)
+      `);
+      console.log("[Migrations] ✅ Created index: purchase_user_status_idx");
+    }
+
+    // Books: Composite index for user + createdAt queries
+    // Used in: /api/books (ORDER BY createdAt DESC)
+    if (!indexExists("book_user_created_idx")) {
+      sqlite!.exec(`
+        CREATE INDEX book_user_created_idx 
+        ON getlostportal_book(userId, createdAt)
+      `);
+      console.log("[Migrations] ✅ Created index: book_user_created_idx");
+    }
+
+    // Users: Unique index on email for faster lookups and data integrity
+    // Used in: Authentication, user lookups
+    // Note: This will fail if duplicate emails exist - check first
+    if (!indexExists("user_email_unique_idx")) {
+      try {
+        // Check for duplicate emails before creating unique index
+        const duplicates = sqlite!
+          .prepare(`
+            SELECT email, COUNT(*) as count 
+            FROM getlostportal_user 
+            GROUP BY email 
+            HAVING count > 1
+          `)
+          .all() as Array<{ email: string; count: number }>;
+
+        if (duplicates.length > 0) {
+          console.warn(`[Migrations] ⚠️  Cannot create unique index on email: ${duplicates.length} duplicate email(s) found`);
+          console.warn(`[Migrations] Duplicate emails: ${duplicates.map(d => d.email).join(", ")}`);
+          console.warn("[Migrations] Please resolve duplicate emails before creating unique index");
+        } else {
+          sqlite!.exec(`
+            CREATE UNIQUE INDEX user_email_unique_idx 
+            ON getlostportal_user(email)
+          `);
+          console.log("[Migrations] ✅ Created unique index: user_email_unique_idx");
+        }
+      } catch (error: any) {
+        // If index creation fails (e.g., duplicates), log but don't throw
+        console.warn(`[Migrations] ⚠️  Failed to create unique index on email: ${error?.message || error}`);
+      }
+    }
+
+    // Reports: Composite index for version + status queries
+    // Used in: Filtering completed reports by version
+    if (!indexExists("report_version_status_idx")) {
+      sqlite!.exec(`
+        CREATE INDEX report_version_status_idx 
+        ON getlostportal_report(bookVersionId, status)
+      `);
+      console.log("[Migrations] ✅ Created index: report_version_status_idx");
+    }
+  } catch (error: any) {
+    console.error("[Migrations] Error ensuring performance indexes:", error?.message || error);
+    // Don't throw - allow app to continue even if indexes fail
+  }
+}
+
+/**
  * Get safe column selection - only selects columns that exist
  */
 export function getSafeBookColumns(): string[] {
@@ -825,6 +925,9 @@ export function initializeMigrations(): void {
     columnExistenceCache.clear(); // Clear column existence cache on initialization
     ensureBooksTableColumns();
     ensureOtherTableColumns();
+    
+    // Ensure performance indexes exist (composite indexes for better query performance)
+    ensurePerformanceIndexes();
     
     migrationsInitialized = true;
     console.log("[Migrations] ✅ Migration check complete");
