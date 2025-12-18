@@ -394,7 +394,7 @@ export async function POST(request: NextRequest) {
         currency: string;
         paymentMethod: string;
         status: string;
-        bookId?: string;
+        bookId?: string | null;
       } = {
         id: purchaseId,
         userId: session.user.id,
@@ -407,14 +407,22 @@ export async function POST(request: NextRequest) {
       
       // Only include bookId if it's not a user-level purchase
       // (report products may be purchased user-level before book exists)
+      // For user-level purchases (book-upload, growth-partnership, or any report product without bookId),
+      // we explicitly set bookId to null to ensure they count as upload permissions
       if (
         featureType !== "book-upload" &&
         featureType !== "growth-partnership" &&
+        featureType !== "dna-report" &&
+        featureType !== "market-validation-report" &&
+        featureType !== "market-ready-pack" &&
         bookId
       ) {
         purchaseValues.bookId = bookId;
+      } else {
+        // Explicitly set bookId to null for user-level purchases
+        // This ensures they are counted in upload permission checks
+        purchaseValues.bookId = null;
       }
-      // For book-upload, we don't include bookId at all (it will be null/undefined)
       
       await db.insert(purchases).values(purchaseValues);
       console.log(`[Checkout] ✅ Inserted purchase ${purchaseId} into database`);

@@ -95,16 +95,20 @@ export async function POST(request: NextRequest) {
       // - status is "complete" (session completed)
       // - payment_status is "paid" (payment succeeded)
       // - status is NOT "expired" or "open" (not still in progress)
+      // For subscriptions, also check if subscription status is active
       const isPaymentComplete = 
         checkoutSession.status === "complete" || 
-        (checkoutSession.payment_status === "paid" && checkoutSession.status !== "expired" && checkoutSession.status !== "open");
+        (checkoutSession.payment_status === "paid" && checkoutSession.status !== "expired" && checkoutSession.status !== "open") ||
+        (checkoutSession.mode === "subscription" && checkoutSession.status === "complete");
       
-      console.log(`[Verify Session] Payment check: payment_status=${checkoutSession.payment_status}, status=${checkoutSession.status}, isPaymentComplete=${isPaymentComplete}`);
+      console.log(`[Verify Session] Payment check: payment_status=${checkoutSession.payment_status}, status=${checkoutSession.status}, mode=${checkoutSession.mode}, isPaymentComplete=${isPaymentComplete}`);
       console.log(`[Verify Session] Full session data:`, {
         id: checkoutSession.id,
         status: checkoutSession.status,
         payment_status: checkoutSession.payment_status,
+        mode: checkoutSession.mode,
         payment_intent: checkoutSession.payment_intent,
+        subscription: checkoutSession.subscription,
         client_reference_id: checkoutSession.client_reference_id,
       });
       

@@ -187,21 +187,42 @@ function DashboardContent() {
                 console.log(`[Dashboard] Verify response data:`, JSON.stringify(verifyData, null, 2));
                 if (verifyData.success) {
                   console.log(`[Dashboard] ✅ Purchase ${purchaseId} verified/updated`);
+                  
+                  // Small delay to ensure database update is visible (better-sqlite3 is synchronous but Next.js might cache)
+                  await new Promise(resolve => setTimeout(resolve, 100));
+                  
+                  // After verification, refresh permission and open upload modal if granted.
+                  const hasPermission = await checkUploadPermission();
+                  console.log(`[Dashboard] Permission check after payment: ${hasPermission}`);
+                  console.log(`[Dashboard] Upload permission check result:`, {
+                    hasPermission,
+                    purchaseId,
+                    featureType,
+                  });
+                  
+                  if (hasPermission) {
+                    console.log(`[Dashboard] ✅ Permission granted, opening upload modal`);
+                    setShowUploadModal(true);
+                    setShowPaymentModal(false);
+                    return true;
+                  } else {
+                    console.warn(`[Dashboard] ⚠️  Permission check returned false even after purchase verification`);
+                    // Retry permission check after a short delay (database might need a moment)
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    const retryPermission = await checkUploadPermission();
+                    console.log(`[Dashboard] Retry permission check: ${retryPermission}`);
+                    if (retryPermission) {
+                      setShowUploadModal(true);
+                      setShowPaymentModal(false);
+                      return true;
+                    }
+                  }
                 } else {
                   console.log(`[Dashboard] ⚠️  Purchase ${purchaseId} verify returned success=false:`, verifyData.message || verifyData.error);
                 }
               } else {
                 const errorData = await verifyResponse.json().catch(() => ({}));
                 console.error(`[Dashboard] Verify response not OK:`, verifyResponse.status, JSON.stringify(errorData, null, 2));
-              }
-
-              // After verification, refresh permission and open upload modal if granted.
-              const hasPermission = await checkUploadPermission();
-              console.log(`[Dashboard] Permission check after payment: ${hasPermission}`);
-              if (hasPermission) {
-                setShowUploadModal(true);
-                setShowPaymentModal(false);
-                return true;
               }
             } catch (error) {
               console.error("[Dashboard] Failed to verify/check purchase:", error);
