@@ -44,9 +44,12 @@ export async function GET(request: NextRequest) {
       p.bookId === ""
     );
     
-    console.log(`[Upload Permission] User ${session.user.id}: Found ${uploadPurchases.length} total upload purchase(s), ${userLevelPurchases.length} user-level purchase(s)`);
-    if (userLevelPurchases.length > 0) {
-      console.log(`[Upload Permission] Purchase details:`, userLevelPurchases.map(p => ({
+    // Only log if there are pending purchases (for debugging)
+    const pendingPurchases = userLevelPurchases.filter(p => p.status === "pending");
+    if (pendingPurchases.length > 0) {
+      console.log(`[Upload Permission] User ${session.user.id}: Found ${uploadPurchases.length} total upload purchase(s), ${userLevelPurchases.length} user-level purchase(s), ${pendingPurchases.length} pending`);
+      // Only log pending purchases (completed ones are working correctly)
+      console.log(`[Upload Permission] Pending purchase details:`, pendingPurchases.map(p => ({
         id: p.id,
         status: p.status,
         bookId: p.bookId,

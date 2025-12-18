@@ -10,6 +10,18 @@ import { sqlite } from "./index";
 let migrationsInitialized = false;
 let migrationsInitializing = false;
 
+// Cache for column checks to avoid running on every request
+let booksTableColumnsChecked = false;
+let booksTableColumnsCheckTime = 0;
+let otherTableColumnsChecked = false;
+let otherTableColumnsCheckTime = 0;
+const COLUMNS_CHECK_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Cache for column existence checks (PRAGMA queries are expensive)
+const columnExistenceCache = new Map<string, boolean>();
+let columnExistenceCacheTime = 0;
+const COLUMN_EXISTENCE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export interface ColumnInfo {
   name: string;
   type: string;
@@ -20,6 +32,7 @@ export interface ColumnInfo {
 
 /**
  * Check if a column exists in a table
+ * Cached to avoid expensive PRAGMA queries on every request
  */
 export function columnExists(tableName: string, columnName: string): boolean {
   if (!sqlite) {
@@ -27,17 +40,48 @@ export function columnExists(tableName: string, columnName: string): boolean {
     return false;
   }
 
+  // Check cache first
+  const cacheKey = `${tableName}.${columnName}`;
+  const now = Date.now();
+  
+  // If cache is expired, clear it
+  if ((now - columnExistenceCacheTime) > COLUMN_EXISTENCE_CACHE_TTL) {
+    columnExistenceCache.clear();
+    columnExistenceCacheTime = now;
+  }
+  
+  // Return cached value if available
+  if (columnExistenceCache.has(cacheKey)) {
+    return columnExistenceCache.get(cacheKey)!;
+  }
+
   try {
+    // Cache all columns for this table at once to avoid multiple PRAGMA calls
     const columns = sqlite
       .prepare(`PRAGMA table_info(${tableName})`)
       .all() as ColumnInfo[];
 
-    return columns.some((col) => col.name === columnName);
+    // Cache all columns from this table
+    const columnNames = new Set(columns.map((col) => col.name));
+    for (const col of columnNames) {
+      columnExistenceCache.set(`${tableName}.${col}`, true);
+    }
+    // Also cache non-existent columns to avoid re-checking
+    // (but only for columns we actually check)
+    const exists = columnNames.has(columnName);
+    if (!exists) {
+      columnExistenceCache.set(cacheKey, false);
+    }
+    
+    columnExistenceCacheTime = now;
+    return exists;
   } catch (error: any) {
     console.error(
       `[Migrations] Error checking column ${tableName}.${columnName}:`,
       error.message
     );
+    // Cache the error result to avoid retrying immediately
+    columnExistenceCache.set(cacheKey, false);
     return false;
   }
 }
@@ -80,6 +124,13 @@ export function addColumnIfMissing(
 export function ensureBooksTableColumns(): void {
   if (!sqlite) {
     console.warn("[Migrations] Database not available, skipping column checks");
+    return;
+  }
+
+  // Cache check: skip if checked recently (within TTL)
+  const now = Date.now();
+  if (booksTableColumnsChecked && (now - booksTableColumnsCheckTime) < COLUMNS_CHECK_CACHE_TTL) {
+    // Silently skip - no logging to reduce noise
     return;
   }
 
@@ -169,12 +220,23 @@ export function ensureBooksTableColumns(): void {
 
     if (changesMade) {
       console.log("✅ [Migrations] Books table columns updated");
+      // Reset cache if changes were made
+      booksTableColumnsChecked = false;
     } else {
-      console.log("✅ [Migrations] All required columns exist");
+      // Only log on first check or after cache expires
+      if (!booksTableColumnsChecked) {
+        console.log("✅ [Migrations] All required columns exist");
+      }
     }
+
+    // Update cache
+    booksTableColumnsChecked = true;
+    booksTableColumnsCheckTime = now;
   } catch (error: any) {
     console.error("[Migrations] Error ensuring books table columns:", error.message);
     // Don't throw - allow app to continue
+    // Reset cache on error so we retry next time
+    booksTableColumnsChecked = false;
   }
 }
 
@@ -188,8 +250,18 @@ export function ensureOtherTableColumns(): void {
     return;
   }
 
+  // Cache check: skip if checked recently (within TTL)
+  const now = Date.now();
+  if (otherTableColumnsChecked && (now - otherTableColumnsCheckTime) < COLUMNS_CHECK_CACHE_TTL) {
+    // Silently skip - no logging to reduce noise
+    return;
+  }
+
   try {
-    console.log("[Migrations] Checking other table columns...");
+    // Only log on first check or after cache expires
+    if (!otherTableColumnsChecked) {
+      console.log("[Migrations] Checking other table columns...");
+    }
 
     // Reports table - viewedAt
     const reportsTableCheck = sqlite
@@ -249,10 +321,19 @@ export function ensureOtherTableColumns(): void {
       }
     }
 
-    console.log("✅ [Migrations] Other table columns check complete");
+    // Only log on first check or after cache expires
+    if (!otherTableColumnsChecked) {
+      console.log("✅ [Migrations] Other table columns check complete");
+    }
+
+    // Update cache
+    otherTableColumnsChecked = true;
+    otherTableColumnsCheckTime = now;
   } catch (error: any) {
     console.error("[Migrations] Error ensuring other table columns:", error.message);
     // Don't throw - allow app to continue
+    // Reset cache on error so we retry next time
+    otherTableColumnsChecked = false;
   }
 }
 
@@ -738,6 +819,10 @@ export function initializeMigrations(): void {
     
     // Then ensure columns exist (adds missing columns to existing tables)
     // This is lightweight and safe to run multiple times
+    // Reset cache to ensure checks run at least once during initialization
+    booksTableColumnsChecked = false;
+    otherTableColumnsChecked = false;
+    columnExistenceCache.clear(); // Clear column existence cache on initialization
     ensureBooksTableColumns();
     ensureOtherTableColumns();
     

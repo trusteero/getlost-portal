@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   try {
     // Get all pending purchases older than 30 minutes.
     // We intentionally do NOT auto-complete anything here; we mark as failed to avoid granting entitlements incorrectly.
-    const cutoffSeconds = Math.floor(Date.now() / 1000) - 30 * 60; // Unix timestamp in seconds
+    const cutoffTime = Date.now() - 30 * 60 * 1000; // 30 minutes ago in milliseconds
 
     const PENDING_CLEANUP_FEATURE_TYPES = [
       "book-upload",
@@ -49,13 +49,20 @@ export async function POST(request: NextRequest) {
     console.log(`[Fix Pending] Found ${pendingPurchases.length} pending purchase(s) in scope`);
 
     const purchasesToMarkFailed = pendingPurchases.filter((p) => {
-      const createdAtSeconds =
-        typeof p.createdAt === "number"
-          ? p.createdAt
-          : p.createdAt
-            ? new Date(p.createdAt).getTime() / 1000
-            : 0;
-      return createdAtSeconds > 0 && createdAtSeconds < cutoffSeconds;
+      // Handle both Date objects and unix timestamps
+      let createdAtTime: number;
+      if (p.createdAt instanceof Date) {
+        createdAtTime = p.createdAt.getTime();
+      } else if (typeof p.createdAt === "number") {
+        // If it's a unix timestamp in seconds, convert to milliseconds
+        createdAtTime = p.createdAt < 10000000000 ? p.createdAt * 1000 : p.createdAt;
+      } else if (p.createdAt) {
+        createdAtTime = new Date(p.createdAt).getTime();
+      } else {
+        return false; // No createdAt, skip
+      }
+      
+      return createdAtTime < cutoffTime;
     });
 
     console.log(`[Fix Pending] Found ${purchasesToMarkFailed.length} pending purchase(s) to mark failed (older than 30 minutes)`);
