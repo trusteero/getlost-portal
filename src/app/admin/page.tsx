@@ -232,7 +232,16 @@ function AdminDashboardContent() {
 
       if (booksRes.ok) {
         const booksData = await booksRes.json();
-        setBooks(booksData);
+        // Handle paginated response format
+        if (booksData.books && Array.isArray(booksData.books)) {
+          setBooks(booksData.books);
+        } else if (Array.isArray(booksData)) {
+          // Backward compatibility: if it's still an array, use it directly
+          setBooks(booksData);
+        } else {
+          console.error("Unexpected books data format:", booksData);
+          setBooks([]);
+        }
       }
 
       if (usersRes.ok) {

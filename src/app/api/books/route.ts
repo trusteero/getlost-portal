@@ -52,6 +52,9 @@ export async function GET(request: NextRequest) {
       ...(columnExists("getlostportal_book", "manuscriptStatus") ? { manuscriptStatus: books.manuscriptStatus } : {}),
     } as const;
 
+    // Memory safety: Limit number of books loaded at once
+    const MAX_BOOKS = 100; // Maximum books to prevent memory exhaustion
+    
     const userBooks = await db
       .select(selectFields)
       .from(books)
@@ -61,14 +64,19 @@ export async function GET(request: NextRequest) {
           ne(books.title, "SYSTEM_SEEDED_REPORTS") // Exclude system book
         )
       )
-      .orderBy(desc(books.createdAt));
+      .orderBy(desc(books.createdAt))
+      .limit(MAX_BOOKS + 1); // Fetch one extra to check if there are more
 
-    if (userBooks.length === 0) {
+    // Check if there are more books than the limit
+    const hasMore = userBooks.length > MAX_BOOKS;
+    const booksToReturn = hasMore ? userBooks.slice(0, MAX_BOOKS) : userBooks;
+
+    if (booksToReturn.length === 0) {
       return NextResponse.json([]);
     }
 
     // Batch fetch all related data to avoid N+1 queries
-    const bookIds: string[] = userBooks.map(book => book.id as string);
+    const bookIds: string[] = booksToReturn.map(book => book.id as string);
 
     // Batch fetch: versions, features, assets, purchases, reports
     const [
@@ -206,7 +214,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Process each book using pre-fetched data (no database queries in loop)
-    const booksWithDetails = userBooks.map((book): BookWithDetails => {
+    const booksWithDetails = booksToReturn.map((book): BookWithDetails => {
       // Get latest version for this book
       const latestVersion = latestVersionsByBookId.get(book.id);
       

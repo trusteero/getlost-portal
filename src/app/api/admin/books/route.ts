@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAdminFromRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { books, bookVersions, users, digestJobs, reports, bookFeatures, marketingAssets, bookCovers, landingPages } from "@/server/db/schema";
-import { desc, eq, and } from "drizzle-orm";
+import { desc, eq, and, sql } from "drizzle-orm";
 import { ensureBooksTableColumns, columnExists } from "@/server/db/migrations";
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +15,12 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Memory safety: Add pagination support
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get("page") || "1", 10);
+    const limit = Math.min(parseInt(url.searchParams.get("limit") || "100", 10), 200); // Max 200 per page
+    const offset = (page - 1) * limit;
+
     // Ensure required columns exist before querying
     ensureBooksTableColumns();
 
@@ -38,12 +44,14 @@ export async function GET(request: NextRequest) {
       selectFields.manuscriptStatus = books.manuscriptStatus;
     }
 
-    // Get all books with user info and digest status
+    // Get books with user info and digest status (with pagination)
     const allBooks = await db
       .select(selectFields)
       .from(books)
       .leftJoin(users, eq(books.userId, users.id))
-      .orderBy(desc(books.createdAt));
+      .orderBy(desc(books.createdAt))
+      .limit(limit)
+      .offset(offset);
 
     // Get digest status for each book
     const booksWithDigest = await Promise.all(
@@ -335,7 +343,21 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return NextResponse.json(booksWithDigest);
+    // Get total count for pagination info
+    const totalCountResult = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(books);
+    const totalCount = totalCountResult[0]?.count || 0;
+
+    return NextResponse.json({
+      books: booksWithDigest,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error) {
     console.error("Failed to fetch admin books:", error);
     return NextResponse.json(
