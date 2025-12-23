@@ -28,63 +28,100 @@ export async function POST(request: NextRequest) {
 
     const query = rawQuery.trim();
 
-    // Security: Only allow SELECT statements (read-only)
+    // Security: Block dangerous operations that could damage the database
     const upperQuery = query.toUpperCase().trim();
-    if (!upperQuery.startsWith("SELECT")) {
-      return NextResponse.json(
-        { error: "Only SELECT queries are allowed for safety" },
-        { status: 400 }
-      );
-    }
-
-    // Additional safety: Block dangerous keywords
+    
+    // Block dangerous keywords that could damage the database structure
     const dangerousKeywords = [
       "DROP",
-      "DELETE",
-      "UPDATE",
-      "INSERT",
       "ALTER",
       "CREATE",
       "TRUNCATE",
       "EXEC",
       "EXECUTE",
+      "ATTACH",
+      "DETACH",
+      "VACUUM",
     ];
 
     for (const keyword of dangerousKeywords) {
       if (upperQuery.includes(keyword)) {
         return NextResponse.json(
-          { error: `Query contains forbidden keyword: ${keyword}` },
+          { error: `Query contains forbidden keyword: ${keyword}. This operation could damage the database.` },
           { status: 400 }
         );
       }
     }
 
-    // Memory safety: Enforce maximum result size
-    const MAX_ROWS = 10000; // Maximum rows to prevent memory exhaustion
+    // Allow: SELECT, UPDATE, INSERT, DELETE (with WHERE clause for safety)
+    const allowedOperations = ["SELECT", "UPDATE", "INSERT", "DELETE"];
+    const queryType = upperQuery.split(/\s+/)[0];
     
-    // Check if query already has LIMIT clause
-    const hasLimit = /LIMIT\s+\d+/i.test(query);
-    
-    let finalQuery = query;
-    if (!hasLimit) {
-      // Add LIMIT if not present
-      finalQuery = `${query} LIMIT ${MAX_ROWS}`;
-    } else {
-      // Extract existing LIMIT value and enforce max
-      const limitMatch = query.match(/LIMIT\s+(\d+)/i);
-      if (limitMatch) {
-        const limitValue = parseInt(limitMatch[1]!, 10);
-        if (limitValue > MAX_ROWS) {
-          finalQuery = query.replace(/LIMIT\s+\d+/i, `LIMIT ${MAX_ROWS}`);
-        }
-      }
+    if (!allowedOperations.includes(queryType)) {
+      return NextResponse.json(
+        { error: `Query type "${queryType}" is not allowed. Only SELECT, UPDATE, INSERT, and DELETE are permitted.` },
+        { status: 400 }
+      );
+    }
+
+    // Safety: Require WHERE clause for UPDATE and DELETE to prevent accidental mass updates
+    if ((queryType === "UPDATE" || queryType === "DELETE") && !upperQuery.includes("WHERE")) {
+      return NextResponse.json(
+        { error: `${queryType} queries must include a WHERE clause for safety.` },
+        { status: 400 }
+      );
     }
 
     // Execute query with error handling
-    let rows: Record<string, unknown>[];
+    const isSelectQuery = queryType === "SELECT";
+    let rows: Record<string, unknown>[] = [];
+    let changes = 0;
+    let lastInsertRowid: number | bigint | null = null;
+
     try {
-      const stmt = sqlite.prepare(finalQuery);
-      rows = stmt.all() as Record<string, unknown>[];
+      if (isSelectQuery) {
+        // Memory safety: Enforce maximum result size for SELECT queries
+        const MAX_ROWS = 10000;
+        
+        // Check if query already has LIMIT clause
+        const hasLimit = /LIMIT\s+\d+/i.test(query);
+        
+        let finalQuery = query;
+        if (!hasLimit) {
+          // Add LIMIT if not present
+          finalQuery = `${query} LIMIT ${MAX_ROWS}`;
+        } else {
+          // Extract existing LIMIT value and enforce max
+          const limitMatch = query.match(/LIMIT\s+(\d+)/i);
+          if (limitMatch) {
+            const limitValue = parseInt(limitMatch[1]!, 10);
+            if (limitValue > MAX_ROWS) {
+              finalQuery = query.replace(/LIMIT\s+\d+/i, `LIMIT ${MAX_ROWS}`);
+            }
+          }
+        }
+
+        const stmt = sqlite.prepare(finalQuery);
+        rows = stmt.all() as Record<string, unknown>[];
+
+        // Additional safety: Check result size
+        if (rows.length > MAX_ROWS) {
+          return NextResponse.json(
+            {
+              error: `Query result exceeds maximum allowed size (${MAX_ROWS} rows). Please add a LIMIT clause.`,
+              columns: [],
+              rows: [],
+            },
+            { status: 400 }
+          );
+        }
+      } else {
+        // For UPDATE, INSERT, DELETE: use run() to get changes count
+        const stmt = sqlite.prepare(query);
+        const result = stmt.run() as { changes: number; lastInsertRowid: number | bigint | null };
+        changes = result.changes;
+        lastInsertRowid = result.lastInsertRowid;
+      }
     } catch (sqlError) {
       console.error("[Admin Database] SQL execution error:", sqlError);
       return NextResponse.json(
@@ -97,26 +134,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Additional safety: Check result size
-    if (rows.length > MAX_ROWS) {
-      return NextResponse.json(
-        {
-          error: `Query result exceeds maximum allowed size (${MAX_ROWS} rows). Please add a LIMIT clause.`,
-          columns: [],
-          rows: [],
-        },
-        { status: 400 }
-      );
+    // Return appropriate response based on query type
+    if (isSelectQuery) {
+      // Convert result to array format for SELECT
+      const columns = rows.length > 0 && rows[0] ? Object.keys(rows[0]) : [];
+      const hasLimit = /LIMIT\s+\d+/i.test(query);
+      const MAX_ROWS = 10000;
+
+      return NextResponse.json({
+        columns,
+        rows: rows.map((row) => columns.map((col) => (row && typeof row === 'object' && col in row ? row[col] : null))),
+        truncated: rows.length === MAX_ROWS && !hasLimit,
+        queryType: "SELECT",
+      });
+    } else {
+      // Return changes count for write operations
+      return NextResponse.json({
+        columns: [],
+        rows: [],
+        queryType,
+        changes,
+        lastInsertRowid: lastInsertRowid !== null ? Number(lastInsertRowid) : null,
+        message: queryType === "UPDATE" 
+          ? `Updated ${changes} row(s)`
+          : queryType === "INSERT"
+          ? `Inserted 1 row (ID: ${lastInsertRowid})`
+          : `Deleted ${changes} row(s)`,
+      });
     }
-
-    // Convert result to array format
-    const columns = rows.length > 0 && rows[0] ? Object.keys(rows[0]) : [];
-
-    return NextResponse.json({
-      columns,
-      rows: rows.map((row) => columns.map((col) => (row && typeof row === 'object' && col in row ? row[col] : null))),
-      truncated: rows.length === MAX_ROWS && !hasLimit,
-    });
   } catch (error) {
     console.error("[Admin Database] Query execution failed:", error);
     console.error("[Admin Database] Error details:", {

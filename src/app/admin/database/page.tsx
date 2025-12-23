@@ -22,6 +22,11 @@ interface QueryResult {
   columns: string[];
   rows: (string | number | null | boolean)[][];
   error?: string;
+  queryType?: string;
+  changes?: number;
+  lastInsertRowid?: number | null;
+  message?: string;
+  truncated?: boolean;
 }
 
 function DatabaseViewerContent() {
@@ -138,7 +143,7 @@ function DatabaseViewerContent() {
           Database Viewer
         </h1>
         <p className="text-sm text-gray-600 mt-1">
-          View and query your database tables. Read-only access for safety.
+          View and query your database tables. Admin access allows SELECT, UPDATE, INSERT, and DELETE operations.
         </p>
       </div>
 
@@ -249,35 +254,64 @@ function DatabaseViewerContent() {
                   <div className="p-4 bg-red-50 border border-red-200 rounded text-red-800">
                     {queryResult.error}
                   </div>
+                ) : queryResult.queryType && queryResult.queryType !== "SELECT" ? (
+                  // Display results for write operations (UPDATE, INSERT, DELETE)
+                  <div className="p-4 bg-green-50 border border-green-200 rounded">
+                    <div className="flex items-center gap-2 text-green-800">
+                      <span className="font-semibold">✓ Success:</span>
+                      <span>{queryResult.message || `Operation completed`}</span>
+                    </div>
+                    {queryResult.changes !== undefined && (
+                      <div className="mt-2 text-sm text-green-700">
+                        Rows affected: {queryResult.changes}
+                      </div>
+                    )}
+                    {queryResult.lastInsertRowid !== null && queryResult.lastInsertRowid !== undefined && (
+                      <div className="mt-2 text-sm text-green-700">
+                        Last insert ID: {queryResult.lastInsertRowid}
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm border-collapse">
-                      <thead>
-                        <tr className="border-b">
-                          {queryResult.columns.map((col) => (
-                            <th
-                              key={col}
-                              className="text-left py-2 px-3 font-medium text-gray-700"
-                            >
-                              {col}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {queryResult.rows.slice(0, 100).map((row, idx) => (
-                          <tr key={idx} className="border-b hover:bg-gray-50">
-                            {row.map((cell: string | number | null | boolean, cellIdx: number) => (
-                              <td key={cellIdx} className="py-2 px-3 text-gray-600">
-                                {cell !== null && cell !== undefined
-                                  ? String(cell).substring(0, 100)
-                                  : "NULL"}
-                              </td>
+                    {queryResult.columns.length > 0 ? (
+                      <table className="w-full text-sm border-collapse">
+                        <thead>
+                          <tr className="border-b">
+                            {queryResult.columns.map((col) => (
+                              <th
+                                key={col}
+                                className="text-left py-2 px-3 font-medium text-gray-700"
+                              >
+                                {col}
+                              </th>
                             ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {queryResult.rows.slice(0, 100).map((row, idx) => (
+                            <tr key={idx} className="border-b hover:bg-gray-50">
+                              {row.map((cell: string | number | null | boolean, cellIdx: number) => (
+                                <td key={cellIdx} className="py-2 px-3 text-gray-600">
+                                  {cell !== null && cell !== undefined
+                                    ? String(cell).substring(0, 100)
+                                    : "NULL"}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        No results returned
+                      </div>
+                    )}
+                    {queryResult.truncated && (
+                      <div className="mt-2 text-xs text-yellow-600">
+                        ⚠️ Results truncated to 10,000 rows. Add a LIMIT clause to see specific results.
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -305,7 +339,7 @@ function DatabaseViewerContent() {
             <textarea
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="SELECT * FROM getlostportal_book LIMIT 10;"
+              placeholder="SELECT * FROM getlostportal_book LIMIT 10;&#10;-- Or: UPDATE getlostportal_purchase SET status = 'completed' WHERE id = '...';"
               className="w-full h-32 px-3 py-2 border rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <div className="flex items-center gap-2">
@@ -335,7 +369,7 @@ function DatabaseViewerContent() {
               </Button>
             </div>
             <p className="text-xs text-gray-500">
-              ⚠️ Read-only queries only. SELECT statements are safe to run.
+              ⚠️ Admin access required. SELECT, UPDATE, INSERT, and DELETE queries are allowed. UPDATE and DELETE require WHERE clauses.
             </p>
           </div>
         </CardContent>
