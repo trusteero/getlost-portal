@@ -55,11 +55,12 @@ export async function POST(request: NextRequest) {
 
     // Allow: SELECT, UPDATE, INSERT, DELETE (with WHERE clause for safety)
     const allowedOperations = ["SELECT", "UPDATE", "INSERT", "DELETE"];
-    const queryType = upperQuery.split(/\s+/)[0];
+    const queryParts = upperQuery.split(/\s+/);
+    const queryType = queryParts[0];
     
-    if (!allowedOperations.includes(queryType)) {
+    if (!queryType || !allowedOperations.includes(queryType)) {
       return NextResponse.json(
-        { error: `Query type "${queryType}" is not allowed. Only SELECT, UPDATE, INSERT, and DELETE are permitted.` },
+        { error: `Query type "${queryType || 'unknown'}" is not allowed. Only SELECT, UPDATE, INSERT, and DELETE are permitted.` },
         { status: 400 }
       );
     }
