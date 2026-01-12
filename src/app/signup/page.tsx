@@ -367,37 +367,3 @@ export default function SignupPage() {
 		</Suspense>
 	);
 }
-
-function SignupContent() {
-	const router = useRouter();
-	const searchParams = useSearchParams();
-	const [formData, setFormData] = useState({
-		name: "",
-		email: "",
-		password: "",
-		confirmPassword: ""
-	});
-	const [isLoading, setIsLoading] = useState(false);
-	const [signupSuccess, setSignupSuccess] = useState(false);
-	const [error, setError] = useState("");
-	const [purchaseContext, setPurchaseContext] = useState<{ purchaseId?: string; email?: string } | null>(null);
-
-	// Check for purchase context from URL params
-	useEffect(() => {
-		const purchaseId = searchParams.get("purchase_id");
-		const email = searchParams.get("email");
-		if (purchaseId || email) {
-			setPurchaseContext({ purchaseId: purchaseId || undefined, email: email || undefined });
-			// Pre-fill email if provided
-			if (email) {
-				setFormData(prev => ({ ...prev, email: decodeURIComponent(email) }));
-			}
-		}
-	}, [searchParams]);
-
-	return (
-		<Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
-			<SignupContent />
-		</Suspense>
-	);
-}
