@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { sendVerificationEmail } from "@/server/services/email";
 import { createExampleBooksForUser } from "@/server/utils/create-example-books";
 import { initializeMigrations } from "@/server/db/migrations";
+import { linkGuestPurchasesToUser } from "@/server/utils/link-guest-purchases";
 import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 
 export async function POST(request: Request) {
@@ -230,6 +231,20 @@ export async function POST(request: Request) {
 				})
 				.where(eq(users.id, createdUser.id));
 			console.log("✅ [Signup] Auto-verified email for test user");
+		}
+
+		// Link any guest purchases to this user account
+		try {
+			const linkedPurchaseIds = await linkGuestPurchasesToUser(
+				createdUser.id,
+				email.toLowerCase().trim()
+			);
+			if (linkedPurchaseIds.length > 0) {
+				console.log(`✅ [Signup] Linked ${linkedPurchaseIds.length} guest purchase(s) to user ${createdUser.id}`);
+			}
+		} catch (linkError) {
+			console.error("❌ [Signup] Failed to link guest purchases:", linkError);
+			// Don't fail signup if linking fails - purchases can be linked later
 		}
 
 		// Create example books for the user

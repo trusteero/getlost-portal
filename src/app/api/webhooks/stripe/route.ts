@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
-import { purchases, bookFeatures, users, books } from "@/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { purchases, guestPurchases, bookFeatures, users, books } from "@/server/db/schema";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import type Stripe from "stripe";
 import { rateLimitMiddleware, RATE_LIMITS } from "@/server/utils/rate-limit";
 
@@ -82,7 +82,58 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        // Idempotency check: Get purchase details first to check if already processed
+        // Check if this is a guest purchase
+        const isGuestPurchase = session.metadata?.isGuestPurchase === "true";
+
+        if (isGuestPurchase) {
+          // Handle guest purchase
+          const [existingGuestPurchase] = await db
+            .select()
+            .from(guestPurchases)
+            .where(eq(guestPurchases.id, purchaseId))
+            .limit(1);
+
+          if (!existingGuestPurchase) {
+            console.error(`[Webhook] ❌ Guest purchase ${purchaseId} not found in database`);
+            return NextResponse.json({ 
+              received: true, 
+              error: `Guest purchase ${purchaseId} not found`,
+              warning: true
+            });
+          }
+
+          // Idempotency: Skip if already completed
+          if (existingGuestPurchase.status === "completed") {
+            console.log(`[Webhook] ✅ Guest purchase ${purchaseId} already completed, skipping duplicate event ${event.id}`);
+            return NextResponse.json({ 
+              received: true, 
+              message: "Already processed",
+              purchaseId 
+            });
+          }
+
+          // Update guest purchase status
+          await db
+            .update(guestPurchases)
+            .set({
+              status: "completed",
+              paymentIntentId: (session.payment_intent as string) || session.id,
+              completedAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(guestPurchases.id, purchaseId));
+
+          console.log(`[Webhook] ✅ Updated guest purchase ${purchaseId} to completed status`);
+          console.log(`[Webhook] Guest purchase will be linked to user account when they sign up with email: ${existingGuestPurchase.guestEmail}`);
+
+          return NextResponse.json({ 
+            received: true, 
+            message: "Guest purchase completed",
+            purchaseId 
+          });
+        }
+
+        // Handle regular (authenticated) purchase
         const [existingPurchase] = await db
           .select()
           .from(purchases)

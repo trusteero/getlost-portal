@@ -1,0 +1,10 @@
+{
+  "title": "Example Book Title",
+  "author": "Author Name",
+  "subtitle": "A compelling subtitle that describes the book",
+  "description": "This is a detailed description of the book. It should provide readers with a good understanding of what the book is about, its themes, and why they might want to read it.",
+  "cover_image": "path/to/cover.jpg"
+}
+
+
+

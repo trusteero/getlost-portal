@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signUp, signIn } from "@/lib/auth-client";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ArrowLeft, Mail, Lock, User, Loader2, CheckCircle, BookOpen } from "lucide-react";
 
-export default function SignupPage() {
+function SignupContent() {
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const [formData, setFormData] = useState({
 		name: "",
 		email: "",
@@ -21,6 +22,20 @@ export default function SignupPage() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [signupSuccess, setSignupSuccess] = useState(false);
 	const [error, setError] = useState("");
+	const [purchaseContext, setPurchaseContext] = useState<{ purchaseId?: string; email?: string } | null>(null);
+
+	// Check for purchase context from URL params
+	useEffect(() => {
+		const purchaseId = searchParams.get("purchase_id");
+		const email = searchParams.get("email");
+		if (purchaseId || email) {
+			setPurchaseContext({ purchaseId: purchaseId || undefined, email: email || undefined });
+			// Pre-fill email if provided
+			if (email) {
+				setFormData(prev => ({ ...prev, email: decodeURIComponent(email) }));
+			}
+		}
+	}, [searchParams]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -71,7 +86,14 @@ export default function SignupPage() {
 
 			// Show success message - don't try to sign in automatically since email verification is required
 			setSignupSuccess(true);
-			// Don't redirect - let user stay on the page to see the verification message
+			
+			// If there was a purchase context, purchases will be automatically linked on the server
+			// Redirect to dashboard after a short delay if purchase was completed
+			if (purchaseContext?.purchaseId) {
+				setTimeout(() => {
+					router.push("/dashboard?purchase_linked=true");
+				}, 2000);
+			}
 		} catch (error: any) {
 			console.error("Signup failed (catch block):", error);
 			console.error("Error type:", typeof error);
@@ -182,9 +204,18 @@ export default function SignupPage() {
 				<Card className="border-orange-200 shadow-lg">
 					<CardHeader className="space-y-3">
 						<CardTitle>Sign Up for Get Lost</CardTitle>
-						<CardDescription>
-							Create your account using email or Google
-						</CardDescription>
+					<CardDescription>
+						{purchaseContext?.purchaseId 
+							? "Complete your account to access your purchase"
+							: "Create your account using email or Google"
+						}
+					</CardDescription>
+					{purchaseContext?.purchaseId && (
+						<div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+							<CheckCircle className="inline w-4 h-4 mr-1" />
+							Your purchase will be automatically linked to this account
+						</div>
+					)}
 					</CardHeader>
 					<CardContent>
 						<div className="space-y-4">
@@ -326,5 +357,47 @@ export default function SignupPage() {
 				</Card>
 			</div>
 		</div>
+	);
+}
+
+export default function SignupPage() {
+	return (
+		<Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+			<SignupContent />
+		</Suspense>
+	);
+}
+
+function SignupContent() {
+	const router = useRouter();
+	const searchParams = useSearchParams();
+	const [formData, setFormData] = useState({
+		name: "",
+		email: "",
+		password: "",
+		confirmPassword: ""
+	});
+	const [isLoading, setIsLoading] = useState(false);
+	const [signupSuccess, setSignupSuccess] = useState(false);
+	const [error, setError] = useState("");
+	const [purchaseContext, setPurchaseContext] = useState<{ purchaseId?: string; email?: string } | null>(null);
+
+	// Check for purchase context from URL params
+	useEffect(() => {
+		const purchaseId = searchParams.get("purchase_id");
+		const email = searchParams.get("email");
+		if (purchaseId || email) {
+			setPurchaseContext({ purchaseId: purchaseId || undefined, email: email || undefined });
+			// Pre-fill email if provided
+			if (email) {
+				setFormData(prev => ({ ...prev, email: decodeURIComponent(email) }));
+			}
+		}
+	}, [searchParams]);
+
+	return (
+		<Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+			<SignupContent />
+		</Suspense>
 	);
 }

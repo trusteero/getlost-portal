@@ -378,6 +378,31 @@ export const purchases = createTable(
 	],
 );
 
+// Guest Purchases table - tracks purchases made before user signup
+// Separate table to avoid modifying existing purchases table (non-intrusive approach)
+export const guestPurchases = createTable(
+	"guest_purchase",
+	(d) => ({
+		id: d.text({ length: 255 }).notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+		guestEmail: d.text({ length: 255 }).notNull(), // Email used for purchase (before signup)
+		bookId: d.text({ length: 255 }).references(() => books.id), // Nullable for user-level purchases
+		featureType: d.text({ length: 50 }).notNull(), // Currently only "book-upload" for guest purchases
+		amount: d.integer({ mode: "number" }).notNull(), // Amount in cents
+		currency: d.text({ length: 10 }).notNull().default("USD"),
+		paymentMethod: d.text({ length: 50 }), // stripe, paypal, etc.
+		paymentIntentId: d.text({ length: 255 }), // Payment processor ID
+		status: d.text({ length: 50 }).notNull().default("pending"), // pending, completed, failed, refunded
+		completedAt: d.integer({ mode: "timestamp" }),
+		createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+		updatedAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+	}),
+	(t) => [
+		index("guest_purchase_email_idx").on(t.guestEmail),
+		index("guest_purchase_status_idx").on(t.status),
+		index("guest_purchase_feature_idx").on(t.featureType),
+	],
+);
+
 // Relations - Updated to include all new tables
 export const booksRelations = relations(books, ({ one, many }) => ({
 	user: one(users, { fields: [books.userId], references: [users.id] }),
