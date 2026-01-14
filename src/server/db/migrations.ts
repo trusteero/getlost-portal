@@ -841,18 +841,19 @@ function ensureEssentialTables(): void {
     // Don't throw - allow app to continue
   }
 
-  // Ensure guest_purchase table exists (for guest purchases feature)
+  // Ensure getlostportal_guest_purchase table exists (for guest purchases feature)
+  // NOTE: Drizzle adds getlostportal_ prefix, so the actual table name is getlostportal_guest_purchase
   try {
     const guestPurchaseCheck = sqlite
       .prepare(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='guest_purchase'"
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='getlostportal_guest_purchase'"
       )
       .get();
 
     if (!guestPurchaseCheck) {
-      console.log("[Migrations] Creating guest_purchase table...");
+      console.log("[Migrations] Creating getlostportal_guest_purchase table...");
       sqlite.exec(`
-        CREATE TABLE IF NOT EXISTS guest_purchase (
+        CREATE TABLE IF NOT EXISTS getlostportal_guest_purchase (
           id text(255) PRIMARY KEY NOT NULL,
           guestEmail text(255) NOT NULL,
           bookId text(255),
@@ -868,13 +869,13 @@ function ensureEssentialTables(): void {
           FOREIGN KEY (bookId) REFERENCES getlostportal_book(id) ON UPDATE no action ON DELETE no action
         )
       `);
-      sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_email_idx ON guest_purchase(guestEmail)`);
-      sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_status_idx ON guest_purchase(status)`);
-      sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_feature_idx ON guest_purchase(featureType)`);
-      console.log("[Migrations] ✅ Created guest_purchase table");
+      sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_email_idx ON getlostportal_guest_purchase(guestEmail)`);
+      sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_status_idx ON getlostportal_guest_purchase(status)`);
+      sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_feature_idx ON getlostportal_guest_purchase(featureType)`);
+      console.log("[Migrations] ✅ Created getlostportal_guest_purchase table");
     }
   } catch (guestPurchaseError) {
-    console.error("[Migrations] Failed to create guest_purchase table:", guestPurchaseError);
+    console.error("[Migrations] Failed to create getlostportal_guest_purchase table:", guestPurchaseError);
     // Don't throw - allow app to continue
   }
 }

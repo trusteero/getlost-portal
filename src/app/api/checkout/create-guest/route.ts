@@ -54,51 +54,94 @@ export async function POST(request: NextRequest) {
     }
 
     // Double-check table exists before proceeding
-    if (sqlite) {
+    if (!sqlite) {
+      console.error("[Guest Checkout] ❌ SQLite connection not available");
+      return NextResponse.json(
+        { 
+          error: "Database connection error",
+          details: "SQLite connection is not available",
+          hint: "Please check database configuration"
+        },
+        { status: 500 }
+      );
+    }
+
+    // Check if table exists, create if not
+    // NOTE: Drizzle adds getlostportal_ prefix, so the actual table name is getlostportal_guest_purchase
+    const actualTableName = "getlostportal_guest_purchase";
+    let tableExists = false;
+    try {
       const tableCheck = sqlite
-        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='guest_purchase'")
+        .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='${actualTableName}'`)
         .get();
-      
-      if (!tableCheck) {
-        console.log("[Guest Checkout] ⚠️ Table doesn't exist, creating it now...");
-        // Create table immediately as fallback
-        try {
-          sqlite.exec(`
-            CREATE TABLE IF NOT EXISTS guest_purchase (
-              id text(255) PRIMARY KEY NOT NULL,
-              guestEmail text(255) NOT NULL,
-              bookId text(255),
-              featureType text(50) NOT NULL,
-              amount integer NOT NULL,
-              currency text(10) NOT NULL DEFAULT 'USD',
-              paymentMethod text(50),
-              paymentIntentId text(255),
-              status text(50) NOT NULL DEFAULT 'pending',
-              completedAt integer,
-              createdAt integer NOT NULL DEFAULT (unixepoch()),
-              updatedAt integer NOT NULL DEFAULT (unixepoch()),
-              FOREIGN KEY (bookId) REFERENCES getlostportal_book(id) ON UPDATE no action ON DELETE no action
-            )
-          `);
-          sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_email_idx ON guest_purchase(guestEmail)`);
-          sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_status_idx ON guest_purchase(status)`);
-          sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_feature_idx ON guest_purchase(featureType)`);
-          console.log("[Guest Checkout] ✅ Created guest_purchase table");
-        } catch (createError: any) {
-          console.error("[Guest Checkout] ❌ Failed to create table:", createError);
-          return NextResponse.json(
-            { 
-              error: "Database setup error",
-              details: "Failed to create guest_purchase table",
-              hint: "Please ensure migrations have run or contact support",
-              errorMessage: createError?.message
-            },
-            { status: 500 }
-          );
+      tableExists = !!tableCheck;
+      console.log(`[Guest Checkout] Table check for ${actualTableName}: ${tableExists ? 'exists' : 'not found'}`);
+    } catch (checkError: any) {
+      console.error("[Guest Checkout] Error checking table:", checkError);
+      return NextResponse.json(
+        { 
+          error: "Database query error",
+          details: "Failed to check if table exists",
+          errorMessage: checkError?.message
+        },
+        { status: 500 }
+      );
+    }
+    
+    if (!tableExists) {
+      console.log(`[Guest Checkout] ⚠️ Table ${actualTableName} doesn't exist, creating it now...`);
+      // Create table immediately as fallback
+      try {
+        sqlite.exec(`
+          CREATE TABLE IF NOT EXISTS ${actualTableName} (
+            id text(255) PRIMARY KEY NOT NULL,
+            guestEmail text(255) NOT NULL,
+            bookId text(255),
+            featureType text(50) NOT NULL,
+            amount integer NOT NULL,
+            currency text(10) NOT NULL DEFAULT 'USD',
+            paymentMethod text(50),
+            paymentIntentId text(255),
+            status text(50) NOT NULL DEFAULT 'pending',
+            completedAt integer,
+            createdAt integer NOT NULL DEFAULT (unixepoch()),
+            updatedAt integer NOT NULL DEFAULT (unixepoch()),
+            FOREIGN KEY (bookId) REFERENCES getlostportal_book(id) ON UPDATE no action ON DELETE no action
+          )
+        `);
+        sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_email_idx ON ${actualTableName}(guestEmail)`);
+        sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_status_idx ON ${actualTableName}(status)`);
+        sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_feature_idx ON ${actualTableName}(featureType)`);
+        console.log(`[Guest Checkout] ✅ Created ${actualTableName} table`);
+        
+        // Verify it was created
+        const verifyCheck = sqlite
+          .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='${actualTableName}'`)
+          .get();
+        if (!verifyCheck) {
+          throw new Error("Table creation appeared to succeed but table still not found");
         }
-      } else {
-        console.log("[Guest Checkout] ✅ guest_purchase table exists");
+        console.log(`[Guest Checkout] ✅ Verified ${actualTableName} exists after creation`);
+      } catch (createError: any) {
+        console.error("[Guest Checkout] ❌ Failed to create table:", createError);
+        console.error("[Guest Checkout] Create error details:", {
+          message: createError?.message,
+          stack: createError?.stack,
+          code: createError?.code
+        });
+        return NextResponse.json(
+          { 
+            error: "Database setup error",
+            details: `Failed to create ${actualTableName} table`,
+            hint: "Please ensure migrations have run or contact support",
+            errorMessage: createError?.message,
+            errorCode: createError?.code
+          },
+          { status: 500 }
+        );
       }
+    } else {
+      console.log(`[Guest Checkout] ✅ ${actualTableName} table exists`);
     }
 
     const { email, featureType = "book-upload" } = await request.json();
@@ -131,26 +174,50 @@ export async function POST(request: NextRequest) {
 
     if (useSimulatedPurchases || !stripeSecretKey) {
       // Simulated purchase for testing
-      await db.insert(guestPurchases).values({
-        id: purchaseId,
-        guestEmail: normalizedEmail,
-        bookId: null,
-        featureType: "book-upload",
-        amount: UPLOAD_PRICE,
-        currency: "USD",
-        paymentMethod: "simulated",
-        status: "completed",
-        completedAt: new Date(),
-      });
+      try {
+        await db.insert(guestPurchases).values({
+          id: purchaseId,
+          guestEmail: normalizedEmail,
+          bookId: null,
+          featureType: "book-upload",
+          amount: UPLOAD_PRICE,
+          currency: "USD",
+          paymentMethod: "simulated",
+          status: "completed",
+          completedAt: new Date(),
+        });
 
-      console.log(`[Guest Checkout] ✅ Created simulated guest purchase ${purchaseId} for ${normalizedEmail}`);
+        console.log(`[Guest Checkout] ✅ Created simulated guest purchase ${purchaseId} for ${normalizedEmail}`);
 
-      return NextResponse.json({
-        message: "Purchase completed (simulated)",
-        purchaseId,
-        status: "completed",
-        redirectUrl: `${baseURL}/signup?purchase_id=${purchaseId}&email=${encodeURIComponent(normalizedEmail)}`,
-      });
+        return NextResponse.json({
+          message: "Purchase completed (simulated)",
+          purchaseId,
+          status: "completed",
+          redirectUrl: `${baseURL}/signup?purchase_id=${purchaseId}&email=${encodeURIComponent(normalizedEmail)}`,
+        });
+      } catch (insertError: any) {
+        console.error("[Guest Checkout] ❌ Failed to insert simulated purchase:", insertError);
+        console.error("[Guest Checkout] Insert error details:", {
+          message: insertError?.message,
+          stack: insertError?.stack,
+          code: insertError?.code,
+        });
+        
+        // Check if it's a table not found error
+        if (insertError?.message?.includes("no such table") || insertError?.message?.includes("guest_purchase")) {
+          return NextResponse.json(
+            { 
+              error: "Database table not found",
+              details: "The guest_purchase table does not exist and could not be created automatically.",
+              hint: "Please ensure migrations have run. The table should be created automatically.",
+              errorMessage: insertError?.message,
+            },
+            { status: 500 }
+          );
+        }
+        
+        throw insertError; // Re-throw to be caught by outer catch
+      }
     }
 
     // Real Stripe checkout
@@ -160,18 +227,42 @@ export async function POST(request: NextRequest) {
     });
 
     // Create guest purchase record with pending status
-    await db.insert(guestPurchases).values({
-      id: purchaseId,
-      guestEmail: normalizedEmail,
-      bookId: null,
-      featureType: "book-upload",
-      amount: UPLOAD_PRICE,
-      currency: "USD",
-      paymentMethod: "stripe",
-      status: "pending",
-    });
+    try {
+      await db.insert(guestPurchases).values({
+        id: purchaseId,
+        guestEmail: normalizedEmail,
+        bookId: null,
+        featureType: "book-upload",
+        amount: UPLOAD_PRICE,
+        currency: "USD",
+        paymentMethod: "stripe",
+        status: "pending",
+      });
 
-    console.log(`[Guest Checkout] ✅ Created guest purchase ${purchaseId} for ${normalizedEmail}`);
+      console.log(`[Guest Checkout] ✅ Created guest purchase ${purchaseId} for ${normalizedEmail}`);
+    } catch (insertError: any) {
+      console.error("[Guest Checkout] ❌ Failed to insert guest purchase:", insertError);
+      console.error("[Guest Checkout] Insert error details:", {
+        message: insertError?.message,
+        stack: insertError?.stack,
+        code: insertError?.code,
+      });
+      
+      // Check if it's a table not found error
+      if (insertError?.message?.includes("no such table") || insertError?.message?.includes("guest_purchase")) {
+        return NextResponse.json(
+          { 
+            error: "Database table not found",
+            details: "The guest_purchase table does not exist and could not be created automatically.",
+            hint: "Please ensure migrations have run. The table should be created automatically.",
+            errorMessage: insertError?.message,
+          },
+          { status: 500 }
+        );
+      }
+      
+      throw insertError; // Re-throw to be caught by outer catch
+    }
 
     // Create Stripe checkout session
     const checkoutSession = await stripe.checkout.sessions.create({
