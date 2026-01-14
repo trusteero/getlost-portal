@@ -84,15 +84,30 @@ export async function POST(request: NextRequest) {
 
         // Check if this is a guest purchase
         const isGuestPurchase = session.metadata?.isGuestPurchase === "true";
+        
+        console.log(`[Webhook] Session metadata:`, {
+          isGuestPurchase: session.metadata?.isGuestPurchase,
+          purchaseId: session.metadata?.purchaseId,
+          guestEmail: session.metadata?.guestEmail,
+          featureType: session.metadata?.featureType,
+        });
+        console.log(`[Webhook] Is guest purchase: ${isGuestPurchase}, Purchase ID: ${purchaseId}`);
 
         if (isGuestPurchase) {
           // Handle guest purchase
           // First check if it's still in guest_purchases (not yet migrated)
+          console.log(`[Webhook] Looking for guest purchase ${purchaseId} in guest_purchases table...`);
           const [existingGuestPurchase] = await db
             .select()
             .from(guestPurchases)
             .where(eq(guestPurchases.id, purchaseId))
             .limit(1);
+          
+          console.log(`[Webhook] Guest purchase lookup result:`, existingGuestPurchase ? {
+            id: existingGuestPurchase.id,
+            status: existingGuestPurchase.status,
+            guestEmail: existingGuestPurchase.guestEmail,
+          } : "NOT FOUND");
 
           if (existingGuestPurchase) {
             // Purchase is still in guest_purchases (user hasn't signed up yet)
