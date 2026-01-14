@@ -1,4 +1,4 @@
-import { db } from "@/server/db";
+import { db, sqlite } from "@/server/db";
 import { purchases, guestPurchases } from "@/server/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 
@@ -19,15 +19,63 @@ export async function linkGuestPurchasesToUser(
   console.log(`[Link Guest Purchases] Looking for guest purchases with email: ${normalizedEmail}`);
 
   // Find all guest purchases with matching email (any status)
-  const guestPurchasesToLink = await db
+  // First, let's check what's actually in the database for debugging
+  const allGuestPurchases = await db
+    .select()
+    .from(guestPurchases)
+    .limit(10);
+  
+  console.log(`[Link Guest Purchases] Debug: Found ${allGuestPurchases.length} total guest purchase(s) in database`);
+  allGuestPurchases.forEach((p) => {
+    console.log(`[Link Guest Purchases] Debug: Purchase ${p.id} - email: "${p.guestEmail}", normalized: "${p.guestEmail.toLowerCase().trim()}", looking for: "${normalizedEmail}"`);
+  });
+
+  // Try Drizzle query first
+  let guestPurchasesToLink = await db
     .select()
     .from(guestPurchases)
     .where(
       sql`LOWER(TRIM(guestEmail)) = ${normalizedEmail}`
     );
 
+  console.log(`[Link Guest Purchases] Drizzle query result: Found ${guestPurchasesToLink.length} purchase(s) matching email "${normalizedEmail}"`);
+
+  // If Drizzle query found nothing, try direct SQL as fallback
+  if (guestPurchasesToLink.length === 0 && sqlite) {
+    console.log(`[Link Guest Purchases] Drizzle query found nothing, trying direct SQL query...`);
+    try {
+      const directQuery = sqlite
+        .prepare(`SELECT * FROM getlostportal_guest_purchase WHERE LOWER(TRIM(guestEmail)) = LOWER(TRIM(?))`)
+        .all(normalizedEmail);
+      
+      console.log(`[Link Guest Purchases] Direct SQL query found ${directQuery.length} purchase(s)`);
+      
+      if (directQuery.length > 0) {
+        // Convert raw SQL results to match Drizzle format
+        guestPurchasesToLink = directQuery.map((row: any) => ({
+          id: row.id,
+          guestEmail: row.guestEmail,
+          bookId: row.bookId,
+          featureType: row.featureType,
+          amount: row.amount,
+          currency: row.currency,
+          paymentMethod: row.paymentMethod,
+          paymentIntentId: row.paymentIntentId,
+          status: row.status,
+          completedAt: row.completedAt ? new Date(row.completedAt * 1000) : null,
+          createdAt: row.createdAt ? new Date(row.createdAt * 1000) : new Date(),
+          updatedAt: row.updatedAt ? new Date(row.updatedAt * 1000) : new Date(),
+        })) as typeof guestPurchasesToLink;
+        console.log(`[Link Guest Purchases] ✅ Using direct SQL query results (${guestPurchasesToLink.length} purchase(s))`);
+      }
+    } catch (sqlError: any) {
+      console.error(`[Link Guest Purchases] Direct SQL query failed:`, sqlError);
+    }
+  }
+
   if (guestPurchasesToLink.length === 0) {
     console.log(`[Link Guest Purchases] No guest purchases found for email: ${normalizedEmail}`);
+    console.log(`[Link Guest Purchases] Debug: Available emails in database:`, allGuestPurchases.map(p => p.guestEmail));
     return [];
   }
 
@@ -62,26 +110,66 @@ export async function linkGuestPurchasesToUser(
         console.log(`[Link Guest Purchases] 🔄 Converting book-upload to market-validation-report for purchase ${guestPurchase.id}`);
       }
 
-      // Insert into main purchases table
-      await db.insert(purchases).values({
-        id: guestPurchase.id,
-        userId,
-        bookId: guestPurchase.bookId,
-        featureType: migratedFeatureType,
-        amount: guestPurchase.amount,
-        currency: guestPurchase.currency,
-        paymentMethod: guestPurchase.paymentMethod,
-        paymentIntentId: guestPurchase.paymentIntentId,
-        status: guestPurchase.status,
-        completedAt: guestPurchase.completedAt,
-        createdAt: guestPurchase.createdAt,
-        updatedAt: new Date(),
-      });
+      // Check if purchase already exists in purchases table (idempotency)
+      const [existingPurchase] = await db
+        .select()
+        .from(purchases)
+        .where(eq(purchases.id, guestPurchase.id))
+        .limit(1);
+
+      if (existingPurchase) {
+        console.log(`[Link Guest Purchases] ⚠️ Purchase ${guestPurchase.id} already exists in purchases table (userId: ${existingPurchase.userId})`);
+        // If it belongs to a different user, that's an error
+        if (existingPurchase.userId !== userId) {
+          console.error(`[Link Guest Purchases] ❌ Purchase ${guestPurchase.id} already belongs to user ${existingPurchase.userId}, cannot link to ${userId}`);
+          // Don't throw - just skip this purchase
+          continue;
+        }
+        // If it already belongs to this user, just delete from guest_purchases and continue
+        console.log(`[Link Guest Purchases] ✅ Purchase ${guestPurchase.id} already linked to user ${userId}, just cleaning up guest_purchases table`);
+      } else {
+        // Insert into main purchases table
+        console.log(`[Link Guest Purchases] Attempting to insert purchase ${guestPurchase.id} into purchases table...`);
+        try {
+          await db.insert(purchases).values({
+            id: guestPurchase.id,
+            userId,
+            bookId: guestPurchase.bookId,
+            featureType: migratedFeatureType,
+            amount: guestPurchase.amount,
+            currency: guestPurchase.currency,
+            paymentMethod: guestPurchase.paymentMethod,
+            paymentIntentId: guestPurchase.paymentIntentId,
+            status: guestPurchase.status,
+            completedAt: guestPurchase.completedAt,
+            createdAt: guestPurchase.createdAt,
+            updatedAt: new Date(),
+          });
+          console.log(`[Link Guest Purchases] ✅ Successfully inserted purchase ${guestPurchase.id} into purchases table`);
+        } catch (insertError: any) {
+          console.error(`[Link Guest Purchases] ❌ Failed to insert purchase ${guestPurchase.id} into purchases table:`, insertError);
+          console.error(`[Link Guest Purchases] Insert error details:`, {
+            message: insertError?.message,
+            stack: insertError?.stack,
+            code: insertError?.code,
+            cause: insertError?.cause,
+          });
+          throw insertError; // Re-throw to be caught by outer catch
+        }
+      }
 
       // Delete from guest purchases table
-      await db
-        .delete(guestPurchases)
-        .where(eq(guestPurchases.id, guestPurchase.id));
+      console.log(`[Link Guest Purchases] Attempting to delete purchase ${guestPurchase.id} from guest_purchases table...`);
+      try {
+        await db
+          .delete(guestPurchases)
+          .where(eq(guestPurchases.id, guestPurchase.id));
+        console.log(`[Link Guest Purchases] ✅ Successfully deleted purchase ${guestPurchase.id} from guest_purchases table`);
+      } catch (deleteError: any) {
+        console.error(`[Link Guest Purchases] ❌ Failed to delete purchase ${guestPurchase.id} from guest_purchases table:`, deleteError);
+        // Don't throw - purchase is already in purchases table, so deletion failure is less critical
+        // But log it so we know something went wrong
+      }
 
       linkedPurchaseIds.push(guestPurchase.id);
 
