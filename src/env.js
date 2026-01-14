@@ -37,6 +37,7 @@ export const env = createEnv({
 		STRIPE_PRICE_MARKET_VALIDATION_REPORT: z.string().optional(),
 		STRIPE_PRICE_MARKET_READY_PACK: z.string().optional(),
 		STRIPE_PRICE_GROWTH_PARTNERSHIP: z.string().optional(),
+		STRIPE_PRICE_BOOK_UPLOAD_PROMO: z.string().optional(),
 		
 		// Email service (optional - can use test mode)
 		RESEND_API_KEY: z.string().optional(),
@@ -89,6 +90,7 @@ export const env = createEnv({
 		STRIPE_PRICE_MARKET_VALIDATION_REPORT: process.env.STRIPE_PRICE_MARKET_VALIDATION_REPORT,
 		STRIPE_PRICE_MARKET_READY_PACK: process.env.STRIPE_PRICE_MARKET_READY_PACK,
 		STRIPE_PRICE_GROWTH_PARTNERSHIP: process.env.STRIPE_PRICE_GROWTH_PARTNERSHIP,
+		STRIPE_PRICE_BOOK_UPLOAD_PROMO: process.env.STRIPE_PRICE_BOOK_UPLOAD_PROMO,
 		RESEND_API_KEY: process.env.RESEND_API_KEY,
 		RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
 		BOOKDIGEST_URL: process.env.BOOKDIGEST_URL,

@@ -6,8 +6,10 @@ import { apiErrors } from "@/server/utils/api-response";
 import { env } from "@/env";
 import crypto from "crypto";
 import { initializeMigrations } from "@/server/db/migrations";
+import { getStripePriceIdForFeature, type FeatureType } from "@/server/utils/stripe-price-ids";
 
-const UPLOAD_PRICE = 9999; // $99.99 in cents
+// Fallback price if Stripe Price ID is not configured (in cents)
+const UPLOAD_PRICE_FALLBACK = 9999; // $99.99 in cents
 
 // Get base URL for redirects
 function getBaseURL(request: NextRequest): string {
@@ -169,6 +171,75 @@ export async function POST(request: NextRequest) {
     const stripeSecretKey = env.STRIPE_SECRET_KEY;
     const useSimulatedPurchases = process.env.USE_SIMULATED_PURCHASES === "true";
 
+    // Get Stripe Price ID for book-upload feature
+    let stripePriceId: string | undefined;
+    let price = UPLOAD_PRICE_FALLBACK;
+    let currency = "usd";
+
+    if (!useSimulatedPurchases && stripeSecretKey) {
+      stripePriceId = getStripePriceIdForFeature("book-upload" as FeatureType);
+      
+      if (stripePriceId) {
+        // Fetch price from Stripe to get the actual amount and currency
+        const StripeLib = (await import("stripe")).default;
+        const stripe = new StripeLib(stripeSecretKey, {
+          apiVersion: "2025-11-17.clover",
+        });
+        
+        try {
+          const stripePrice = await stripe.prices.retrieve(stripePriceId);
+          if (stripePrice.active === false) {
+            console.error(`[Guest Checkout] ❌ Stripe price inactive: priceId=${stripePriceId}`);
+            return NextResponse.json(
+              { 
+                error: "Stripe price inactive",
+                details: `Stripe price ${stripePriceId} is inactive. Activate it in Stripe or update the env var to an active price.`,
+              },
+              { status: 400 }
+            );
+          }
+
+          // Validate it's a one-time price (not recurring)
+          if (stripePrice.recurring) {
+            console.error(`[Guest Checkout] ❌ Stripe price type mismatch: book-upload requires one-time. priceId=${stripePriceId}`);
+            return NextResponse.json(
+              { 
+                error: "Invalid price type",
+                details: `Stripe price ${stripePriceId} is recurring, but book-upload requires a one-time price.`,
+              },
+              { status: 400 }
+            );
+          }
+
+          if (stripePrice.unit_amount == null || !stripePrice.currency) {
+            console.error(`[Guest Checkout] ❌ Stripe price missing unit_amount/currency: priceId=${stripePriceId}`);
+            return NextResponse.json(
+              { 
+                error: "Invalid Stripe price",
+                details: `Stripe price ${stripePriceId} missing unit_amount or currency`,
+              },
+              { status: 400 }
+            );
+          }
+
+          price = stripePrice.unit_amount;
+          currency = stripePrice.currency.toLowerCase();
+          console.log(`[Guest Checkout] ✅ Using Stripe Price ID ${stripePriceId}: ${price} ${currency.toUpperCase()}`);
+        } catch (stripeError: any) {
+          console.error(`[Guest Checkout] ❌ Failed to retrieve Stripe price ${stripePriceId}:`, stripeError);
+          return NextResponse.json(
+            { 
+              error: "Stripe price retrieval failed",
+              details: `Failed to retrieve Stripe price ${stripePriceId}: ${stripeError?.message}`,
+            },
+            { status: 500 }
+          );
+        }
+      } else {
+        console.warn(`[Guest Checkout] ⚠️ No Stripe Price ID configured for book-upload, using fallback price ${UPLOAD_PRICE_FALLBACK}`);
+      }
+    }
+
     // Create purchase record first
     const purchaseId = crypto.randomUUID();
 
@@ -180,8 +251,8 @@ export async function POST(request: NextRequest) {
           guestEmail: normalizedEmail,
           bookId: null,
           featureType: "book-upload",
-          amount: UPLOAD_PRICE,
-          currency: "USD",
+          amount: price,
+          currency: currency.toUpperCase(),
           paymentMethod: "simulated",
           status: "completed",
           completedAt: new Date(),
@@ -233,8 +304,8 @@ export async function POST(request: NextRequest) {
         guestEmail: normalizedEmail,
         bookId: null,
         featureType: "book-upload",
-        amount: UPLOAD_PRICE,
-        currency: "USD",
+        amount: price,
+        currency: currency.toUpperCase(),
         paymentMethod: "stripe",
         status: "pending",
       });
@@ -265,22 +336,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Stripe checkout session
+    // Use Stripe Price ID if available, otherwise fall back to price_data
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       allow_promotion_codes: true,
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: "Book Upload Permission",
-              description: "Upload and analyze your manuscript",
+      line_items: stripePriceId
+        ? [{ price: stripePriceId, quantity: 1 }]
+        : [
+            {
+              price_data: {
+                currency: currency,
+                product_data: {
+                  name: "Book Upload Permission",
+                  description: "Upload and analyze your manuscript",
+                },
+                unit_amount: price,
+              },
+              quantity: 1,
             },
-            unit_amount: UPLOAD_PRICE,
-          },
-          quantity: 1,
-        },
-      ],
+          ],
       mode: "payment",
       success_url: `${baseURL}/signup?purchase_id=${purchaseId}&email=${encodeURIComponent(normalizedEmail)}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseURL}/purchase-upload`,
@@ -291,6 +365,7 @@ export async function POST(request: NextRequest) {
         guestEmail: normalizedEmail,
         isGuestPurchase: "true", // Flag for webhook
         featureType: "book-upload",
+        ...(stripePriceId ? { stripePriceId } : {}),
       },
     });
 

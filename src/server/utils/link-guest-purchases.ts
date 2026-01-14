@@ -38,12 +38,23 @@ export async function linkGuestPurchasesToUser(
   // Move each guest purchase to main purchases table
   for (const guestPurchase of guestPurchasesToLink) {
     try {
+      // Convert "book-upload" to "market-validation-report" when migrating
+      // The guest purchase uses STRIPE_PRICE_BOOK_UPLOAD_PROMO (promo price),
+      // but product-wise it's the same as market-validation-report
+      const migratedFeatureType = guestPurchase.featureType === "book-upload" 
+        ? "market-validation-report" 
+        : guestPurchase.featureType;
+
+      if (guestPurchase.featureType === "book-upload") {
+        console.log(`[Link Guest Purchases] 🔄 Converting book-upload to market-validation-report for purchase ${guestPurchase.id}`);
+      }
+
       // Insert into main purchases table
       await db.insert(purchases).values({
         id: guestPurchase.id,
         userId,
         bookId: guestPurchase.bookId,
-        featureType: guestPurchase.featureType,
+        featureType: migratedFeatureType,
         amount: guestPurchase.amount,
         currency: guestPurchase.currency,
         paymentMethod: guestPurchase.paymentMethod,
@@ -61,7 +72,7 @@ export async function linkGuestPurchasesToUser(
 
       linkedPurchaseIds.push(guestPurchase.id);
 
-      console.log(`[Link Guest Purchases] ✅ Linked purchase ${guestPurchase.id} to user ${userId} (status: ${guestPurchase.status})`);
+      console.log(`[Link Guest Purchases] ✅ Linked purchase ${guestPurchase.id} to user ${userId} (featureType: ${migratedFeatureType}, status: ${guestPurchase.status})`);
     } catch (error) {
       console.error(`[Link Guest Purchases] ❌ Failed to link purchase ${guestPurchase.id}:`, error);
       // Continue with other purchases even if one fails

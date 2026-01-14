@@ -32,6 +32,12 @@ export function getStripePriceIdForFeature(featureType: FeatureType): string | u
   // If callers still request manuscript-report checkout, charge the Market-Ready Pack price.
   const effectiveFeatureType = featureType === "manuscript-report" ? "market-ready-pack" : featureType;
 
+  // Special handling for book-upload: use STRIPE_PRICE_BOOK_UPLOAD_PROMO
+  if (featureType === "book-upload") {
+    const value = process.env.STRIPE_PRICE_BOOK_UPLOAD_PROMO;
+    return typeof value === "string" && value.trim() ? value.trim() : undefined;
+  }
+
   const key = featureTypeToPriceEnvVar(effectiveFeatureType);
   const value = process.env[key];
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
