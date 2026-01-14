@@ -94,13 +94,13 @@ export default function PurchaseUploadPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
         <div className="flex flex-col items-center gap-6 sm:gap-8 w-full">
-          {/* Carousel - Same width as banner, responsive */}
-          <div className="w-full max-w-full">
+          {/* Carousel - Same width as button */}
+          <div className="w-full max-w-md">
             <ImageCarousel images={carouselImages} autoPlay={true} interval={3000} />
           </div>
 
           {/* Buy Now Button Section - Same width as carousel */}
-          <div className="flex flex-col items-center gap-4 w-full">
+          <div className="flex flex-col items-center gap-4 w-full max-w-md">
             {/* Error Message */}
             {error && (
               <p className="text-sm text-red-600 text-center w-full">{error}</p>
