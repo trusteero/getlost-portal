@@ -144,6 +144,18 @@ export async function POST(request: NextRequest) {
       }
     } else {
       console.log(`[Guest Checkout] ✅ ${actualTableName} table exists`);
+      
+      // Debug: List all guest_purchase related tables
+      if (sqlite) {
+        try {
+          const allTables = sqlite
+            .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%guest%'`)
+            .all();
+          console.log(`[Guest Checkout] Debug: Found tables with 'guest' in name:`, allTables);
+        } catch (debugError) {
+          console.warn(`[Guest Checkout] Could not list tables for debugging:`, debugError);
+        }
+      }
     }
 
     const { email, featureType = "book-upload" } = await request.json();
@@ -246,6 +258,15 @@ export async function POST(request: NextRequest) {
     if (useSimulatedPurchases || !stripeSecretKey) {
       // Simulated purchase for testing
       try {
+        console.log(`[Guest Checkout] Attempting to insert simulated guest purchase:`, {
+          id: purchaseId,
+          guestEmail: normalizedEmail,
+          featureType: "book-upload",
+          amount: price,
+          currency: currency.toUpperCase(),
+          status: "completed",
+        });
+
         await db.insert(guestPurchases).values({
           id: purchaseId,
           guestEmail: normalizedEmail,
@@ -259,6 +280,18 @@ export async function POST(request: NextRequest) {
         });
 
         console.log(`[Guest Checkout] ✅ Created simulated guest purchase ${purchaseId} for ${normalizedEmail}`);
+        
+        // Verify the insert worked
+        if (sqlite) {
+          const verifyPurchase = sqlite
+            .prepare(`SELECT id, guestEmail, status FROM getlostportal_guest_purchase WHERE id = ?`)
+            .get(purchaseId);
+          if (verifyPurchase) {
+            console.log(`[Guest Checkout] ✅ Verified purchase exists in database:`, verifyPurchase);
+          } else {
+            console.error(`[Guest Checkout] ❌ Purchase ${purchaseId} was not found in database after insert!`);
+          }
+        }
 
         return NextResponse.json({
           message: "Purchase completed (simulated)",
@@ -299,6 +332,15 @@ export async function POST(request: NextRequest) {
 
     // Create guest purchase record with pending status
     try {
+      console.log(`[Guest Checkout] Attempting to insert guest purchase:`, {
+        id: purchaseId,
+        guestEmail: normalizedEmail,
+        featureType: "book-upload",
+        amount: price,
+        currency: currency.toUpperCase(),
+        status: "pending",
+      });
+
       await db.insert(guestPurchases).values({
         id: purchaseId,
         guestEmail: normalizedEmail,
@@ -311,6 +353,18 @@ export async function POST(request: NextRequest) {
       });
 
       console.log(`[Guest Checkout] ✅ Created guest purchase ${purchaseId} for ${normalizedEmail}`);
+      
+      // Verify the insert worked
+      if (sqlite) {
+        const verifyPurchase = sqlite
+          .prepare(`SELECT id, guestEmail, status FROM getlostportal_guest_purchase WHERE id = ?`)
+          .get(purchaseId);
+        if (verifyPurchase) {
+          console.log(`[Guest Checkout] ✅ Verified purchase exists in database:`, verifyPurchase);
+        } else {
+          console.error(`[Guest Checkout] ❌ Purchase ${purchaseId} was not found in database after insert!`);
+        }
+      }
     } catch (insertError: any) {
       console.error("[Guest Checkout] ❌ Failed to insert guest purchase:", insertError);
       console.error("[Guest Checkout] Insert error details:", {

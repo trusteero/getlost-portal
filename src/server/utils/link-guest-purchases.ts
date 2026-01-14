@@ -32,6 +32,19 @@ export async function linkGuestPurchasesToUser(
   }
 
   console.log(`[Link Guest Purchases] Found ${guestPurchasesToLink.length} guest purchase(s) to link`);
+  
+  // Log details of each purchase being linked
+  guestPurchasesToLink.forEach((p) => {
+    console.log(`[Link Guest Purchases] Purchase details:`, {
+      id: p.id,
+      featureType: p.featureType,
+      status: p.status,
+      amount: p.amount,
+      currency: p.currency,
+      paymentMethod: p.paymentMethod,
+      completedAt: p.completedAt,
+    });
+  });
 
   const linkedPurchaseIds: string[] = [];
 
@@ -72,7 +85,11 @@ export async function linkGuestPurchasesToUser(
 
       linkedPurchaseIds.push(guestPurchase.id);
 
-      console.log(`[Link Guest Purchases] ✅ Linked purchase ${guestPurchase.id} to user ${userId} (featureType: ${migratedFeatureType}, status: ${guestPurchase.status})`);
+      const statusNote = guestPurchase.status === "completed" 
+        ? "✅ (will grant upload permission)" 
+        : "⚠️ (pending - webhook will complete it)";
+      
+      console.log(`[Link Guest Purchases] ✅ Linked purchase ${guestPurchase.id} to user ${userId} (featureType: ${migratedFeatureType}, status: ${guestPurchase.status}) ${statusNote}`);
     } catch (error) {
       console.error(`[Link Guest Purchases] ❌ Failed to link purchase ${guestPurchase.id}:`, error);
       // Continue with other purchases even if one fails

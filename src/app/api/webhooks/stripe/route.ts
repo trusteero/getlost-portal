@@ -87,52 +87,96 @@ export async function POST(request: NextRequest) {
 
         if (isGuestPurchase) {
           // Handle guest purchase
+          // First check if it's still in guest_purchases (not yet migrated)
           const [existingGuestPurchase] = await db
             .select()
             .from(guestPurchases)
             .where(eq(guestPurchases.id, purchaseId))
             .limit(1);
 
-          if (!existingGuestPurchase) {
-            console.error(`[Webhook] ❌ Guest purchase ${purchaseId} not found in database`);
-            return NextResponse.json({ 
-              received: true, 
-              error: `Guest purchase ${purchaseId} not found`,
-              warning: true
-            });
-          }
+          if (existingGuestPurchase) {
+            // Purchase is still in guest_purchases (user hasn't signed up yet)
+            // Idempotency: Skip if already completed
+            if (existingGuestPurchase.status === "completed") {
+              console.log(`[Webhook] ✅ Guest purchase ${purchaseId} already completed, skipping duplicate event ${event.id}`);
+              return NextResponse.json({ 
+                received: true, 
+                message: "Already processed",
+                purchaseId 
+              });
+            }
 
-          // Idempotency: Skip if already completed
-          if (existingGuestPurchase.status === "completed") {
-            console.log(`[Webhook] ✅ Guest purchase ${purchaseId} already completed, skipping duplicate event ${event.id}`);
+            // Update guest purchase status (wrap in transaction for safety)
+            await db.transaction(async (tx) => {
+              await tx
+                .update(guestPurchases)
+                .set({
+                  status: "completed",
+                  paymentIntentId: (session.payment_intent as string) || session.id,
+                  completedAt: new Date(),
+                  updatedAt: new Date(),
+                })
+                .where(eq(guestPurchases.id, purchaseId));
+
+              console.log(`[Webhook] ✅ Updated guest purchase ${purchaseId} to completed status`);
+            });
+
+            console.log(`[Webhook] Guest purchase will be linked to user account when they sign up with email: ${existingGuestPurchase.guestEmail}`);
+
             return NextResponse.json({ 
               received: true, 
-              message: "Already processed",
+              message: "Guest purchase completed",
               purchaseId 
             });
           }
 
-          // Update guest purchase status (wrap in transaction for safety)
-          await db.transaction(async (tx) => {
-            await tx
-              .update(guestPurchases)
-              .set({
-                status: "completed",
-                paymentIntentId: (session.payment_intent as string) || session.id,
-                completedAt: new Date(),
-                updatedAt: new Date(),
-              })
-              .where(eq(guestPurchases.id, purchaseId));
+          // Purchase not found in guest_purchases - check if it's already been migrated to purchases table
+          // This can happen if user signed up before the webhook processed
+          const [migratedPurchase] = await db
+            .select()
+            .from(purchases)
+            .where(eq(purchases.id, purchaseId))
+            .limit(1);
 
-            console.log(`[Webhook] ✅ Updated guest purchase ${purchaseId} to completed status`);
-          });
+          if (migratedPurchase) {
+            // Purchase has been migrated - update it in the purchases table
+            if (migratedPurchase.status === "completed") {
+              console.log(`[Webhook] ✅ Migrated purchase ${purchaseId} already completed, skipping duplicate event ${event.id}`);
+              return NextResponse.json({ 
+                received: true, 
+                message: "Already processed",
+                purchaseId 
+              });
+            }
 
-          console.log(`[Webhook] Guest purchase will be linked to user account when they sign up with email: ${existingGuestPurchase.guestEmail}`);
+            // Update migrated purchase status
+            await db.transaction(async (tx) => {
+              await tx
+                .update(purchases)
+                .set({
+                  status: "completed",
+                  paymentIntentId: (session.payment_intent as string) || session.id,
+                  completedAt: new Date(),
+                  updatedAt: new Date(),
+                })
+                .where(eq(purchases.id, purchaseId));
 
+              console.log(`[Webhook] ✅ Updated migrated purchase ${purchaseId} to completed status (user: ${migratedPurchase.userId})`);
+            });
+
+            return NextResponse.json({ 
+              received: true, 
+              message: "Migrated guest purchase completed",
+              purchaseId 
+            });
+          }
+
+          // Purchase not found in either table
+          console.error(`[Webhook] ❌ Guest purchase ${purchaseId} not found in guest_purchases or purchases table`);
           return NextResponse.json({ 
             received: true, 
-            message: "Guest purchase completed",
-            purchaseId 
+            error: `Guest purchase ${purchaseId} not found`,
+            warning: true
           });
         }
 
