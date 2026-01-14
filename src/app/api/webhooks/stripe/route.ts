@@ -82,14 +82,27 @@ export async function POST(request: NextRequest) {
           });
         }
 
+        // Retrieve full session from Stripe API to ensure we have all data including email
+        // The webhook event object might not include all fields
+        let fullSession: Stripe.Checkout.Session;
+        try {
+          fullSession = await stripe.checkout.sessions.retrieve(session.id, {
+            expand: ['customer_details', 'customer'],
+          });
+          console.log(`[Webhook] ✅ Retrieved full session ${session.id} from Stripe API`);
+        } catch (retrieveError: any) {
+          console.error(`[Webhook] ⚠️ Failed to retrieve full session, using event object:`, retrieveError);
+          fullSession = session; // Fallback to event object
+        }
+
         // Check if this is a guest purchase
-        const isGuestPurchase = session.metadata?.isGuestPurchase === "true";
+        const isGuestPurchase = fullSession.metadata?.isGuestPurchase === "true";
         
         console.log(`[Webhook] Session metadata:`, {
-          isGuestPurchase: session.metadata?.isGuestPurchase,
-          purchaseId: session.metadata?.purchaseId,
-          guestEmail: session.metadata?.guestEmail,
-          featureType: session.metadata?.featureType,
+          isGuestPurchase: fullSession.metadata?.isGuestPurchase,
+          purchaseId: fullSession.metadata?.purchaseId,
+          guestEmail: fullSession.metadata?.guestEmail,
+          featureType: fullSession.metadata?.featureType,
         });
         console.log(`[Webhook] Is guest purchase: ${isGuestPurchase}, Purchase ID: ${purchaseId}`);
 
@@ -110,10 +123,41 @@ export async function POST(request: NextRequest) {
           } : "NOT FOUND");
 
           if (existingGuestPurchase) {
-            // Purchase is still in guest_purchases (user hasn't signed up yet)
-            // Idempotency: Skip if already completed
+            // Get email from Stripe session first (before checking status)
+            // customer_email is the primary source, customer_details.email is the fallback
+            const stripeEmail = fullSession.customer_email || 
+                              fullSession.customer_details?.email || 
+                              null;
+            
+            console.log(`[Webhook] Stripe session email info:`, {
+              customer_email: fullSession.customer_email,
+              customer_details: fullSession.customer_details,
+              customer: typeof fullSession.customer === 'string' ? 'customer_id' : (fullSession.customer && !fullSession.customer.deleted ? 'customer_object' : 'deleted_customer'),
+              extractedEmail: stripeEmail,
+              currentGuestEmail: existingGuestPurchase.guestEmail,
+            });
+            
+            // Check if we need to update email (even if already completed)
+            const needsEmailUpdate = stripeEmail && 
+                                    stripeEmail.trim() !== "" &&
+                                    (existingGuestPurchase.guestEmail?.includes("@stripe-pending.getlost.ink") ||
+                                     existingGuestPurchase.guestEmail !== stripeEmail.toLowerCase().trim());
+            
+            // If already completed but email needs updating, update it
             if (existingGuestPurchase.status === "completed") {
-              console.log(`[Webhook] ✅ Guest purchase ${purchaseId} already completed, skipping duplicate event ${event.id}`);
+              if (needsEmailUpdate && stripeEmail) {
+                console.log(`[Webhook] Guest purchase ${purchaseId} already completed, but updating email from placeholder`);
+                await db
+                  .update(guestPurchases)
+                  .set({
+                    guestEmail: stripeEmail.toLowerCase().trim(),
+                    updatedAt: new Date(),
+                  })
+                  .where(eq(guestPurchases.id, purchaseId));
+                console.log(`[Webhook] ✅ Updated email for completed purchase ${purchaseId} to: ${stripeEmail.toLowerCase().trim()}`);
+              } else {
+                console.log(`[Webhook] ✅ Guest purchase ${purchaseId} already completed, skipping duplicate event ${event.id}`);
+              }
               return NextResponse.json({ 
                 received: true, 
                 message: "Already processed",
@@ -122,21 +166,13 @@ export async function POST(request: NextRequest) {
             }
 
             // Update guest purchase status and email from Stripe (wrap in transaction for safety)
-            // Get email from Stripe session if available (customer_email or customer_details)
-            const stripeEmail = session.customer_email || 
-                              (session.customer_details?.email) || 
-                              null;
-            
-            // Update email if we have it from Stripe and current email is a placeholder
-            const needsEmailUpdate = stripeEmail && 
-                                    existingGuestPurchase.guestEmail?.includes("@stripe-pending.getlost.ink");
             
             await db.transaction(async (tx) => {
               await tx
                 .update(guestPurchases)
                 .set({
                   status: "completed",
-                  paymentIntentId: (session.payment_intent as string) || session.id,
+                  paymentIntentId: (fullSession.payment_intent as string) || fullSession.id,
                   completedAt: new Date(),
                   updatedAt: new Date(),
                   ...(needsEmailUpdate && stripeEmail ? { 
@@ -146,7 +182,11 @@ export async function POST(request: NextRequest) {
                 .where(eq(guestPurchases.id, purchaseId));
 
               if (needsEmailUpdate && stripeEmail) {
-                console.log(`[Webhook] ✅ Updated guest purchase ${purchaseId} email from placeholder to: ${stripeEmail}`);
+                console.log(`[Webhook] ✅ Updated guest purchase ${purchaseId} email from "${existingGuestPurchase.guestEmail}" to: "${stripeEmail.toLowerCase().trim()}"`);
+              } else if (stripeEmail) {
+                console.log(`[Webhook] ℹ️ Email already matches or update not needed. Stripe email: "${stripeEmail}", Current: "${existingGuestPurchase.guestEmail}"`);
+              } else {
+                console.log(`[Webhook] ⚠️ No email available from Stripe session for purchase ${purchaseId}`);
               }
               console.log(`[Webhook] ✅ Updated guest purchase ${purchaseId} to completed status`);
             });

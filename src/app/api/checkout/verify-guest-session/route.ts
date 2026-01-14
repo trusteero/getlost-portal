@@ -103,17 +103,40 @@ export async function POST(request: NextRequest) {
       
       console.log(`[Verify Guest Session] Payment check: payment_status=${checkoutSession.payment_status}, status=${checkoutSession.status}, isPaymentComplete=${isPaymentComplete}`);
       
-      if (isPaymentComplete) {
-        // Update guest purchase status (idempotent - safe to call multiple times)
-        await db
-          .update(guestPurchases)
-          .set({
-            status: "completed",
-            paymentIntentId: (checkoutSession.payment_intent as string) || checkoutSession.id,
-            completedAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(eq(guestPurchases.id, purchaseId));
+          if (isPaymentComplete) {
+            // Get email from Stripe session
+            const stripeEmail = checkoutSession.customer_email || 
+                              checkoutSession.customer_details?.email || 
+                              null;
+            
+            // Check if we need to update email (if current is placeholder)
+            const needsEmailUpdate = stripeEmail && 
+                                    stripeEmail.trim() !== "" &&
+                                    guestPurchase.guestEmail?.includes("@stripe-pending.getlost.ink");
+            
+            console.log(`[Verify Guest Session] Email info:`, {
+              stripeEmail,
+              currentEmail: guestPurchase.guestEmail,
+              needsEmailUpdate,
+            });
+            
+            // Update guest purchase status and email (idempotent - safe to call multiple times)
+            await db
+              .update(guestPurchases)
+              .set({
+                status: "completed",
+                paymentIntentId: (checkoutSession.payment_intent as string) || checkoutSession.id,
+                completedAt: new Date(),
+                updatedAt: new Date(),
+                ...(needsEmailUpdate && stripeEmail ? { 
+                  guestEmail: stripeEmail.toLowerCase().trim() 
+                } : {}),
+              })
+              .where(eq(guestPurchases.id, purchaseId));
+            
+            if (needsEmailUpdate && stripeEmail) {
+              console.log(`[Verify Guest Session] ✅ Updated email from placeholder to: ${stripeEmail.toLowerCase().trim()}`);
+            }
 
         // Get updated purchase to verify the update worked
         const [updatedPurchase] = await db

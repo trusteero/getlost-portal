@@ -410,13 +410,17 @@ export async function POST(request: NextRequest) {
             },
           ],
       mode: "payment",
-          success_url: `${baseURL}/signup?purchase_id=${purchaseId}&session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${baseURL}/purchase-upload`,
-          client_reference_id: purchaseId,
-          // Don't set customer_email - let user enter it in Stripe checkout
-          metadata: {
+      success_url: `${baseURL}/signup?purchase_id=${purchaseId}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseURL}/purchase-upload`,
+      client_reference_id: purchaseId,
+      // Don't set customer_email - let user enter it in Stripe checkout
+      // Stripe will automatically collect email and make it available in customer_details.email
+      invoice_creation: {
+        enabled: false, // We don't need invoices for this
+      },
+      metadata: {
         purchaseId,
-        guestEmail: normalizedEmail,
+        guestEmail: normalizedEmail, // Placeholder email, will be updated from Stripe
         isGuestPurchase: "true", // Flag for webhook
         featureType: "book-upload",
         ...(stripePriceId ? { stripePriceId } : {}),
