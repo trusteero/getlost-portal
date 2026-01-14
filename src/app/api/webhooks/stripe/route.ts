@@ -121,7 +121,16 @@ export async function POST(request: NextRequest) {
               });
             }
 
-            // Update guest purchase status (wrap in transaction for safety)
+            // Update guest purchase status and email from Stripe (wrap in transaction for safety)
+            // Get email from Stripe session if available (customer_email or customer_details)
+            const stripeEmail = session.customer_email || 
+                              (session.customer_details?.email) || 
+                              null;
+            
+            // Update email if we have it from Stripe and current email is a placeholder
+            const needsEmailUpdate = stripeEmail && 
+                                    existingGuestPurchase.guestEmail?.includes("@stripe-pending.getlost.ink");
+            
             await db.transaction(async (tx) => {
               await tx
                 .update(guestPurchases)
@@ -130,9 +139,15 @@ export async function POST(request: NextRequest) {
                   paymentIntentId: (session.payment_intent as string) || session.id,
                   completedAt: new Date(),
                   updatedAt: new Date(),
+                  ...(needsEmailUpdate && stripeEmail ? { 
+                    guestEmail: stripeEmail.toLowerCase().trim() 
+                  } : {}),
                 })
                 .where(eq(guestPurchases.id, purchaseId));
 
+              if (needsEmailUpdate && stripeEmail) {
+                console.log(`[Webhook] ✅ Updated guest purchase ${purchaseId} email from placeholder to: ${stripeEmail}`);
+              }
               console.log(`[Webhook] ✅ Updated guest purchase ${purchaseId} to completed status`);
             });
 

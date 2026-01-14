@@ -158,25 +158,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { email, featureType = "book-upload" } = await request.json();
+        const { email, featureType = "book-upload" } = await request.json();
 
-    // Validate email
-    if (!email || typeof email !== "string" || !isValidEmail(email)) {
-      return NextResponse.json(
-        { error: "Valid email address is required" },
-        { status: 400 }
-      );
-    }
+        // Email is optional - Stripe will collect it
+        // Use placeholder email if not provided, will be updated from Stripe webhook
+        let normalizedEmail: string;
+        if (email && typeof email === "string" && isValidEmail(email)) {
+          normalizedEmail = email.toLowerCase().trim();
+        } else {
+          // Use placeholder - will be updated when we get email from Stripe checkout
+          normalizedEmail = `pending-${crypto.randomUUID()}@stripe-pending.getlost.ink`;
+        }
 
-    // Only allow book-upload for guest purchases (for now)
-    if (featureType !== "book-upload") {
-      return NextResponse.json(
-        { error: "Only book-upload is available for guest purchases" },
-        { status: 400 }
-      );
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
+        // Only allow book-upload for guest purchases (for now)
+        if (featureType !== "book-upload") {
+          return NextResponse.json(
+            { error: "Only book-upload is available for guest purchases" },
+            { status: 400 }
+          );
+        }
     const baseURL = getBaseURL(request);
 
     // Check Stripe configuration
