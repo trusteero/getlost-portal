@@ -5,6 +5,7 @@ import { db } from "@/server/db";
 import { account, user as betterAuthUser } from "@/server/db/better-auth-schema";
 import { eq, desc } from "drizzle-orm";
 import { createExampleBooksForUser } from "@/server/utils/create-example-books";
+import { linkGuestPurchasesToUser } from "@/server/utils/link-guest-purchases";
 
 const handler = toNextJsHandler(auth);
 
@@ -55,6 +56,62 @@ export const POST = async (request: Request) => {
     console.log("🔐 [Better Auth] Calling handler.POST...");
     const response = await handler.POST(request);
     console.log("🔐 [Better Auth] Handler returned status:", response.status);
+    
+    // Handle signup - link guest purchases after successful signup
+    if (pathname.includes("/sign-up") || pathname.includes("/signup")) {
+      try {
+        // Check if signup was successful (status 200 or 201)
+        if (response.status >= 200 && response.status < 300) {
+          // Try to get the email from the request body
+          try {
+            const body = await request.clone().json();
+            if (body.email) {
+              const email = body.email.toLowerCase().trim();
+              console.log(`🔐 [Better Auth] Signup successful for email: ${email}, attempting to link guest purchases...`);
+              
+              // Find the user that was just created
+              const [newUser] = await db
+                .select()
+                .from(betterAuthUser)
+                .where(eq(betterAuthUser.email, email))
+                .limit(1);
+              
+              if (newUser) {
+                console.log(`🔐 [Better Auth] Found new user ${newUser.id}, linking guest purchases...`);
+                // Link guest purchases asynchronously (don't block response)
+                linkGuestPurchasesToUser(newUser.id, email).catch((error) => {
+                  console.error("❌ [Better Auth] Failed to link guest purchases after signup:", error);
+                });
+              } else {
+                console.log(`🔐 [Better Auth] User not found immediately after signup, will retry...`);
+                // Retry after a short delay in case user is still being created
+                setTimeout(async () => {
+                  const [retryUser] = await db
+                    .select()
+                    .from(betterAuthUser)
+                    .where(eq(betterAuthUser.email, email))
+                    .limit(1);
+                  
+                  if (retryUser) {
+                    console.log(`🔐 [Better Auth] Found user ${retryUser.id} on retry, linking guest purchases...`);
+                    linkGuestPurchasesToUser(retryUser.id, email).catch((error) => {
+                      console.error("❌ [Better Auth] Failed to link guest purchases on retry:", error);
+                    });
+                  } else {
+                    console.warn(`🔐 [Better Auth] ⚠️  User still not found after retry for email: ${email}`);
+                  }
+                }, 1000);
+              }
+            }
+          } catch (bodyError) {
+            console.log("🔐 [Better Auth] Could not read request body for signup linking");
+          }
+        }
+      } catch (signupError) {
+        console.error("❌ [Better Auth] Error in signup guest purchase linking:", signupError);
+        // Don't fail the signup if linking fails
+      }
+    }
     
     // Log response status for sign-in requests
     if (pathname.includes("/sign-in") || pathname.includes("/signin")) {

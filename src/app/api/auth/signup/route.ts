@@ -234,16 +234,26 @@ export async function POST(request: Request) {
 		}
 
 		// Link any guest purchases to this user account
+		console.log(`[Signup] 🔗 Attempting to link guest purchases for user ${createdUser.id} with email: ${email}`);
 		try {
 			const linkedPurchaseIds = await linkGuestPurchasesToUser(
 				createdUser.id,
 				email.toLowerCase().trim()
 			);
+			console.log(`[Signup] 🔗 Linking function returned ${linkedPurchaseIds.length} purchase ID(s):`, linkedPurchaseIds);
 			if (linkedPurchaseIds.length > 0) {
 				console.log(`✅ [Signup] Linked ${linkedPurchaseIds.length} guest purchase(s) to user ${createdUser.id}`);
+			} else {
+				console.log(`[Signup] ℹ️ No guest purchases found to link for email: ${email}`);
 			}
 		} catch (linkError) {
 			console.error("❌ [Signup] Failed to link guest purchases:", linkError);
+			console.error("❌ [Signup] Link error details:", {
+				message: linkError instanceof Error ? linkError.message : String(linkError),
+				stack: linkError instanceof Error ? linkError.stack : undefined,
+				userId: createdUser.id,
+				email: email,
+			});
 			// Don't fail signup if linking fails - purchases can be linked later
 		}
 

@@ -14,6 +14,8 @@ export async function linkGuestPurchasesToUser(
   userId: string,
   email: string
 ): Promise<string[]> {
+  console.log(`[Link Guest Purchases] 🔍 Function called for userId: ${userId}, email: ${email}`);
+  
   const normalizedEmail = email.toLowerCase().trim();
 
   console.log(`[Link Guest Purchases] Looking for guest purchases with email: ${normalizedEmail}`);

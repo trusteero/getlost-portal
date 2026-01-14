@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 import crypto from "crypto";
 import { createExampleBooksForUser } from "@/server/utils/create-example-books";
+import { linkGuestPurchasesToUser } from "@/server/utils/link-guest-purchases";
 
 const handler = toNextJsHandler(auth);
 
@@ -63,6 +64,12 @@ export async function GET(request: Request) {
                   console.error("❌ [Verify Email] Failed to send welcome email:", emailError);
                   // Don't fail the verification if email fails
                 }
+                
+                // Link guest purchases to this user account (async, don't wait)
+                linkGuestPurchasesToUser(verifiedUser[0]!.id, verifiedUser[0]!.email).catch((error) => {
+                  console.error("❌ [Verify Email] Failed to link guest purchases:", error);
+                  // Don't fail verification if linking fails
+                });
                 
                 // Create example books for the user (async, don't wait)
                 createExampleBooksForUser(verifiedUser[0]!.id).catch((error) => {
