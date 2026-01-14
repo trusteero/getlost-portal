@@ -874,8 +874,36 @@ function ensureEssentialTables(): void {
       sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_feature_idx ON getlostportal_guest_purchase(featureType)`);
       console.log("[Migrations] ✅ Created getlostportal_guest_purchase table");
     }
+
+    // Clean up old table without prefix if it exists (from old migration)
+    const oldTableCheck = sqlite
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='guest_purchase'"
+      )
+      .get();
+
+    if (oldTableCheck) {
+      console.log("[Migrations] Found old guest_purchase table (without prefix), checking if it has data...");
+      const oldTableData = sqlite
+        .prepare("SELECT COUNT(*) as count FROM guest_purchase")
+        .get() as { count: number };
+      
+      if (oldTableData.count > 0) {
+        console.log(`[Migrations] ⚠️ Old guest_purchase table has ${oldTableData.count} record(s). Migrating to getlostportal_guest_purchase...`);
+        // Migrate data from old table to new table
+        sqlite.exec(`
+          INSERT OR IGNORE INTO getlostportal_guest_purchase 
+          SELECT * FROM guest_purchase
+        `);
+        console.log("[Migrations] ✅ Migrated data from old table");
+      }
+      
+      // Drop the old table
+      sqlite.exec(`DROP TABLE IF EXISTS guest_purchase`);
+      console.log("[Migrations] ✅ Dropped old guest_purchase table");
+    }
   } catch (guestPurchaseError) {
-    console.error("[Migrations] Failed to create getlostportal_guest_purchase table:", guestPurchaseError);
+    console.error("[Migrations] Failed to create/getlostportal_guest_purchase table:", guestPurchaseError);
     // Don't throw - allow app to continue
   }
 }
