@@ -22,20 +22,60 @@ function SignupContent() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [signupSuccess, setSignupSuccess] = useState(false);
 	const [error, setError] = useState("");
-	const [purchaseContext, setPurchaseContext] = useState<{ purchaseId?: string; email?: string } | null>(null);
+	const [purchaseContext, setPurchaseContext] = useState<{ purchaseId?: string; email?: string; sessionId?: string } | null>(null);
 
 	// Check for purchase context from URL params
 	useEffect(() => {
 		const purchaseId = searchParams.get("purchase_id");
 		const email = searchParams.get("email");
-		if (purchaseId || email) {
-			setPurchaseContext({ purchaseId: purchaseId || undefined, email: email || undefined });
+		const sessionId = searchParams.get("session_id");
+		if (purchaseId || email || sessionId) {
+			setPurchaseContext({ 
+				purchaseId: purchaseId || undefined, 
+				email: email || undefined,
+				sessionId: sessionId || undefined,
+			});
 			// Pre-fill email if provided
 			if (email) {
 				setFormData(prev => ({ ...prev, email: decodeURIComponent(email) }));
 			}
 		}
 	}, [searchParams]);
+
+	// Verify guest purchase session when returning from Stripe checkout
+	useEffect(() => {
+		const verifyGuestSession = async () => {
+			if (purchaseContext?.sessionId && purchaseContext?.purchaseId) {
+				console.log(`[Signup] Verifying guest purchase session: sessionId=${purchaseContext.sessionId}, purchaseId=${purchaseContext.purchaseId}`);
+				try {
+					const verifyResponse = await fetch('/api/checkout/verify-guest-session', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ 
+							sessionId: purchaseContext.sessionId, 
+							purchaseId: purchaseContext.purchaseId 
+						}),
+					});
+
+					if (verifyResponse.ok) {
+						const verifyData = await verifyResponse.json();
+						if (verifyData.success) {
+							console.log(`[Signup] ✅ Guest purchase ${purchaseContext.purchaseId} verified and completed`);
+						} else {
+							console.log(`[Signup] Guest purchase verification: ${verifyData.message}`);
+						}
+					} else {
+						console.warn(`[Signup] Failed to verify guest session: ${verifyResponse.status}`);
+					}
+				} catch (error) {
+					console.error(`[Signup] Error verifying guest session:`, error);
+					// Don't show error to user - webhook will handle it eventually
+				}
+			}
+		};
+
+		verifyGuestSession();
+	}, [purchaseContext?.sessionId, purchaseContext?.purchaseId]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
