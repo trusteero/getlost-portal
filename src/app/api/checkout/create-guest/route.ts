@@ -410,11 +410,11 @@ export async function POST(request: NextRequest) {
             },
           ],
       mode: "payment",
-      success_url: `${baseURL}/signup?purchase_id=${purchaseId}&email=${encodeURIComponent(normalizedEmail)}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseURL}/purchase-upload`,
-      client_reference_id: purchaseId,
-      customer_email: normalizedEmail, // Pre-fill email in Stripe checkout
-      metadata: {
+          success_url: `${baseURL}/signup?purchase_id=${purchaseId}&session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseURL}/purchase-upload`,
+          client_reference_id: purchaseId,
+          // Don't set customer_email - let user enter it in Stripe checkout
+          metadata: {
         purchaseId,
         guestEmail: normalizedEmail,
         isGuestPurchase: "true", // Flag for webhook
