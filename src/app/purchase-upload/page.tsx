@@ -1,25 +1,45 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { ImageCarousel } from "@/components/image-carousel";
+import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Upload, CheckCircle, ArrowRight } from "lucide-react";
+import { Red_Hat_Display } from "next/font/google";
+
+const redHatDisplay = Red_Hat_Display({
+  subsets: ["latin"],
+  variable: "--font-red-hat-display",
+  weight: ["400", "500", "600", "700"],
+});
+
+// Placeholder images - replace with actual carousel images
+// You can use book report images or marketing assets
+const carouselImages = [
+  "/api/uploads/precanned/uploads/wool_cover.jpg",
+  "/api/uploads/precanned/uploads/beach_read.jpg",
+  "/placeholder.svg",
+  "/placeholder.svg",
+  "/placeholder.svg",
+];
 
 export default function PurchaseUploadPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [showEmailInput, setShowEmailInput] = useState(false);
   const [error, setError] = useState("");
 
-  const handlePurchase = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  const handlePurchase = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    if (!email.trim()) {
+      setShowEmailInput(true);
+      return;
+    }
 
+    setLoading(true);
+    setError("");
+    
     try {
       const response = await fetch("/api/checkout/create-guest", {
         method: "POST",
@@ -34,14 +54,9 @@ export default function PurchaseUploadPage() {
 
       if (response.ok) {
         if (data.url) {
-          // Redirect to Stripe checkout
           window.location.href = data.url;
         } else if (data.status === "completed" && data.redirectUrl) {
-          // Simulated purchase - redirect to signup
           window.location.href = data.redirectUrl;
-        } else {
-          setError("Failed to create checkout session. Please try again.");
-          setLoading(false);
         }
       } else {
         setError(data.error || "Failed to create checkout session. Please try again.");
@@ -55,114 +70,98 @@ export default function PurchaseUploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-4xl mx-auto px-4 py-12 md:py-16">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Upload Your Manuscript
+    <div className={`min-h-screen bg-[#FCFDFD] ${redHatDisplay.variable}`}>
+      {/* Banner Section */}
+      <header className="bg-white">
+        <div className="max-w-7xl mx-auto px-4 pt-3 pb-5">
+          <h1 
+            className="text-[17px] font-normal text-[#2A2522] mb-0 pt-3 font-[family-name:var(--font-red-hat-display)]"
+          >
+            BookID Author Report
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Get comprehensive analysis and insights for your book. Purchase now and create your account after checkout.
-          </p>
+          <Link
+            href="https://www.publishersweekly.com/pw/by-topic/international/international-book-news/article/99321-finnish-ai-co-aims-to-help-authors-with-market-analysis.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block bg-[#791529] text-white text-base py-2 px-0 mt-0 transition-opacity hover:opacity-90"
+            style={{ fontFamily: "Inter, sans-serif" }}
+          >
+            <span className="block text-center">Featured By</span>
+            <span className="block text-center">Publisher&apos;s</span>
+            <span className="block text-center pb-5">Weekly</span>
+          </Link>
         </div>
+      </header>
 
-        {/* Main Card */}
-        <Card className="shadow-xl">
-          <CardHeader className="text-center pb-4">
-            <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <Upload className="w-8 h-8 text-blue-600" />
-            </div>
-            <CardTitle className="text-2xl">Book Upload Permission</CardTitle>
-            <CardDescription className="text-lg mt-2">
-              One-time purchase • $99.99
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handlePurchase} className="space-y-6">
-              <div>
-                <Label htmlFor="email" className="text-base font-medium">
-                  Email Address
-                </Label>
-                <p className="text-sm text-gray-500 mb-2">
-                  We'll use this to create your account after purchase
-                </p>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex flex-col items-center gap-8">
+          {/* Carousel */}
+          <div className="w-full cursor-pointer">
+            <ImageCarousel images={carouselImages} autoPlay={true} interval={3000} />
+          </div>
+
+          {/* Buy Now Button Section */}
+          <div className="flex flex-col items-center gap-4 w-full max-w-md">
+            {showEmailInput && (
+              <form onSubmit={handlePurchase} className="w-full space-y-3">
                 <Input
-                  id="email"
                   type="email"
+                  placeholder="Enter your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder="your@email.com"
-                  className="h-12 text-base"
+                  className="w-full"
                   disabled={loading}
                 />
-              </div>
+                {error && (
+                  <p className="text-sm text-red-600 text-center">{error}</p>
+                )}
+              </form>
+            )}
 
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
-                  {error}
+            <button
+              onClick={() => {
+                if (!showEmailInput) {
+                  setShowEmailInput(true);
+                } else {
+                  handlePurchase();
+                }
+              }}
+              disabled={loading}
+              className="relative inline-block px-8 py-5 rounded-2xl text-base font-normal text-[#2A2522] cursor-pointer transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                background: "linear-gradient(to bottom, rgb(225, 177, 55), rgb(210, 150, 45), rgb(178, 119, 52))",
+                fontFamily: "Inter, sans-serif",
+                boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Processing...</span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">Buy</span>
+                    <span className="font-semibold">Now</span>
+                  </div>
+                  <p className="text-sm mt-1">50% Discount: GETLOST50</p>
                 </div>
               )}
+            </button>
 
-              <Button
-                type="submit"
-                disabled={loading || !email.trim()}
-                className="w-full h-12 text-base font-semibold"
-                size="lg"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    Purchase Upload Permission
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </>
-                )}
-              </Button>
-            </form>
-
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-3">What's included:</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li className="flex items-start">
-                  <CheckCircle className="w-5 h-5 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span>Upload and analyze one manuscript</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="w-5 h-5 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span>Comprehensive book analysis and insights</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="w-5 h-5 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span>Access to all analysis features</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="w-5 h-5 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span>Account created automatically after purchase</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-500">
-                Already have an account?{" "}
-                <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">
-                  Sign in
-                </Link>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Trust Indicators */}
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>Secure payment powered by Stripe</p>
+            {/* Description Text */}
+            <p 
+              className="text-base text-[#2A2522] text-center max-w-2xl mt-2" 
+              style={{ fontFamily: "Inter, sans-serif" }}
+            >
+              For the first time, you can clearly identify who your book is for, what they care about, and how to reach them.
+            </p>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
