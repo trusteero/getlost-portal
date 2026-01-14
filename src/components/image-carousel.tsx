@@ -44,7 +44,7 @@ export function ImageCarousel({ images, autoPlay = true, interval = 3000 }: Imag
           key={index}
           src={image}
           alt={`Slide ${index + 1}`}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+          className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${
             index === currentIndex ? "opacity-100" : "opacity-0"
           }`}
         />

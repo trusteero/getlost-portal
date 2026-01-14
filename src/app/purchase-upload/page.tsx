@@ -63,7 +63,7 @@ export default function PurchaseUploadPage() {
       {/* Banner Section */}
       <header className="bg-white">
         <div className="max-w-7xl mx-auto px-4 pt-3 pb-5">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between max-w-md mx-auto">
             {/* Left: Title */}
             <h1 
               className="text-[17px] font-semibold text-[#2A2522] mb-0 pt-3 font-[family-name:var(--font-red-hat-display)]"
