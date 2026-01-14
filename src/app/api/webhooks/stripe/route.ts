@@ -112,18 +112,21 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          // Update guest purchase status
-          await db
-            .update(guestPurchases)
-            .set({
-              status: "completed",
-              paymentIntentId: (session.payment_intent as string) || session.id,
-              completedAt: new Date(),
-              updatedAt: new Date(),
-            })
-            .where(eq(guestPurchases.id, purchaseId));
+          // Update guest purchase status (wrap in transaction for safety)
+          await db.transaction(async (tx) => {
+            await tx
+              .update(guestPurchases)
+              .set({
+                status: "completed",
+                paymentIntentId: (session.payment_intent as string) || session.id,
+                completedAt: new Date(),
+                updatedAt: new Date(),
+              })
+              .where(eq(guestPurchases.id, purchaseId));
 
-          console.log(`[Webhook] ✅ Updated guest purchase ${purchaseId} to completed status`);
+            console.log(`[Webhook] ✅ Updated guest purchase ${purchaseId} to completed status`);
+          });
+
           console.log(`[Webhook] Guest purchase will be linked to user account when they sign up with email: ${existingGuestPurchase.guestEmail}`);
 
           return NextResponse.json({ 

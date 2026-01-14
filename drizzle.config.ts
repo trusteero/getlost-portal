@@ -8,5 +8,5 @@ export default {
 	dbCredentials: {
 		url: env.DATABASE_URL,
 	},
-	tablesFilter: ["getlostportal_*"],
+	tablesFilter: ["getlostportal_*", "guest_purchase"],
 } satisfies Config;

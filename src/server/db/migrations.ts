@@ -840,6 +840,43 @@ function ensureEssentialTables(): void {
     console.error("[Migrations] Error ensuring essential tables:", error.message);
     // Don't throw - allow app to continue
   }
+
+  // Ensure guest_purchase table exists (for guest purchases feature)
+  try {
+    const guestPurchaseCheck = sqlite
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='guest_purchase'"
+      )
+      .get();
+
+    if (!guestPurchaseCheck) {
+      console.log("[Migrations] Creating guest_purchase table...");
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS guest_purchase (
+          id text(255) PRIMARY KEY NOT NULL,
+          guestEmail text(255) NOT NULL,
+          bookId text(255),
+          featureType text(50) NOT NULL,
+          amount integer NOT NULL,
+          currency text(10) NOT NULL DEFAULT 'USD',
+          paymentMethod text(50),
+          paymentIntentId text(255),
+          status text(50) NOT NULL DEFAULT 'pending',
+          completedAt integer,
+          createdAt integer NOT NULL DEFAULT (unixepoch()),
+          updatedAt integer NOT NULL DEFAULT (unixepoch()),
+          FOREIGN KEY (bookId) REFERENCES getlostportal_book(id) ON UPDATE no action ON DELETE no action
+        )
+      `);
+      sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_email_idx ON guest_purchase(guestEmail)`);
+      sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_status_idx ON guest_purchase(status)`);
+      sqlite.exec(`CREATE INDEX IF NOT EXISTS guest_purchase_feature_idx ON guest_purchase(featureType)`);
+      console.log("[Migrations] ✅ Created guest_purchase table");
+    }
+  } catch (guestPurchaseError) {
+    console.error("[Migrations] Failed to create guest_purchase table:", guestPurchaseError);
+    // Don't throw - allow app to continue
+  }
 }
 
 /**

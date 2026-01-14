@@ -14,6 +14,9 @@
 		},
 		{
 			"path": "../../../getlostconverter"
+		},
+		{
+			"path": "../../../book-processor"
 		}
 	],
 	"settings": {}

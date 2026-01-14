@@ -43,6 +43,13 @@
       "when": 1766052902133,
       "tag": "0005_add_performance_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1735689600000,
+      "tag": "0006_add_guest_purchases_table",
+      "breakpoints": true
     }
   ]
 }
