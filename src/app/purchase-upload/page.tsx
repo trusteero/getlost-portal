@@ -12,14 +12,13 @@ const redHatDisplay = Red_Hat_Display({
   weight: ["400", "500", "600", "700"],
 });
 
-// Placeholder images - replace with actual carousel images
-// You can use book report images or marketing assets
+// Carousel images
 const carouselImages = [
-  "/api/uploads/precanned/uploads/wool_cover.jpg",
-  "/api/uploads/precanned/uploads/beach_read.jpg",
-  "/placeholder.svg",
-  "/placeholder.svg",
-  "/placeholder.svg",
+  "/Carousel1.png",
+  "/Carousel2.png",
+  "/Carousel3.png",
+  "/Carousel4.png",
+  "/Carousel5.png",
 ];
 
 export default function PurchaseUploadPage() {
