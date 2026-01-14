@@ -93,10 +93,10 @@ export default function PurchaseUploadPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex flex-col items-center gap-8 w-full">
-          {/* Carousel - Same width as banner */}
-          <div className="w-full">
+      <main className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
+        <div className="flex flex-col items-center gap-6 sm:gap-8 w-full">
+          {/* Carousel - Same width as banner, responsive */}
+          <div className="w-full max-w-full">
             <ImageCarousel images={carouselImages} autoPlay={true} interval={3000} />
           </div>
 
@@ -111,7 +111,7 @@ export default function PurchaseUploadPage() {
             <button
               onClick={handlePurchase}
               disabled={loading}
-              className="buy-button w-full py-5 px-8 text-center cursor-pointer active:scale-[0.98] transition-transform"
+              className="buy-button w-full max-w-md py-4 sm:py-5 px-6 sm:px-8 text-center cursor-pointer active:scale-[0.98] transition-transform"
               style={{
                 background: "linear-gradient(to bottom, rgb(225, 177, 55), rgb(210, 150, 45), rgb(178, 119, 52))",
                 borderRadius: "16px",
@@ -126,10 +126,10 @@ export default function PurchaseUploadPage() {
               ) : (
                 <div className="relative z-10">
                   <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-[39px] font-bold text-white drop-shadow-sm">Buy</span>
-                    <span className="text-[39px] font-bold text-white drop-shadow-sm">Now</span>
+                    <span className="text-3xl sm:text-[39px] font-bold text-white drop-shadow-sm">Buy</span>
+                    <span className="text-3xl sm:text-[39px] font-bold text-white drop-shadow-sm">Now</span>
                   </div>
-                  <p className="text-[15px] text-white/75 mt-1">50% Discount: GETLOST50</p>
+                  <p className="text-sm sm:text-[15px] text-white/75 mt-1">50% Discount: GETLOST50</p>
                 </div>
               )}
             </button>
