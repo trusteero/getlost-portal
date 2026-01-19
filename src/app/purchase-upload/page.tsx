@@ -110,7 +110,7 @@ export default function PurchaseUploadPage() {
             <button
               onClick={handlePurchase}
               disabled={loading}
-              className="buy-button w-full max-w-md py-4 sm:py-5 px-6 sm:px-8 text-center cursor-pointer active:scale-[0.98] transition-transform"
+              className="buy-button w-full max-w-md py-6 sm:py-8 px-6 sm:px-8 text-center cursor-pointer active:scale-[0.98] transition-transform"
               style={{
                 background: "linear-gradient(to bottom, rgb(225, 177, 55), rgb(210, 150, 45), rgb(178, 119, 52))",
                 borderRadius: "16px",
@@ -125,10 +125,9 @@ export default function PurchaseUploadPage() {
               ) : (
                 <div className="relative z-10">
                   <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-3xl sm:text-[39px] font-bold text-white drop-shadow-sm">Buy</span>
-                    <span className="text-3xl sm:text-[39px] font-bold text-white drop-shadow-sm">Now</span>
+                    <span className="text-4xl sm:text-5xl md:text-6xl font-bold text-white drop-shadow-sm">Buy</span>
+                    <span className="text-4xl sm:text-5xl md:text-6xl font-bold text-white drop-shadow-sm">Now</span>
                   </div>
-                  <p className="text-sm sm:text-[15px] text-white/75 mt-1">50% Discount: GETLOST50</p>
                 </div>
               )}
             </button>
