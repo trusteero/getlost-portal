@@ -1374,24 +1374,17 @@ function DashboardContent() {
           <h2 className="text-lg md:text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight mb-2">
             {isFirstLogin ? `Welcome, ${userName}!` : `Welcome back, ${userName}!`}
           </h2>
+          <p className="text-sm md:text-base text-gray-600 font-medium">
+            You have <b>{remainingPermissions} unused report credit{remainingPermissions !== 1 ? 's' : ''}</b> and <b>{stats.activeManuscripts} active manuscript{stats.activeManuscripts !== 1 ? 's' : ''}</b>.
+          </p>
           {remainingPermissions > 0 ? (
-            <>
-              <p className="text-sm md:text-base text-gray-600 font-medium">
-                You have <b>{remainingPermissions} unused report credit{remainingPermissions !== 1 ? 's' : ''}</b>.
-              </p>
-              <p className="text-sm md:text-base text-gray-600 font-medium">
-                Ready for your next step? Upload your manuscript and submit it to our team.
-              </p>
-            </>
+            <p className="text-sm md:text-base text-gray-600 font-medium">
+              Ready for your next step? Upload your manuscript and submit it to our team.
+            </p>
           ) : books.length > 0 ? (
-            <>
-              <p className="text-sm md:text-base text-gray-600 font-medium">
-                You've unlocked <b>{stats.unlockedInsights} of {stats.totalInsights} manuscript insights</b> and have <b>{stats.activeManuscripts} active manuscript{stats.activeManuscripts !== 1 ? 's' : ''}</b>.
-              </p>
-              <p className="text-sm md:text-base text-gray-600 font-medium">
-                Ready for your next step? Unlock your Author Data Reports to target your audience better.
-              </p>
-            </>
+            <p className="text-sm md:text-base text-gray-600 font-medium">
+              Ready for your next step? Unlock your Author Data Reports to target your audience better.
+            </p>
           ) : (
             <p className="text-sm md:text-base text-gray-600 font-medium">
               Get started by uploading your first manuscript to begin your journey.
