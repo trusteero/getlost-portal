@@ -1409,7 +1409,7 @@ function DashboardContent() {
             {books.length > 0 ? (
               <>
                 <RefreshCw className="w-4 h-4 inline-block align-middle" />
-                Analyze Another Manuscript
+                Upload Your Manuscript
               </>
             ) : (
               <>
