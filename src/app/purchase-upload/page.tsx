@@ -68,7 +68,7 @@ export default function PurchaseUploadPage() {
             <h1 
               className="text-[17px] font-semibold text-[#2A2522] mb-0 pt-3 font-[family-name:var(--font-red-hat-display)]"
             >
-              BookID Author Report
+              myStory DNA report
             </h1>
             
             {/* Right: Featured Banner - Pennant/Ribbon Shape */}
