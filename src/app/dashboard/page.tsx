@@ -74,6 +74,7 @@ function DashboardContent() {
   const [sessionTimeout, setSessionTimeout] = useState(false);
   const [fallbackSession, setFallbackSession] = useState<any>(null);
   const [hasUploadPermission, setHasUploadPermission] = useState<boolean | null>(null);
+  const [remainingPermissions, setRemainingPermissions] = useState<number>(0);
   const [checkingPermission, setCheckingPermission] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
@@ -832,6 +833,7 @@ function DashboardContent() {
           rawData: JSON.stringify(data, null, 2)
         });
         setHasUploadPermission(hasPermission);
+        setRemainingPermissions(data.remainingPermissions || 0);
         return hasPermission;
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -839,6 +841,7 @@ function DashboardContent() {
       }
       console.warn("[Dashboard] Upload permission check failed:", response.status);
       setHasUploadPermission(false);
+      setRemainingPermissions(0);
       return false;
     } catch (error) {
       console.error("[Dashboard] Failed to check upload permission:", error);
@@ -848,6 +851,7 @@ function DashboardContent() {
         userId: activeSession?.id,
       });
       setHasUploadPermission(false);
+      setRemainingPermissions(0);
       return false;
     } finally {
       setCheckingPermission(false);
@@ -1025,6 +1029,8 @@ function DashboardContent() {
       setUploadCoverImage(null);
       setUploadFile(null);
       await fetchBooks();
+      // Refresh upload permission to update remaining credits count
+      await checkUploadPermission();
       // Scroll to the newly uploaded book
       setTimeout(() => {
         const element = document.getElementById(`detail-${data.bookId}`);
@@ -1368,7 +1374,16 @@ function DashboardContent() {
           <h2 className="text-lg md:text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight mb-2">
             {isFirstLogin ? `Welcome, ${userName}!` : `Welcome back, ${userName}!`}
           </h2>
-          {books.length > 0 ? (
+          {remainingPermissions > 0 ? (
+            <>
+              <p className="text-sm md:text-base text-gray-600 font-medium">
+                You have <b>{remainingPermissions} unused report credit{remainingPermissions !== 1 ? 's' : ''}</b>.
+              </p>
+              <p className="text-sm md:text-base text-gray-600 font-medium">
+                Ready for your next step? Upload your manuscript and submit it to our team.
+              </p>
+            </>
+          ) : books.length > 0 ? (
             <>
               <p className="text-sm md:text-base text-gray-600 font-medium">
                 You've unlocked <b>{stats.unlockedInsights} of {stats.totalInsights} manuscript insights</b> and have <b>{stats.activeManuscripts} active manuscript{stats.activeManuscripts !== 1 ? 's' : ''}</b>.
