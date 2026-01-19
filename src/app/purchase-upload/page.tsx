@@ -137,7 +137,7 @@ export default function PurchaseUploadPage() {
               className="text-base text-[#2A2522] text-center" 
               style={{ fontFamily: "Inter, sans-serif" }}
             >
-              For the first time, you can clearly identify who your book is for, what they care about, and how to reach them.
+              For the <b>first time</b>, you can clearly identify who your book is for, what they care about, and how to reach them.
             </p>
           </div>
         </div>
