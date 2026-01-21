@@ -37,14 +37,14 @@ export function ImageCarousel({ images, autoPlay = true, interval = 3000 }: Imag
   if (images.length === 0) return null;
 
   return (
-    <div className="carousel-card w-full aspect-[1/1.05] sm:aspect-[16/9] cursor-pointer hover:shadow-lg transition-shadow duration-300 relative overflow-hidden max-w-full">
+    <div className="carousel-card w-full aspect-[1/1.05] sm:aspect-[16/9] lg:aspect-[16/10] cursor-pointer hover:shadow-lg transition-shadow duration-300 relative overflow-hidden max-w-full rounded-lg bg-gray-50">
       {/* Images with opacity transitions */}
       {images.map((image, index) => (
         <img
           key={index}
           src={image}
           alt={`Slide ${index + 1}`}
-          className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${
+          className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-500 ${
             index === currentIndex ? "opacity-100" : "opacity-0"
           }`}
         />
