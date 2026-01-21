@@ -1666,8 +1666,40 @@ function DashboardContent() {
                   </h2>
                 </div>
 
-                {/* Single Purchase Option - Introductory Offer */}
-                <div className="mb-8 relative">
+                {/* Purchase Options */}
+                <div className="mb-8 space-y-4">
+                  {/* Normal Price - Disabled with strikethrough */}
+                  <div 
+                    className="rounded-lg p-6 border-2 relative opacity-60 cursor-not-allowed"
+                    style={{ 
+                      backgroundColor: '#FFFFFF',
+                      borderColor: '#E5E7EB',
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="text-lg font-semibold mb-1 text-gray-500">
+                          Normal price
+                        </div>
+                        <div className="text-2xl font-bold text-gray-400 relative">
+                          <span className="line-through decoration-red-500 decoration-2" style={{ textDecorationColor: '#EF4444' }}>
+                            €79.99
+                          </span>
+                        </div>
+                      </div>
+                      {/* Unselected indicator circle */}
+                      <div 
+                        className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                        style={{ 
+                          backgroundColor: '#FFFFFF',
+                          borderColor: '#D1D5DB',
+                        }}
+                      >
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Introductory Offer - Selectable */}
                   <div 
                     className="rounded-lg p-6 border-2 relative overflow-visible"
                     style={{ 
@@ -1711,36 +1743,36 @@ function DashboardContent() {
                 {/* Features List */}
                 <div className="mb-8">
                   <ul className="space-y-2.5">
-                    <li className="flex items-start text-sm text-gray-900">
-                      <span className="text-black mr-3 mt-0.5">✓</span>
+                    <li className="flex items-center text-sm text-gray-900">
+                      <span className="text-black mr-3">✓</span>
                       <span>Clear reader persona and intent</span>
                     </li>
-                    <li className="flex items-start text-sm text-gray-900">
-                      <span className="text-black mr-3 mt-0.5">✓</span>
+                    <li className="flex items-center text-sm text-gray-900">
+                      <span className="text-black mr-3">✓</span>
                       <span>True genre and subgenre positioning</span>
                     </li>
-                    <li className="flex items-start text-sm text-gray-900">
-                      <span className="text-black mr-3 mt-0.5">✓</span>
+                    <li className="flex items-center text-sm text-gray-900">
+                      <span className="text-black mr-3">✓</span>
                       <span>Comparable titles and market anchors</span>
                     </li>
-                    <li className="flex items-start text-sm text-gray-900">
-                      <span className="text-black mr-3 mt-0.5">✓</span>
+                    <li className="flex items-center text-sm text-gray-900">
+                      <span className="text-black mr-3">✓</span>
                       <span>Audience size and demand signals</span>
                     </li>
-                    <li className="flex items-start text-sm text-gray-900">
-                      <span className="text-black mr-3 mt-0.5">✓</span>
+                    <li className="flex items-center text-sm text-gray-900">
+                      <span className="text-black mr-3">✓</span>
                       <span>Blurb and hook alignment check</span>
                     </li>
-                    <li className="flex items-start text-sm text-gray-900">
-                      <span className="text-black mr-3 mt-0.5">✓</span>
+                    <li className="flex items-center text-sm text-gray-900">
+                      <span className="text-black mr-3">✓</span>
                       <span>Pricing and format guidance</span>
                     </li>
-                    <li className="flex items-start text-sm text-gray-900">
-                      <span className="text-black mr-3 mt-0.5">✓</span>
+                    <li className="flex items-center text-sm text-gray-900">
+                      <span className="text-black mr-3">✓</span>
                       <span>Marketing angles that convert</span>
                     </li>
-                    <li className="flex items-start text-sm text-gray-900">
-                      <span className="text-black mr-3 mt-0.5">✓</span>
+                    <li className="flex items-center text-sm text-gray-900">
+                      <span className="text-black mr-3">✓</span>
                       <span>Clear next steps to drive sales</span>
                     </li>
                   </ul>
