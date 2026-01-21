@@ -2,14 +2,20 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ImageCarousel } from "@/components/image-carousel";
 import { Loader2, ArrowUpRight } from "lucide-react";
-import { Red_Hat_Display } from "next/font/google";
+import { Red_Hat_Display, Geist } from "next/font/google";
 
 const redHatDisplay = Red_Hat_Display({
   subsets: ["latin"],
   variable: "--font-red-hat-display",
   weight: ["400", "500", "600", "700"],
+});
+
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist-sans",
 });
 
 // Mobile carousel images
@@ -70,17 +76,22 @@ export default function PurchaseUploadPage() {
   return (
     <>
       {/* Mobile Layout - Original Design */}
-      <div className={`lg:hidden min-h-screen bg-[#FCFDFD] ${redHatDisplay.variable}`}>
+      <div className={`lg:hidden min-h-screen bg-[#FCFDFD] ${redHatDisplay.variable} ${geist.variable}`}>
         {/* Banner Section */}
         <header className="bg-white">
           <div className="max-w-7xl mx-auto px-4 pt-3 pb-5">
             <div className="flex items-start justify-between max-w-md mx-auto">
-              {/* Left: Title */}
-              <h1 
-                className="text-[17px] font-semibold text-[#2A2522] mb-0 pt-3 font-[family-name:var(--font-red-hat-display)]"
-              >
-                myStory DNA report
-              </h1>
+              {/* Left: Logo */}
+              <Link href="/" className="flex items-center gap-2 pt-3">
+                <Image
+                  src="/getlost-logo-CcbncUJ4.png"
+                  alt="Get Lost"
+                  width={120}
+                  height={40}
+                  className="h-8 w-auto"
+                  priority
+                />
+              </Link>
               
               {/* Right: Featured Banner - Pennant/Ribbon Shape */}
               <Link
@@ -112,37 +123,6 @@ export default function PurchaseUploadPage() {
 
             {/* Buy Now Button Section - Same width as carousel */}
             <div className="flex flex-col items-center gap-4 w-full max-w-md">
-              {/* Error Message */}
-              {error && (
-                <p className="text-sm text-red-600 text-center w-full">{error}</p>
-              )}
-
-              {/* Buy Now Button */}
-              <button
-                onClick={handlePurchase}
-                disabled={loading}
-                className="buy-button w-full max-w-md py-6 sm:py-8 px-6 sm:px-8 text-center cursor-pointer active:scale-[0.98] transition-transform"
-                style={{
-                  background: "linear-gradient(to bottom, rgb(225, 177, 55), rgb(210, 150, 45), rgb(178, 119, 52))",
-                  borderRadius: "16px",
-                  boxShadow: "rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.1) 0px 4px 6px -4px",
-                }}
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center gap-2 text-white">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Processing...</span>
-                  </div>
-                ) : (
-                  <div className="relative z-10">
-                    <div className="flex items-baseline justify-center gap-2">
-                      <span className="text-4xl sm:text-5xl md:text-6xl font-bold text-white drop-shadow-sm">Buy</span>
-                      <span className="text-4xl sm:text-5xl md:text-6xl font-bold text-white drop-shadow-sm">Now</span>
-                    </div>
-                  </div>
-                )}
-              </button>
-
               {/* Description Text */}
               <p 
                 className="text-base text-[#2A2522] text-center" 
@@ -153,10 +133,45 @@ export default function PurchaseUploadPage() {
             </div>
           </div>
         </main>
+
+        {/* Buy Now Button - Sticky at bottom for mobile */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg p-4">
+          <div className="max-w-md mx-auto">
+            {error && (
+              <p className="text-sm text-red-600 text-center mb-2">{error}</p>
+            )}
+            <button
+              onClick={handlePurchase}
+              disabled={loading}
+              className="buy-button w-full py-6 sm:py-8 px-6 sm:px-8 text-center cursor-pointer active:scale-[0.98] transition-transform"
+              style={{
+                background: "linear-gradient(to bottom, rgb(225, 177, 55), rgb(210, 150, 45), rgb(178, 119, 52))",
+                borderRadius: "16px",
+                boxShadow: "rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.1) 0px 4px 6px -4px",
+              }}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center gap-2 text-white">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Processing...</span>
+                </div>
+              ) : (
+                <div className="relative z-10">
+                  <div className="flex items-baseline justify-center gap-2">
+                    <span className="text-4xl sm:text-5xl md:text-6xl font-bold text-white drop-shadow-sm">Buy</span>
+                    <span className="text-4xl sm:text-5xl md:text-6xl font-bold text-white drop-shadow-sm">Now</span>
+                  </div>
+                </div>
+              )}
+            </button>
+          </div>
+        </div>
+        {/* Spacer to prevent content from being hidden behind sticky button */}
+        <div className="h-32"></div>
       </div>
 
       {/* Desktop Layout - New Design */}
-      <div className="hidden lg:block min-h-screen bg-white relative overflow-hidden">
+      <div className={`hidden lg:block min-h-screen bg-white relative overflow-hidden ${geist.variable}`}>
         {/* Background decorative orange shapes */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute -left-32 top-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl"></div>
@@ -168,11 +183,16 @@ export default function PurchaseUploadPage() {
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             <div className="flex items-center justify-between h-20">
               {/* Left: Logo */}
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-black">GET LOST</span>
-                {/* Logo icon placeholder - replace with actual logo image if available */}
-                <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 via-orange-500 to-blue-500 rounded"></div>
-              </div>
+              <Link href="/" className="flex items-center">
+                <Image
+                  src="/getlost-logo-CcbncUJ4.png"
+                  alt="Get Lost"
+                  width={150}
+                  height={50}
+                  className="h-10 w-auto"
+                  priority
+                />
+              </Link>
               
               {/* Right: Featured by Publishers Weekly */}
               <Link
@@ -198,7 +218,7 @@ export default function PurchaseUploadPage() {
         <main className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-12 lg:py-20">
           <div className="flex flex-col items-center gap-12 lg:gap-16">
             {/* Main Headline */}
-            <h1 className="text-5xl lg:text-7xl font-bold text-black text-center max-w-4xl">
+            <h1 className="text-5xl lg:text-7xl font-bold text-black text-center max-w-4xl" style={{ fontFamily: "var(--font-geist-sans)" }}>
               Publish with intent.
             </h1>
 
@@ -210,7 +230,7 @@ export default function PurchaseUploadPage() {
             </div>
 
             {/* Tagline */}
-            <p className="text-3xl lg:text-4xl font-bold text-black text-center max-w-3xl">
+            <p className="text-3xl lg:text-4xl font-bold text-black text-center max-w-3xl" style={{ fontFamily: "var(--font-geist-sans)" }}>
               Gain insights that convert into book sales.
             </p>
 
@@ -219,26 +239,33 @@ export default function PurchaseUploadPage() {
               <p className="text-sm text-red-600 text-center max-w-md">{error}</p>
             )}
 
-            {/* Buy Now Button */}
-            <button
-              onClick={handlePurchase}
-              disabled={loading}
-              className="group relative bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-4 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Processing...</span>
-                </>
-              ) : (
-                <>
-                  <span>Buy Now</span>
-                  <ArrowUpRight className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                </>
-              )}
-            </button>
+            {/* Buy Now Button - Sticky at bottom */}
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg p-4">
+              <div className="max-w-7xl mx-auto flex justify-center">
+                <button
+                  onClick={handlePurchase}
+                  disabled={loading}
+                  className="group relative bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-4 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ fontFamily: "var(--font-geist-sans)" }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Buy Now</span>
+                      <ArrowUpRight className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </main>
+        {/* Spacer to prevent content from being hidden behind sticky button */}
+        <div className="h-24"></div>
       </div>
     </>
   );
