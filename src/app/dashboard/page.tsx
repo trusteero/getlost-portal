@@ -78,9 +78,8 @@ function DashboardContent() {
   const [checkingPermission, setCheckingPermission] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
-  const [selectedReportProduct, setSelectedReportProduct] = useState<
-    "dna-report" | "market-validation-report" | "market-ready-pack" | "growth-partnership"
-  >("market-ready-pack");
+  // Single purchase option - using book-upload to match the purchase-upload page
+  const selectedReportProduct: "book-upload" = "book-upload";
   const [hasCheckedForExampleBooks, setHasCheckedForExampleBooks] = useState(false);
   const [waitingForExampleBooks, setWaitingForExampleBooks] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState<boolean>(true); // Track first login for welcome message
@@ -1369,6 +1368,19 @@ function DashboardContent() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* TEST BUTTON - Remove after testing */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded-lg">
+            <button
+              onClick={() => setShowPaymentModal(true)}
+              className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 font-semibold"
+            >
+              🧪 Test Purchase Modal
+            </button>
+            <p className="text-xs text-gray-600 mt-2">Development only - Click to preview the purchase modal</p>
+          </div>
+        )}
+        
         {/* Welcome Section */}
         <div className="mb-6 md:mb-8 premium-card rounded-2xl p-4 md:p-8">
           <h2 className="text-lg md:text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight mb-2">
@@ -1631,130 +1643,137 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* Payment Modal for Upload Permission */}
+        {/* Payment Modal for Upload Permission - Matching Design Image */}
         {showPaymentModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-md">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">Purchase Report</h2>
-                  <button
-                    onClick={() => setShowPaymentModal(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    disabled={processingPayment}
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-[20px] shadow-2xl w-full max-w-[551px] overflow-hidden relative border border-gray-200" style={{ borderRadius: '20px' }}>
+              {/* Close Button */}
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
+                disabled={processingPayment}
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+
+              {/* Modal Content */}
+              <div className="p-8 pt-12">
+                {/* Title Section */}
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-gray-900 leading-tight">
+                    <span className="block">myStory DNA Audience</span>
+                    <span className="block">Report</span>
+                  </h2>
+                </div>
+
+                {/* Single Purchase Option - Introductory Offer */}
+                <div className="mb-8 relative">
+                  <div 
+                    className="rounded-lg p-6 border-2 relative overflow-visible"
+                    style={{ 
+                      backgroundColor: '#E9F4EC',
+                      borderColor: '#82C49B',
+                    }}
                   >
-                    <X className="w-5 h-5 text-gray-500" />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <p className="text-gray-600">
-                    Choose a product to purchase. After payment, you can upload a manuscript.
-                  </p>
-                  
-                  <div className="space-y-2">
-                    <label className="flex items-start gap-2 cursor-pointer rounded border p-3 hover:bg-gray-50">
-                      <input
-                        type="radio"
-                        name="purchaseOption"
-                        value="dna-report"
-                        checked={selectedReportProduct === "dna-report"}
-                        onChange={() => setSelectedReportProduct("dna-report")}
-                        className="mt-1"
-                        disabled={processingPayment}
-                      />
+                    <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">myStory DNA Report</div>
-                        <div className="text-xs text-gray-600">One-time purchase (priced in Stripe)</div>
+                        <div className="text-lg font-semibold mb-1" style={{ color: '#366A4D' }}>
+                          Get started
+                        </div>
+                        <div className="text-2xl font-bold text-gray-900">
+                          €39.99
+                        </div>
                       </div>
-                    </label>
-
-                    <label className="flex items-start gap-2 cursor-pointer rounded border p-3 hover:bg-gray-50">
-                      <input
-                        type="radio"
-                        name="purchaseOption"
-                        value="market-validation-report"
-                        checked={selectedReportProduct === "market-validation-report"}
-                        onChange={() => setSelectedReportProduct("market-validation-report")}
-                        className="mt-1"
-                        disabled={processingPayment}
-                      />
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">myStory Market &amp; Audience Validation Report</div>
-                        <div className="text-xs text-gray-600">One-time purchase (priced in Stripe)</div>
+                      {/* Selected indicator circle */}
+                      <div 
+                        className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                        style={{ 
+                          backgroundColor: '#366A4D',
+                          borderColor: '#366A4D',
+                        }}
+                      >
+                        <div className="w-2 h-2 rounded-full bg-white"></div>
                       </div>
-                    </label>
-
-                    <label className="flex items-start gap-2 cursor-pointer rounded border p-3 hover:bg-gray-50">
-                      <input
-                        type="radio"
-                        name="purchaseOption"
-                        value="market-ready-pack"
-                        checked={selectedReportProduct === "market-ready-pack"}
-                        onChange={() => setSelectedReportProduct("market-ready-pack")}
-                        className="mt-1"
-                        disabled={processingPayment}
-                      />
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">myStory Market-Ready Pack</div>
-                        <div className="text-xs text-gray-600">One-time purchase (priced in Stripe)</div>
-                      </div>
-                    </label>
-
-                    <label className="flex items-start gap-2 cursor-pointer rounded border p-3 hover:bg-gray-50">
-                      <input
-                        type="radio"
-                        name="purchaseOption"
-                        value="growth-partnership"
-                        checked={selectedReportProduct === "growth-partnership"}
-                        onChange={() => setSelectedReportProduct("growth-partnership")}
-                        className="mt-1"
-                        disabled={processingPayment}
-                      />
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">myStory Growth Partnership</div>
-                        <div className="text-xs text-gray-600">Subscription (billed monthly, priced in Stripe)</div>
-                      </div>
-                    </label>
-                  </div>
-
-                  {uploadError && (
-                    <div className="bg-red-50 text-red-800 p-3 rounded-md text-sm">
-                      {uploadError}
                     </div>
-                  )}
-
-                  <div className="flex justify-end gap-3 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowPaymentModal(false)}
-                      disabled={processingPayment}
+                    
+                    {/* -50% Introductory Offer Tag */}
+                    <div 
+                      className="absolute -bottom-3 right-6 px-3 py-1 rounded text-xs font-semibold text-white"
+                      style={{ 
+                        backgroundColor: '#DD7C63',
+                      }}
                     >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="button"
-                      className="bg-emerald-600 hover:bg-emerald-700"
-                      onClick={handlePurchaseUpload}
-                      disabled={processingPayment}
-                    >
-                      {processingPayment ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          Continue to Checkout
-                        </>
-                      )}
-                    </Button>
+                      -50% Introductory Offer
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* Features List */}
+                <div className="mb-8">
+                  <ul className="space-y-2.5">
+                    <li className="flex items-start text-sm text-gray-900">
+                      <span className="text-black mr-3 mt-0.5">✓</span>
+                      <span>Clear reader persona and intent</span>
+                    </li>
+                    <li className="flex items-start text-sm text-gray-900">
+                      <span className="text-black mr-3 mt-0.5">✓</span>
+                      <span>True genre and subgenre positioning</span>
+                    </li>
+                    <li className="flex items-start text-sm text-gray-900">
+                      <span className="text-black mr-3 mt-0.5">✓</span>
+                      <span>Comparable titles and market anchors</span>
+                    </li>
+                    <li className="flex items-start text-sm text-gray-900">
+                      <span className="text-black mr-3 mt-0.5">✓</span>
+                      <span>Audience size and demand signals</span>
+                    </li>
+                    <li className="flex items-start text-sm text-gray-900">
+                      <span className="text-black mr-3 mt-0.5">✓</span>
+                      <span>Blurb and hook alignment check</span>
+                    </li>
+                    <li className="flex items-start text-sm text-gray-900">
+                      <span className="text-black mr-3 mt-0.5">✓</span>
+                      <span>Pricing and format guidance</span>
+                    </li>
+                    <li className="flex items-start text-sm text-gray-900">
+                      <span className="text-black mr-3 mt-0.5">✓</span>
+                      <span>Marketing angles that convert</span>
+                    </li>
+                    <li className="flex items-start text-sm text-gray-900">
+                      <span className="text-black mr-3 mt-0.5">✓</span>
+                      <span>Clear next steps to drive sales</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Error Message */}
+                {uploadError && (
+                  <div className="bg-red-50 border border-red-200 text-red-800 p-3 rounded-lg text-sm mb-6">
+                    {uploadError}
+                  </div>
+                )}
+
+                {/* Buy Now Button - Yellow-Orange Gradient */}
+                <button
+                  onClick={handlePurchaseUpload}
+                  disabled={processingPayment}
+                  className="w-full text-gray-900 font-bold py-4 px-8 rounded-[20px] transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                  style={{ 
+                    background: 'linear-gradient(to bottom, #FFD93E, #FFC400)',
+                    borderRadius: '20px',
+                  }}
+                >
+                  {processingPayment ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    <span>Buy Now</span>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         )}
     </main>

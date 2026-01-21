@@ -86,9 +86,9 @@ export default function PurchaseUploadPage() {
                 <Image
                   src="/getlost-logo-CcbncUJ4.png"
                   alt="Get Lost"
-                  width={120}
-                  height={40}
-                  className="h-8 w-auto"
+                  width={180}
+                  height={60}
+                  className="h-12 w-auto"
                   priority
                 />
               </Link>
@@ -187,9 +187,9 @@ export default function PurchaseUploadPage() {
                 <Image
                   src="/getlost-logo-CcbncUJ4.png"
                   alt="Get Lost"
-                  width={150}
-                  height={50}
-                  className="h-10 w-auto"
+                  width={240}
+                  height={80}
+                  className="h-16 w-auto"
                   priority
                 />
               </Link>
