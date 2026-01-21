@@ -1742,7 +1742,7 @@ function DashboardContent() {
 
                 {/* Features List */}
                 <div className="mb-8">
-                  <ul className="space-y-2.5">
+                  <ul className="space-y-2.5 flex flex-col items-center">
                     <li className="flex items-center text-sm text-gray-900">
                       <span className="text-black mr-3">✓</span>
                       <span>Clear reader persona and intent</span>
