@@ -12,6 +12,19 @@ import { BookOpen, Plus, RefreshCw, Users, Upload, X, Loader2, FileText, CreditC
 import { CondensedLibrary } from "@/components/condensed-library";
 import { ManuscriptCard } from "@/components/manuscript-card";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { Red_Hat_Display, Crimson_Text } from "next/font/google";
+
+const redHatDisplay = Red_Hat_Display({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-red-hat-display",
+});
+
+const crimsonText = Crimson_Text({
+  subsets: ["latin"],
+  weight: ["400", "600"],
+  variable: "--font-crimson-text",
+});
 
 // Force dynamic rendering to prevent prerendering errors
 export const dynamic = 'force-dynamic';
@@ -1643,10 +1656,10 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* Payment Modal for Upload Permission - Matching Design Image */}
+        {/* Payment Modal for Upload Permission - Matching HTML Design */}
         {showPaymentModal && (
           <div 
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 overflow-y-auto"
+            className={`fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 overflow-y-auto ${redHatDisplay.variable} ${crimsonText.variable}`}
             onClick={(e) => {
               // Close modal when clicking outside (on the backdrop)
               if (e.target === e.currentTarget && !processingPayment) {
@@ -1654,9 +1667,9 @@ function DashboardContent() {
               }
             }}
           >
-            <div className="bg-white rounded-[20px] shadow-2xl w-full max-w-[551px] max-h-[90vh] overflow-y-auto relative border border-gray-200 my-auto" style={{ borderRadius: '20px' }}>
+            <div className="bg-white rounded-[20px] shadow-2xl w-full max-w-[420px] max-h-[90vh] overflow-y-auto relative my-auto" style={{ borderRadius: '20px', padding: '32px 24px 20px' }}>
               {/* Close Button - Fixed position relative to modal */}
-              <div className="sticky top-0 z-[110] flex justify-end p-4 bg-white">
+              <div className="sticky top-0 z-[110] flex justify-end -mt-2 -mr-2 mb-2">
                 <button
                   onClick={() => setShowPaymentModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1667,155 +1680,214 @@ function DashboardContent() {
                 </button>
               </div>
 
-              {/* Modal Content */}
-              <div className="p-8 pt-0">
-                {/* Title Section */}
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold text-gray-900 leading-tight">
-                    <span className="block">myStory DNA Audience</span>
-                    <span className="block">Report</span>
-                  </h2>
-                </div>
+              {/* Title */}
+              <h1 
+                className="text-center mb-6"
+                style={{ 
+                  fontFamily: 'var(--font-red-hat-display)',
+                  fontSize: '32px',
+                  letterSpacing: '-1.5px',
+                  lineHeight: '1',
+                }}
+              >
+                myStory DNA Audience Report
+              </h1>
 
-                {/* Purchase Options */}
-                <div className="mb-8 space-y-4">
-                  {/* Normal Price - Disabled with strikethrough */}
-                  <div 
-                    className="rounded-lg p-6 border-2 relative opacity-60 cursor-not-allowed"
-                    style={{ 
-                      backgroundColor: '#FFFFFF',
-                      borderColor: '#E5E7EB',
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="text-lg font-semibold mb-1 text-gray-500">
-                          Normal price
-                        </div>
-                        <div className="text-2xl font-bold text-gray-400 relative">
-                          <span className="line-through decoration-red-500 decoration-2" style={{ textDecorationColor: '#EF4444' }}>
-                            €79.99
-                          </span>
-                        </div>
-                      </div>
-                      {/* Unselected indicator circle */}
-                      <div 
-                        className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-                        style={{ 
-                          backgroundColor: '#FFFFFF',
-                          borderColor: '#D1D5DB',
-                        }}
-                      >
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Introductory Offer - Selectable */}
-                  <div 
-                    className="rounded-lg p-6 border-2 relative overflow-visible"
-                    style={{ 
-                      backgroundColor: '#E9F4EC',
-                      borderColor: '#82C49B',
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="text-lg font-semibold mb-1" style={{ color: '#366A4D' }}>
-                          Get started
-                        </div>
-                        <div className="text-2xl font-bold text-gray-900">
-                          €39.99
-                        </div>
-                      </div>
-                      {/* Selected indicator circle */}
-                      <div 
-                        className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-                        style={{ 
-                          backgroundColor: '#366A4D',
-                          borderColor: '#366A4D',
-                        }}
-                      >
-                        <div className="w-2 h-2 rounded-full bg-white"></div>
-                      </div>
-                    </div>
-                    
-                    {/* -50% Introductory Offer Tag */}
-                    <div 
-                      className="absolute -bottom-3 right-6 px-3 py-1 rounded text-xs font-semibold text-white"
-                      style={{ 
-                        backgroundColor: '#DD7C63',
-                      }}
-                    >
-                      -50% Introductory Offer
-                    </div>
-                  </div>
-                </div>
-
-                {/* Features List */}
-                <div className="mb-8">
-                  <ul className="space-y-2.5 flex flex-col items-center">
-                    <li className="flex items-center text-sm text-gray-900">
-                      <span className="text-black mr-3">✓</span>
-                      <span>Clear reader persona and intent</span>
-                    </li>
-                    <li className="flex items-center text-sm text-gray-900">
-                      <span className="text-black mr-3">✓</span>
-                      <span>True genre and subgenre positioning</span>
-                    </li>
-                    <li className="flex items-center text-sm text-gray-900">
-                      <span className="text-black mr-3">✓</span>
-                      <span>Comparable titles and market anchors</span>
-                    </li>
-                    <li className="flex items-center text-sm text-gray-900">
-                      <span className="text-black mr-3">✓</span>
-                      <span>Audience size and demand signals</span>
-                    </li>
-                    <li className="flex items-center text-sm text-gray-900">
-                      <span className="text-black mr-3">✓</span>
-                      <span>Blurb and hook alignment check</span>
-                    </li>
-                    <li className="flex items-center text-sm text-gray-900">
-                      <span className="text-black mr-3">✓</span>
-                      <span>Pricing and format guidance</span>
-                    </li>
-                    <li className="flex items-center text-sm text-gray-900">
-                      <span className="text-black mr-3">✓</span>
-                      <span>Marketing angles that convert</span>
-                    </li>
-                    <li className="flex items-center text-sm text-gray-900">
-                      <span className="text-black mr-3">✓</span>
-                      <span>Clear next steps to drive sales</span>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Error Message */}
-                {uploadError && (
-                  <div className="bg-red-50 border border-red-200 text-red-800 p-3 rounded-lg text-sm mb-6">
-                    {uploadError}
-                  </div>
-                )}
-
-                {/* Buy Now Button - Yellow-Orange Gradient */}
-                <button
-                  onClick={handlePurchaseUpload}
-                  disabled={processingPayment}
-                  className="w-full text-gray-900 font-bold py-4 px-8 rounded-[20px] transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-base"
+              {/* Purchase Options */}
+              <div className="mb-4 space-y-0">
+                {/* Normal Price - Disabled with strikethrough */}
+                <div 
+                  className="flex items-center justify-between rounded-[16px] px-4 py-3 mb-3 relative cursor-not-allowed"
                   style={{ 
-                    background: 'linear-gradient(to bottom, #FFD93E, #FFC400)',
-                    borderRadius: '20px',
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid rgba(0, 0, 0, 0.25)',
+                    boxShadow: '0px 2px 4px 0px rgba(0, 0, 0, 0.2)',
+                    transform: 'scale(0.9)',
+                    transformOrigin: 'center',
                   }}
                 >
-                  {processingPayment ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Processing...</span>
-                    </>
-                  ) : (
-                    <span>Buy Now</span>
-                  )}
-                </button>
+                  <span 
+                    className="line-through"
+                    style={{ 
+                      fontFamily: 'var(--font-red-hat-display)',
+                      fontSize: '28px',
+                      letterSpacing: '-1.4px',
+                      lineHeight: '1',
+                      color: '#000',
+                    }}
+                  >
+                    Normal price
+                  </span>
+                  <span 
+                    className="line-through"
+                    style={{ 
+                      fontFamily: 'var(--font-crimson-text)',
+                      fontSize: '36px',
+                      fontWeight: '600',
+                      letterSpacing: '-1.8px',
+                      lineHeight: '1',
+                      color: '#000',
+                    }}
+                  >
+                    €79.99
+                  </span>
+                  <span className="text-sm ml-2">🔘</span>
+                </div>
+
+                {/* Introductory Offer - Selectable */}
+                <div 
+                  className="flex items-center justify-between rounded-[16px] px-4 py-3 relative overflow-visible"
+                  style={{ 
+                    backgroundColor: '#DEE9DD',
+                    border: '1px solid black',
+                    boxShadow: '0px 2px 4px 0px rgba(0, 0, 0, 0.2)',
+                  }}
+                >
+                  <span 
+                    style={{ 
+                      fontFamily: 'var(--font-red-hat-display)',
+                      fontSize: '28px',
+                      letterSpacing: '-1.4px',
+                      lineHeight: '1',
+                      color: '#000',
+                    }}
+                  >
+                    Get started
+                  </span>
+                  <span 
+                    style={{ 
+                      fontFamily: 'var(--font-crimson-text)',
+                      fontSize: '36px',
+                      fontWeight: '600',
+                      letterSpacing: '-1.8px',
+                      lineHeight: '1',
+                      color: '#000',
+                    }}
+                  >
+                    €39.99
+                  </span>
+                  <span className="text-sm ml-2">🔘</span>
+                  
+                  {/* -50% Introductory Offer Badge */}
+                  <div 
+                    className="absolute"
+                    style={{ 
+                      bottom: '-10px',
+                      right: '60px',
+                      background: '#F5A17F',
+                      border: '1px solid rgba(0, 0, 0, 0.96)',
+                      borderRadius: '4px',
+                      padding: '2px 6px',
+                      fontSize: '12px',
+                      letterSpacing: '-0.6px',
+                      color: '#000',
+                    }}
+                  >
+                    -50% Introductory Offer
+                  </div>
+                </div>
               </div>
+
+              {/* Features List */}
+              <ul 
+                className="mb-6 list-none"
+                style={{ 
+                  fontSize: '16px',
+                  lineHeight: '2',
+                }}
+              >
+                <li 
+                  className="relative pl-10 mb-1"
+                  style={{ fontFamily: 'var(--font-crimson-text)' }}
+                >
+                  <span className="absolute left-0 font-bold">✓</span>
+                  Clear reader persona and intent
+                </li>
+                <li 
+                  className="relative pl-10 mb-1"
+                  style={{ fontFamily: 'var(--font-crimson-text)' }}
+                >
+                  <span className="absolute left-0 font-bold">✓</span>
+                  True genre and subgenre positioning
+                </li>
+                <li 
+                  className="relative pl-10 mb-1"
+                  style={{ fontFamily: 'var(--font-crimson-text)' }}
+                >
+                  <span className="absolute left-0 font-bold">✓</span>
+                  Comparable titles and market anchors
+                </li>
+                <li 
+                  className="relative pl-10 mb-1"
+                  style={{ fontFamily: 'var(--font-crimson-text)' }}
+                >
+                  <span className="absolute left-0 font-bold">✓</span>
+                  Audience size and demand signals
+                </li>
+                <li 
+                  className="relative pl-10 mb-1"
+                  style={{ fontFamily: 'var(--font-crimson-text)' }}
+                >
+                  <span className="absolute left-0 font-bold">✓</span>
+                  Blurb and hook alignment check
+                </li>
+                <li 
+                  className="relative pl-10 mb-1"
+                  style={{ fontFamily: 'var(--font-crimson-text)' }}
+                >
+                  <span className="absolute left-0 font-bold">✓</span>
+                  Pricing and format guidance
+                </li>
+                <li 
+                  className="relative pl-10 mb-1"
+                  style={{ fontFamily: 'var(--font-crimson-text)' }}
+                >
+                  <span className="absolute left-0 font-bold">✓</span>
+                  Marketing angles that convert
+                </li>
+                <li 
+                  className="relative pl-10 mb-1"
+                  style={{ fontFamily: 'var(--font-crimson-text)' }}
+                >
+                  <span className="absolute left-0 font-bold">✓</span>
+                  Clear next steps to drive sales
+                </li>
+              </ul>
+
+              {/* Error Message */}
+              {uploadError && (
+                <div className="bg-red-50 border border-red-200 text-red-800 p-2 rounded-lg text-xs mb-4">
+                  {uploadError}
+                </div>
+              )}
+
+              {/* Buy Now Button */}
+              <button
+                onClick={handlePurchaseUpload}
+                disabled={processingPayment}
+                className="block mx-auto transition-transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed w-full"
+                style={{ 
+                  background: '#FFD22E',
+                  border: 'none',
+                  borderRadius: '16px',
+                  boxShadow: '0px 2px 4px 0px rgba(0, 0, 0, 0.2)',
+                  fontFamily: 'var(--font-red-hat-display)',
+                  fontSize: '32px',
+                  letterSpacing: '0.6px',
+                  lineHeight: '1',
+                  padding: '16px',
+                  color: '#000',
+                }}
+              >
+                {processingPayment ? (
+                  <span className="flex items-center justify-center gap-2 text-lg">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Processing...
+                  </span>
+                ) : (
+                  'Buy Now'
+                )}
+              </button>
             </div>
           </div>
         )}
