@@ -35,6 +35,8 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, []);
 
+  const currentImage: string = carouselImages[currentSlide] ?? carouselImages[0] ?? "/Carousel1.png";
+
   return (
     <div className={`hidden lg:block min-h-screen bg-white ${dmSans.variable} ${crimsonText.variable}`}>
       {/* Header with Logo */}
@@ -119,7 +121,7 @@ export default function LandingPage() {
             <div className="bg-black rounded-t-[20px] p-1">
               <div className="bg-white rounded-t-[20px] overflow-hidden">
                 <Image
-                  src={carouselImages[currentSlide]}
+                  src={currentImage}
                   alt="Dashboard Preview"
                   width={1200}
                   height={500}
