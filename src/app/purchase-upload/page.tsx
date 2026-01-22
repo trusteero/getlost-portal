@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ImageCarousel } from "@/components/image-carousel";
 import { Loader2, ArrowUpRight } from "lucide-react";
-import { Red_Hat_Display, Geist } from "next/font/google";
+import { Red_Hat_Display, Geist, DM_Sans, Crimson_Text } from "next/font/google";
 
 const redHatDisplay = Red_Hat_Display({
   subsets: ["latin"],
@@ -16,6 +16,18 @@ const redHatDisplay = Red_Hat_Display({
 const geist = Geist({
   subsets: ["latin"],
   variable: "--font-geist-sans",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-dm-sans",
+});
+
+const crimsonText = Crimson_Text({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  variable: "--font-crimson-text",
 });
 
 // Mobile carousel images
@@ -170,102 +182,110 @@ export default function PurchaseUploadPage() {
         <div className="h-32"></div>
       </div>
 
-      {/* Desktop Layout - New Design */}
-      <div className={`hidden lg:block min-h-screen bg-white relative overflow-hidden ${geist.variable}`}>
-        {/* Background decorative orange shapes */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -left-32 top-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute -right-32 top-1/3 w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-3xl"></div>
-        </div>
-
-        {/* Header Section */}
-        <header className="relative z-10 bg-white border-b border-gray-100">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8">
-            <div className="flex items-center justify-between h-20">
-              {/* Left: Logo */}
-              <Link href="/" className="flex items-center">
-                <Image
-                  src="/getlost-logo-CcbncUJ4.png"
-                  alt="Get Lost"
-                  width={240}
-                  height={80}
-                  className="h-16 w-auto"
-                  priority
-                />
-              </Link>
-              
-              {/* Right: Featured by Publishers Weekly */}
-              <Link
-                href="https://www.publishersweekly.com/pw/by-topic/international/international-book-news/article/99321-finnish-ai-co-aims-to-help-authors-with-market-analysis.html"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative bg-[#791529] text-white transition-opacity hover:opacity-90 inline-block"
-                style={{ 
-                  fontFamily: "Inter, sans-serif",
-                  clipPath: "polygon(0 0, 100% 0, 100% calc(100% - 12px), 50% 100%, 0 calc(100% - 12px))",
-                  padding: "8px 16px 16px 16px",
-                }}
-              >
-                <span className="block text-xs leading-tight text-center">Featured By</span>
-                <span className="block text-sm font-bold leading-tight text-center">Publisher&apos;s</span>
-                <span className="block text-sm font-bold leading-tight text-center">Weekly</span>
-              </Link>
-            </div>
-          </div>
+      {/* Desktop Layout - Campaign Landing Page */}
+      <div className={`hidden lg:block min-h-screen bg-white ${dmSans.variable} ${crimsonText.variable}`}>
+        {/* Header with Logo */}
+        <header className="px-8 py-6 md:px-16 lg:px-24">
+          <Link href="/">
+            <Image
+              src="/getlost-logo-CcbncUJ4.png"
+              alt="Get Lost Logo"
+              width={112}
+              height={112}
+              className="h-20 w-20 md:h-28 md:w-28"
+              priority
+            />
+          </Link>
         </header>
 
         {/* Main Content */}
-        <main className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-12 lg:py-20">
-          <div className="flex flex-col items-center gap-12 lg:gap-16">
-            {/* Main Headline */}
-            <h1 className="text-5xl lg:text-7xl font-bold text-black text-center max-w-4xl" style={{ fontFamily: "var(--font-geist-sans)" }}>
+        <main className="px-8 md:px-16 lg:px-24">
+          {/* Hero Section */}
+          <section className="text-center mb-12 md:mb-16">
+            <h1
+              className="mb-8 md:mb-12"
+              style={{
+                fontFamily: "var(--font-crimson-text)",
+                fontSize: "clamp(2.5rem, 6vw, 7rem)",
+                lineHeight: "0.9",
+                letterSpacing: "-0.04em",
+                color: "#000",
+              }}
+            >
               Publish with intent.
             </h1>
+          </section>
 
-            {/* Carousel Section */}
-            <div className="w-full max-w-5xl lg:max-w-6xl">
-              <div className="relative">
-                <ImageCarousel images={desktopCarouselImages} autoPlay={true} interval={3000} />
-              </div>
-            </div>
-
-            {/* Tagline */}
-            <p className="text-3xl lg:text-4xl font-bold text-black text-center max-w-3xl" style={{ fontFamily: "var(--font-geist-sans)" }}>
+          {/* CTA Section */}
+          <section className="text-center max-w-5xl mx-auto mb-12 md:mb-16">
+            <h2
+              className="mb-8 md:mb-12"
+              style={{
+                fontFamily: "var(--font-crimson-text)",
+                fontSize: "clamp(2rem, 5vw, 4.5rem)",
+                lineHeight: "0.85",
+                letterSpacing: "-0.05em",
+                color: "#000",
+              }}
+            >
               Gain insights that convert into book sales.
-            </p>
+            </h2>
 
             {/* Error Message */}
             {error && (
-              <p className="text-sm text-red-600 text-center max-w-md">{error}</p>
+              <p className="text-sm text-red-600 text-center max-w-md mb-4">{error}</p>
             )}
 
-            {/* Buy Now Button - Sticky at bottom */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg p-4">
-              <div className="max-w-7xl mx-auto flex justify-center">
-                <button
-                  onClick={handlePurchase}
-                  disabled={loading}
-                  className="group relative bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-4 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ fontFamily: "var(--font-geist-sans)" }}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Processing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Buy Now</span>
-                      <ArrowUpRight className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                    </>
-                  )}
-                </button>
+            <button
+              onClick={handlePurchase}
+              disabled={loading}
+              className="inline-flex items-center gap-4 bg-[#ff8d28] text-white px-10 py-6 rounded-full font-bold text-xl tracking-[-0.025em] hover:bg-[#ff9d3d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ fontFamily: "var(--font-dm-sans)" }}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  BUY NOW
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M7 7h10v10"></path>
+                    <path d="M7 17 17 7"></path>
+                  </svg>
+                </>
+              )}
+            </button>
+          </section>
+
+          {/* Dashboard Preview Section */}
+          <section className="relative max-w-6xl mx-auto mb-16 md:mb-24">
+            {/* Orange background block */}
+            <div
+              className="absolute inset-0 bg-[#f2995b] rounded-[30px] -mx-8 md:-mx-16 lg:-mx-24 h-[350px] md:h-[400px] bottom-0 top-auto z-0"
+            ></div>
+
+            {/* Dashboard frame */}
+            <div className="relative z-10 bg-[#969696] rounded-t-[20px] p-1">
+              <div className="bg-black rounded-t-[20px] p-1">
+                <div className="bg-white rounded-t-[20px] overflow-hidden">
+                  <ImageCarousel images={desktopCarouselImages} autoPlay={true} interval={2000} />
+                </div>
               </div>
             </div>
-          </div>
+          </section>
         </main>
-        {/* Spacer to prevent content from being hidden behind sticky button */}
-        <div className="h-24"></div>
       </div>
     </>
   );
